@@ -13,8 +13,6 @@ export interface App {
   category: string;
   tags: string[];
   featured?: boolean;
-  /** Si true, abre en la misma pestaña. Default false (abre nueva pestaña). */
-  sameTab?: boolean;
 }
 
 export interface AppsData {

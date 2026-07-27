@@ -15,7 +15,8 @@
       "icon": "📝",
       "category": "productividad",
       "tags": ["texto", "markdown"],
-      "featured": true
+      "featured": true,
+      "sameTab": true
     }
   ]
 }

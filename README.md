@@ -79,3 +79,5 @@ El adapter de Astro 7 habilita por defecto sesiones con Cloudflare KV (binding `
 <!-- last verified 2026-07-26 22:12 Z -->
 
 <!-- retry deploy after ip allowlist fix 22:16:50 -->
+
+<!-- retry with new user api token 22:21:17 -->

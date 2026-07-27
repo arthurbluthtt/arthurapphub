@@ -75,3 +75,5 @@ npx wrangler deploy
 ## Nota técnica
 
 El adapter de Astro 7 habilita por defecto sesiones con Cloudflare KV (binding `SESSION`). Para evitar requerir permisos KV en el token de deploy, se usa `session: { driver: 'lruCache' }` en `astro.config.mjs` (driver en memoria — irrelevante porque no usamos sesiones). Si en el futuro agregás auth/sesiones, cambiá a `cloudflareKVBinding` y otorgá permiso `Workers KV Storage:Edit` al token.
+
+<!-- last verified 2026-07-26 22:12 Z -->

@@ -10,6 +10,7 @@ export default defineConfig({
   site: 'https://arthurapphub.pages.dev',
   adapter: cloudflare(),
   prefetch: { defaultStrategy: 'hover' },
+  session: { driver: 'lruCache' },
   vite: {
     plugins: [tailwindcss()],
   },

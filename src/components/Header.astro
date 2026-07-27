@@ -1,0 +1,19 @@
+---
+import { apps } from '../lib/apps';
+import ThemeToggle from './ThemeToggle.astro';
+---
+
+<header class="border-b border-slate-200 dark:border-slate-800">
+  <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+    <a href="/" class="flex items-center gap-2 text-lg font-semibold">
+      <span class="text-2xl">⚡</span>
+      <span>AppHub</span>
+    </a>
+    <div class="flex items-center gap-4">
+      <span class="text-sm text-slate-500 dark:text-slate-400">
+        {apps.length} {apps.length === 1 ? 'app' : 'apps'}
+      </span>
+      <ThemeToggle />
+    </div>
+  </div>
+</header>

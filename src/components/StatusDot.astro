@@ -1,0 +1,26 @@
+---
+interface Props {
+  appId: string;
+}
+
+const { appId } = Astro.props;
+---
+
+<span
+  id={`status-${appId}`}
+  class="status-dot inline-block h-2 w-2 rounded-full bg-slate-400 transition-colors"
+  title="Comprobando..."
+  aria-label="Estado"
+></span>
+
+<style>
+  .status-dot.is-online {
+    background-color: #10b981;
+  }
+  .status-dot.is-offline {
+    background-color: #ef4444;
+  }
+  .dark .status-dot.is-unknown {
+    background-color: #475569;
+  }
+</style>

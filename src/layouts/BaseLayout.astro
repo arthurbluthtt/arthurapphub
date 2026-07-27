@@ -1,0 +1,72 @@
+---
+import '../styles/global.css';
+import Header from '../components/Header.astro';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'AppHub',
+  description = 'Hub personal de apps — punto de partida a todas mis herramientas web.',
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="description" content={description} />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#020617" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+    <script is:inline>
+      (function () {
+        try {
+          const t = localStorage.getItem('theme');
+          if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+          }
+        } catch {}
+      })();
+    </script>
+  </head>
+  <body class="min-h-screen">
+    <Header />
+    <main class="mx-auto max-w-6xl px-4 py-10">
+      <slot />
+    </main>
+    <script is:inline>
+      (function () {
+        if (typeof fetch === 'undefined') return;
+        const fetchPromise = fetch('/api/health').then((r) => (r.ok ? r.json() : null));
+        fetchPromise
+          .then((data) => {
+            if (!data || !Array.isArray(data.results)) return;
+            for (const r of data.results) {
+              const el = document.getElementById(`status-${r.id}`);
+              if (!el) continue;
+              el.classList.remove('is-unknown');
+              if (r.ok) {
+                el.classList.add('is-online');
+                el.title = `Online · ${r.status}`;
+              } else {
+                el.classList.add('is-offline');
+                el.title = 'Offline';
+              }
+            }
+          })
+          .catch(() => {
+            const dots = document.querySelectorAll('.status-dot');
+            dots.forEach((d) => {
+              d.classList.add('is-unknown');
+              d.title = 'Sin datos';
+            });
+          });
+      })();
+    </script>
+  </body>
+</html>

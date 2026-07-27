@@ -1,0 +1,21 @@
+{
+  "categories": [
+    {
+      "id": "productividad",
+      "label": "Productividad",
+      "color": "#3b82f6"
+    }
+  ],
+  "apps": [
+    {
+      "id": "notas",
+      "name": "Notas",
+      "description": "Bloc de notas rápido y minimalista",
+      "url": "https://notes.arthurapphub.pages.dev",
+      "icon": "📝",
+      "category": "productividad",
+      "tags": ["texto", "markdown"],
+      "featured": true
+    }
+  ]
+}

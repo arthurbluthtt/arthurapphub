@@ -17,7 +17,7 @@ async function handle(request: Request): Promise<Response> {
   const headers = new Headers();
   headers.append('Set-Cookie', buildClearedSessionCookie());
   headers.append('Set-Cookie', 'hub_user=; Path=/; Secure; SameSite=Lax; Max-Age=0');
-  headers.set('Location', '/login');
+  headers.set('Location', '/');
   return new Response(null, { status: 303, headers });
 }
 

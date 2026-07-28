@@ -1,128 +1,16 @@
 ---
 import { env } from 'cloudflare:workers';
-import BaseLayout from '../layouts/BaseLayout.astro';
-import {
-  COOKIE_NAME_CONST,
-  SESSION_TTL_MS_CONST,
-  createSession,
-  getUserByUsername,
-  hashPin,
-  isValidPin,
-  isValidUsername,
-  lookupSession,
-  normalizeUsername,
-  readCookie,
-} from '../lib/auth';
+import { lookupSession, readCookie } from '../lib/auth';
 
 export const prerender = false;
 
-const next = Astro.url.searchParams.get('next') ?? '/';
-
 const sessionId = readCookie(Astro.request);
-if (sessionId) {
-  const sess = await lookupSession(env.AUTH_DB, sessionId);
-  if (sess) {
-    return Astro.redirect(next);
-  }
+const sess = sessionId ? await lookupSession(env.AUTH_DB, sessionId) : null;
+
+if (sess) {
+  return Astro.redirect('/');
 }
 
-let error: string | null = null;
-
-if (Astro.request.method === 'POST') {
-  const form = await Astro.request.formData();
-  const usernameInput = String(form.get('username') ?? '');
-  const pin = String(form.get('pin') ?? '').trim();
-  const nextField = String(form.get('next') ?? '') || next;
-
-  const username = normalizeUsername(usernameInput);
-
-  if (!usernameInput.trim() || !pin) {
-    error = 'Completá usuario y PIN.';
-  } else if (!isValidUsername(username)) {
-    error = 'Usuario o PIN incorrecto.';
-  } else if (!isValidPin(pin)) {
-    error = 'Usuario o PIN incorrecto.';
-  } else {
-    const user = await getUserByUsername(env.AUTH_DB, username);
-    if (!user) {
-      error = 'Usuario o PIN incorrecto.';
-    } else {
-      const candidate = await hashPin(pin, username, env.AUTH_PEPPER);
-      if (candidate !== user.pinHash) {
-        error = 'Usuario o PIN incorrecto.';
-      } else {
-        const sess = await createSession(env.AUTH_DB, username);
-        Astro.cookies.set(COOKIE_NAME_CONST, sess.sessionId, {
-          path: '/',
-          httpOnly: true,
-          secure: true,
-          sameSite: 'lax',
-          maxAge: Math.floor(SESSION_TTL_MS_CONST / 1000),
-        });
-        Astro.cookies.set('hub_user', username, {
-          path: '/',
-          secure: true,
-          sameSite: 'lax',
-          maxAge: Math.floor(SESSION_TTL_MS_CONST / 1000),
-        });
-        return Astro.redirect(nextField);
-      }
-    }
-  }
-}
+const next = Astro.url.searchParams.get('next');
+return Astro.redirect(next ? `/?next=${encodeURIComponent(next)}` : '/');
 ---
-
-<BaseLayout title="Entrar — AppHub">
-  <div class="mx-auto max-w-sm">
-    <div class="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur">
-      <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Entrar</h1>
-      <p class="mt-1 text-sm text-zinc-500">Usuario y PIN de 4 dígitos.</p>
-      {
-        error && (
-          <p class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
-            {error}
-          </p>
-        )
-      }
-      <form method="POST" class="mt-6 flex flex-col gap-3">
-        <input type="hidden" name="next" value={next} />
-        <input
-          type="text"
-          name="username"
-          placeholder="arthur"
-          autocomplete="username"
-          autocapitalize="off"
-          autocorrect="off"
-          spellcheck="false"
-          required
-          autofocus
-          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
-        />
-        <input
-          type="password"
-          name="pin"
-          inputmode="numeric"
-          autocomplete="current-password"
-          pattern="[0-9]{4}"
-          maxlength="4"
-          minlength="4"
-          required
-          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-3 text-center text-2xl tracking-[0.5em] text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
-        />
-        <button
-          type="submit"
-          class="w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
-        >
-          Entrar
-        </button>
-      </form>
-    </div>
-    <p class="mt-4 text-center text-sm text-zinc-500">
-      Primer acceso → <a
-        href={`/signup${next && next !== '/' ? `?next=${encodeURIComponent(next)}` : ''}`}
-        class="underline decoration-zinc-400 underline-offset-4 hover:text-zinc-900 dark:hover:text-white"
-        >Crear usuario</a
-      >
-    </p>
-  </div>
-</BaseLayout>

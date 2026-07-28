@@ -53,12 +53,12 @@ const foundDateLabel = foundAt
     )
   }
 
-  <div class="flex aspect-[4/3] w-full items-center justify-center overflow-hidden">
+  <div class="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-white/[0.04]">
     <img
       src={weaponIconUrl}
       alt={name}
       loading="lazy"
-      class="h-full w-full object-contain"
+      class="h-full w-full object-contain p-2"
     />
   </div>
 
@@ -77,14 +77,14 @@ const foundDateLabel = foundAt
       alt={perk1.name}
       title={perk1.name}
       loading="lazy"
-      class="h-7 w-7 rounded ring-1 ring-zinc-200 dark:ring-white/10"
+      class="h-10 w-10 rounded ring-1 ring-zinc-200 dark:ring-white/10"
     />
     <img
       src={perk2IconUrl}
       alt={perk2.name}
       title={perk2.name}
       loading="lazy"
-      class="h-7 w-7 rounded ring-1 ring-zinc-200 dark:ring-white/10"
+      class="h-10 w-10 rounded ring-1 ring-zinc-200 dark:ring-white/10"
     />
   </div>
 

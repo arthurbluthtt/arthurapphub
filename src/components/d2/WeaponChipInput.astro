@@ -197,13 +197,13 @@
       el.className =
         'group relative flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-5 transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur';
       el.innerHTML = `
-        <div class="flex aspect-[4/3] w-full items-center justify-center overflow-hidden">
-          <img src="/destiny/api/icon?type=weapon&hash=${encodeURIComponent(w.itemHash)}" alt="${escapeHtml(w.name)}" loading="lazy" class="h-full w-full object-contain" />
+        <div class="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-white/[0.04]">
+          <img src="/destiny/api/icon?type=weapon&hash=${encodeURIComponent(w.itemHash)}" alt="${escapeHtml(w.name)}" loading="lazy" class="h-full w-full object-contain p-2" />
         </div>
         <h3 class="font-semibold text-zinc-900 dark:text-white">${escapeHtml(w.name)}</h3>
         <div class="flex items-center gap-2">
-          <img src="/destiny/api/icon?type=perk&hash=${encodeURIComponent(w.perk1.hash)}" alt="${escapeHtml(w.perk1.name)}" title="${escapeHtml(w.perk1.name)}" loading="lazy" class="h-7 w-7 rounded ring-1 ring-zinc-200 dark:ring-white/10" />
-          <img src="/destiny/api/icon?type=perk&hash=${encodeURIComponent(w.perk2.hash)}" alt="${escapeHtml(w.perk2.name)}" title="${escapeHtml(w.perk2.name)}" loading="lazy" class="h-7 w-7 rounded ring-1 ring-zinc-200 dark:ring-white/10" />
+          <img src="/destiny/api/icon?type=perk&hash=${encodeURIComponent(w.perk1.hash)}" alt="${escapeHtml(w.perk1.name)}" title="${escapeHtml(w.perk1.name)}" loading="lazy" class="h-10 w-10 rounded ring-1 ring-zinc-200 dark:ring-white/10" />
+          <img src="/destiny/api/icon?type=perk&hash=${encodeURIComponent(w.perk2.hash)}" alt="${escapeHtml(w.perk2.name)}" title="${escapeHtml(w.perk2.name)}" loading="lazy" class="h-10 w-10 rounded ring-1 ring-zinc-200 dark:ring-white/10" />
         </div>
         <div class="mt-auto flex items-center justify-between gap-2 pt-1">
           <button type="button" data-toggle-found data-item-hash="${escapeHtml(w.itemHash)}" data-found="false" class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white">Marcar encontrada</button>

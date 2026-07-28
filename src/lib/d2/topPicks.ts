@@ -15,11 +15,15 @@ const topPicks = topPicksRaw as Record<string, PerksPair>;
 
 function fallbackPerks(itemHash: string): PerksPair | null {
   const weapon = getWeapon(itemHash);
-  if (!weapon || !Array.isArray(weapon.perkPoolHashes) || weapon.perkPoolHashes.length < 2) {
-    return null;
-  }
-  const a = weapon.perkPoolHashes[0];
-  const b = weapon.perkPoolHashes[1];
+  if (!weapon) return null;
+  // Preferimos mainPerkHashes (trait 3 y trait 4, calculados en build-time).
+  // Fallback al pool genérico si el arma no tiene mainPerkHashes.
+  const candidates = Array.isArray(weapon.mainPerkHashes) && weapon.mainPerkHashes.length >= 2
+    ? weapon.mainPerkHashes
+    : weapon.perkPoolHashes;
+  if (!Array.isArray(candidates) || candidates.length < 2) return null;
+  const a = candidates[0];
+  const b = candidates[1];
   if (getPerk(a) && getPerk(b)) return [a, b];
   return null;
 }

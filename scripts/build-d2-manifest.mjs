@@ -56,6 +56,12 @@ async function getCdnJson(path) {
   return await res.json();
 }
 
+// Socket type hashes que corresponden a las columnas de perks (trait 3 y trait 4).
+// 1215804697 = perk column 3 (regular trait)
+// 1215804696 = perk column 4 (regular trait)
+// 514622187  = exotic trait (columna 4 de exóticas tipo Ace of Spades)
+const PERK_COLUMN_SOCKET_HASHES = new Set([1215804697, 1215804696, 514622187]);
+
 function pickWeapon(item) {
   if (item.itemType !== ITEM_TYPE_WEAPON) return null;
   if (item.redacted) return null;
@@ -73,6 +79,25 @@ function pickWeapon(item) {
 
   if (perkPoolHashes.length < 2) return null;
 
+  // Identificamos los perks principales (trait 3 y trait 4) por socket type hash.
+  // Para armas con menos perks identificables, caemos a los índices 3 y 4
+  // (que es donde típicamente caen perk1 y perk2 en legendarias estándar).
+  const perkSocketHashes = sockets
+    .filter((s) => PERK_COLUMN_SOCKET_HASHES.has(s.socketTypeHash))
+    .map((s) => String(s.singleInitialItemHash))
+    .filter(Boolean);
+
+  let mainPerkHashes;
+  if (perkSocketHashes.length >= 2) {
+    mainPerkHashes = perkSocketHashes.slice(0, 2);
+  } else if (perkSocketHashes.length === 1 && sockets.length >= 5) {
+    mainPerkHashes = [perkSocketHashes[0], String(sockets[4].singleInitialItemHash)].filter(Boolean);
+  } else if (sockets.length >= 5) {
+    mainPerkHashes = [String(sockets[3].singleInitialItemHash), String(sockets[4].singleInitialItemHash)].filter(Boolean);
+  } else {
+    mainPerkHashes = perkPoolHashes.slice(0, 2);
+  }
+
   return {
     hash: String(item.hash),
     name: item.displayProperties.name,
@@ -80,6 +105,7 @@ function pickWeapon(item) {
     damage: DAMAGE_TYPES[item.defaultDamageType] ?? 'kinetic',
     tier: tier === 6 ? 'exotic' : 'legendary',
     perkPoolHashes,
+    mainPerkHashes,
   };
 }
 
@@ -144,6 +170,7 @@ async function build() {
     damage: w.damage,
     tier: w.tier,
     perkPoolHashes: w.perkPoolHashes,
+    mainPerkHashes: w.mainPerkHashes,
   }));
 
   await mkdir('data/d2', { recursive: true });

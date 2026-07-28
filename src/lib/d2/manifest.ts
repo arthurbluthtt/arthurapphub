@@ -8,6 +8,7 @@ export interface WeaponIndexEntry {
   damage: string;
   tier: 'exotic' | 'legendary';
   perkPoolHashes: string[];
+  mainPerkHashes: string[];
 }
 
 export interface PerkEntry {

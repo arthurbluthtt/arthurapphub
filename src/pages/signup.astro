@@ -1,0 +1,106 @@
+---
+import { env } from 'cloudflare:workers';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import {
+  COOKIE_NAME_CONST,
+  SESSION_TTL_MS_CONST,
+  createSession,
+  getPinHash,
+  hashPin,
+  isValidPin,
+  lookupSession,
+  readCookie,
+} from '../lib/auth';
+
+export const prerender = false;
+
+const next = Astro.url.searchParams.get('next') ?? '/';
+
+const sessionId = readCookie(Astro.request);
+if (sessionId) {
+  const sess = await lookupSession(env.AUTH_DB, sessionId);
+  if (sess) {
+    return Astro.redirect(next);
+  }
+}
+
+let error: string | null = null;
+
+if (Astro.request.method === 'POST') {
+  const form = await Astro.request.formData();
+  const pin = String(form.get('pin') ?? '').trim();
+
+  if (!isValidPin(pin)) {
+    error = 'El PIN debe ser exactamente 4 dígitos.';
+  } else {
+    const existing = await getPinHash(env.AUTH_DB);
+    if (existing) {
+      error = 'Ya existe un PIN. Para cambiarlo, usá la sección de cuenta.';
+    } else {
+      const pinHash = await hashPin(pin, env.AUTH_PEPPER);
+      await env.AUTH_DB
+        .prepare(
+          `INSERT INTO pin_credentials (user_id, pin_hash, created_at, updated_at)
+           VALUES ('default', ?, ?, ?)
+           ON CONFLICT(user_id) DO NOTHING`
+        )
+        .bind(pinHash, Date.now(), Date.now())
+        .run();
+      const sess = await createSession(env.AUTH_DB);
+      Astro.cookies.set(COOKIE_NAME_CONST, sess.sessionId, {
+        path: '/',
+        httpOnly: true,
+        secure: true,
+        sameSite: 'lax',
+        maxAge: Math.floor(SESSION_TTL_MS_CONST / 1000),
+      });
+      return Astro.redirect(next);
+    }
+  }
+}
+---
+
+<BaseLayout title="Crear PIN — AppHub">
+  <div class="mx-auto max-w-sm">
+    <div class="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur">
+      <h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Crear PIN</h1>
+      <p class="mt-1 text-sm text-zinc-500">
+        Tu PIN te da acceso a todas las apps del hub. Recordalo: no se puede recuperar.
+      </p>
+      {
+        error && (
+          <p class="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-600 dark:text-red-400">
+            {error}
+          </p>
+        )
+      }
+      <form method="POST" class="mt-6 flex flex-col gap-3">
+        <input
+          type="password"
+          name="pin"
+          inputmode="numeric"
+          autocomplete="new-password"
+          pattern="[0-9]{4}"
+          maxlength="4"
+          minlength="4"
+          required
+          autofocus
+          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-3 text-center text-2xl tracking-[0.5em] text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+        />
+        <button
+          type="submit"
+          class="w-full rounded-lg bg-zinc-900 px-3 py-2 text-sm font-semibold text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+        >
+          Crear PIN y entrar
+        </button>
+      </form>
+    </div>
+    <p class="mt-4 text-center text-sm text-zinc-500">
+      ¿Ya tenés PIN? <a
+        href={`/login${next && next !== '/' ? `?next=${encodeURIComponent(next)}` : ''}`}
+        class="underline decoration-zinc-400 underline-offset-4 hover:text-zinc-900 dark:hover:text-white"
+        >Entrar</a
+      >
+    </p>
+  </div>
+</BaseLayout>

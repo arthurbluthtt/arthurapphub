@@ -10,5 +10,13 @@
 	},
 	"observability": {
 		"enabled": true
-	}
+	},
+	"d1_databases": [
+		{
+			"binding": "AUTH_DB",
+			"database_name": "arthurapphub-auth-db",
+			"database_id": "09663bc8-89c0-422f-833f-de9f48b0a8ab",
+			"migrations_dir": "./migrations"
+		}
+	]
 }

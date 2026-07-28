@@ -12,7 +12,7 @@ const category = getCategory(app.category);
 ---
 
 <a
-  href={app.url}
+  href={app.redir ?? `/api/redir?app=${app.id}`}
   class="group relative flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur dark:hover:border-white/25 dark:hover:bg-white/[0.04]"
 >
   <div class="flex items-start justify-between">

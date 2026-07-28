@@ -8,10 +8,11 @@
   ],
   "apps": [
     {
-      "id": "notas",
+      "id": "notes-app",
       "name": "Notas",
       "description": "Bloc de notas rápido y minimalista",
       "url": "https://notes-app.arthurbluthtt.workers.dev",
+      "redir": "/api/redir?app=notes-app",
       "icon": "📝",
       "category": "productividad",
       "tags": ["texto", "markdown"],

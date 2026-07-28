@@ -1,6 +1,6 @@
 ﻿# STATE — ArthurAppHub
 
-Estado actual del hub como **Identity Provider** (SSO multi-app) + lanzador de apps.
+Estado actual del hub como **Identity Provider** (SSO multi-app) + lanzador de apps + sub-app de wishlist de Destiny 2.
 Última actualización: 2026-07-28.
 
 ## ¿Qué está hecho?
@@ -27,6 +27,21 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + lanzador de a
   - `POST /api/auth/logout-all` — stub simétrico (no-op; el hub no trackea sesiones por app).
   - `GET /api/redir?app=<id>` — con sesión: code + 302 a `${app.url}/api/auth/exchange?code=...`. Sin sesión: 302 a `/login?next=...`.
   - `GET /api/health` — HEAD a cada `app.url`, devuelve `{id, ok, status, ms}` con cache 5 min.
+
+### D2 Wishlist (sub-app interna)
+
+- **Página `/destiny`** (login requerido): wishlist de armas de Destiny 2 con filtro (Pendientes/Encontradas/Todas), botón para marcar como encontrada, agregar por nombre con autocomplete desde el manifest de Bungie.
+- **Manifest** de Bungie (`BUNGIE_API_KEY` secret) → `data/d2/weapons-index.json` + `perks.json` (bundled en el worker).
+- **Top picks**: import desde [lightggtodim](https://github.com/CryoTheRenegade/lightggtodim) (DIM-format) → `data/d2/top-picks.json`. Fallback: 2 primeras perks del pool.
+- **Iconos**: primer hit → R2 (`arthurapphub-d2-assets` binding `D2_ASSETS`). Después cache 30 días.
+- **D1 tabla `d2_wishlist`** (migración `0003`): `(username, item_hash, weapon_name, weapon_icon_path, top_perk_hashes, found, found_at, added_at)` + índice `(username, found, added_at DESC)`.
+- **API**:
+  - `GET /destiny/api/search?q=...` — top 10 armas coincidentes (case-insensitive).
+  - `POST /destiny/api/add` `{itemHash}` — agrega arma, resuelve top picks o fallback. 409 si duplicado.
+  - `POST /destiny/api/remove` `{itemHash}` — DELETE.
+  - `POST /destiny/api/toggle-found` `{itemHash}` — toggle found/found_at.
+  - `GET /destiny/api/icon?type=weapon|perk&hash=...` — R2 con fallback Bungie CDN.
+- **Refresh top picks**: correr lightggtodim localmente → copiar `dist/wishlists/lightgg-popular-pve.txt` → `data/d2/source/dim-popular.txt` → `npm run build:d2-picks` → commit.
 - **Header**: muestra `username` en el header (visible solo si hay cookie `hub_user`, leída via JS on page load).
 - **Algoritmo PIN**: `PBKDF2-SHA256(pin + ":" + username + ":" + pepper, salt="arthurapphub-auth-v1", 100k iter)`. Username entra al input para evitar colisiones entre usuarios con mismo PIN.
 - **Per-app partition key**: `pin_hash_app = sha256(pin_hash_hub + ":" + app_id + ":" + pepper)`. El hub calcula; cada app lo guarda como su propia partition key.

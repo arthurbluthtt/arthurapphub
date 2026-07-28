@@ -101,3 +101,10 @@ Este es el **diseño canónico** de ArthurAppHub. Cualquier cambio de colores / 
 1. Sumar entrada en `src/data/apps.json` con `icon` (emoji ideal), `category`, etc.
 2. Si la categoría es nueva, agregarla al array `categories`. Usar `color: "#fafafa"` (no se renderiza, pero queda como metadata para futuro).
 3. Listo — el componente se encarga del estilo.
+
+## Categorías disponibles
+
+- **productividad** — apps de trabajo/notas (color `#3b82f6`, solo metadata).
+- **gaming** — apps de juegos (D2 Wishlist, etc.). Color `#fafafa` (metadata).
+
+Cuando se sume una nueva, agregar arriba siguiendo el patrón.

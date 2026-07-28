@@ -98,6 +98,36 @@ Push a `main` en GitHub dispara `.github/workflows/deploy.yml`:
 - Static assets servidos por la binding `ASSETS`.
 - Identity Provider multi-usuario con username + PIN.
 - SSO via exchange code hacia apps vinculadas.
-- Sin search bar ni filtros (versión mínima).
+- **Sub-app `/destiny`** — wishlist de armas de Destiny 2 con autocompletado desde el manifest oficial de Bungie, perks "más usadas" importadas desde [lightggtodim](https://github.com/CryoTheRenegade/lightggtodim), imágenes cacheadas en R2, filtro (Pendientes/Encontradas/Todas), botón para marcar armas como conseguidas.
 
 Ver `STATE.md` para el plan completo y la historia del proyecto.
+
+## D2 Wishlist (sub-app)
+
+Una página interna en `/destiny` que mantiene una wishlist personal de armas de Destiny 2 con las perks más populares según la comunidad (vía lightggtodim).
+
+### Datos
+
+- **Manifest**: `data/d2/weapons-index.json` + `data/d2/perks.json` generados con `npm run build:d2-manifest`. Necesita `BUNGIE_API_KEY` (gratis en https://www.bungie.net/en/Application).
+- **Top picks**: `data/d2/top-picks.json` generado con `npm run build:d2-picks`. Lee `data/d2/source/dim-popular.txt` (output de lightggtodim en formato DIM-wishlist).
+- **Iconos**: primer hit baja desde Bungie CDN → se guarda en R2 (`arthurapphub-d2-assets`). Después se sirve desde R2 con cache de 30 días.
+
+### Storage
+
+- D1 tabla `d2_wishlist` (migración `migrations/0003_d2_wishlist.sql`): `(username, item_hash, weapon_name, weapon_icon_path, top_perk_hashes, found, found_at, added_at)`.
+- R2 bucket `arthurapphub-d2-assets`: `weapons/<hash>.png` + `perks/<hash>.png`.
+
+### Refrescar top picks (~cada season de D2)
+
+```bash
+# 1. En una copia local de lightggtodim:
+pnpm generate
+
+# 2. Copiar el output a este repo:
+cp dist/wishlists/lightgg-popular-pve.txt ../arthurapphub/data/d2/source/dim-popular.txt
+
+# 3. Regenerar el JSON consumido por el hub:
+cd ../arthurapphub
+npm run build:d2-picks
+git add data/d2/top-picks.json && git commit -m "d2: refresh top picks" && git push
+```

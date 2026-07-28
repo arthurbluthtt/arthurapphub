@@ -1,0 +1,112 @@
+---
+interface PerkLite {
+  hash: string;
+  name: string;
+  icon: string;
+}
+
+interface Props {
+  itemHash: string;
+  name: string;
+  iconPath: string;
+  perk1: PerkLite;
+  perk2: PerkLite;
+  found: boolean;
+  foundAt: number | null;
+}
+
+const { itemHash, name, iconPath, perk1, perk2, found, foundAt } = Astro.props;
+
+const weaponIconUrl = `/destiny/api/icon?type=weapon&hash=${itemHash}`;
+const perk1IconUrl = `/destiny/api/icon?type=perk&hash=${perk1.hash}`;
+const perk2IconUrl = `/destiny/api/icon?type=perk&hash=${perk2.hash}`;
+
+const foundDateLabel = foundAt
+  ? new Date(foundAt).toLocaleDateString('es', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    })
+  : '';
+---
+
+<article
+  class:list={[
+    'group relative flex flex-col gap-3 rounded-2xl border bg-white p-5 transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur',
+    found
+      ? 'border-zinc-200 opacity-60 dark:border-white/10'
+      : 'border-zinc-200 hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg dark:border-white/10 dark:hover:border-white/25 dark:hover:bg-white/[0.04]',
+  ]}
+  data-weapon-card
+  data-found={found ? '1' : '0'}
+  data-item-hash={itemHash}
+>
+  {
+    found && (
+      <span
+        class="absolute left-3 top-3 grid h-6 w-6 place-items-center rounded-full bg-emerald-500 text-xs font-semibold text-white"
+        title={`Encontrada el ${foundDateLabel}`}
+        aria-label="Encontrada"
+      >
+        ✓
+      </span>
+    )
+  }
+
+  <div class="flex aspect-[4/3] w-full items-center justify-center overflow-hidden">
+    <img
+      src={weaponIconUrl}
+      alt={name}
+      loading="lazy"
+      class="h-full w-full object-contain"
+    />
+  </div>
+
+  <h3
+    class:list={[
+      'font-semibold text-zinc-900 dark:text-white',
+      found && 'line-through',
+    ]}
+  >
+    {name}
+  </h3>
+
+  <div class="flex items-center gap-2">
+    <img
+      src={perk1IconUrl}
+      alt={perk1.name}
+      title={perk1.name}
+      loading="lazy"
+      class="h-7 w-7 rounded ring-1 ring-zinc-200 dark:ring-white/10"
+    />
+    <img
+      src={perk2IconUrl}
+      alt={perk2.name}
+      title={perk2.name}
+      loading="lazy"
+      class="h-7 w-7 rounded ring-1 ring-zinc-200 dark:ring-white/10"
+    />
+  </div>
+
+  <div class="mt-auto flex items-center justify-between gap-2 pt-1">
+    <button
+      type="button"
+      class="text-xs uppercase tracking-wider transition data-[found=true]:text-emerald-600 data-[found=false]:text-zinc-500 hover:text-zinc-900 dark:data-[found=true]:text-emerald-400 dark:data-[found=false]:text-zinc-500 dark:hover:text-white"
+      data-toggle-found
+      data-item-hash={itemHash}
+      data-found={found ? 'true' : 'false'}
+    >
+      {found ? 'Marcar pendiente' : 'Marcar encontrada'}
+    </button>
+    <button
+      type="button"
+      class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400"
+      data-remove-weapon
+      data-item-hash={itemHash}
+      title="Quitar de la wishlist"
+      aria-label="Quitar"
+    >
+      ×
+    </button>
+  </div>
+</article>

@@ -13,5 +13,6 @@ declare module 'cloudflare:workers' {
   interface Env extends WorkerConfig.Env {
     AUTH_PEPPER: string;
     INTERNAL_API_SECRET: string;
+    BUNGIE_API_KEY: string;
   }
 }

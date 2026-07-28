@@ -1,0 +1,312 @@
+---
+import { env } from 'cloudflare:workers';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import WeaponCard from '../../components/d2/WeaponCard.astro';
+import WeaponChipInput from '../../components/d2/WeaponChipInput.astro';
+import { lookupSession, readCookie } from '../../lib/auth';
+import { resolveWeapon } from '../../lib/d2/topPicks';
+import { listWishlist } from '../../lib/d2/wishlist';
+
+export const prerender = false;
+
+const sessionId = readCookie(Astro.request);
+const sess = sessionId ? await lookupSession(env.AUTH_DB, sessionId) : null;
+if (!sess) {
+  return Astro.redirect('/?next=' + encodeURIComponent('/destiny'));
+}
+
+type Filter = 'pending' | 'found' | 'all';
+const paramFilter = Astro.url.searchParams.get('filter') ?? 'pending';
+const currentFilter: Filter =
+  paramFilter === 'found' || paramFilter === 'all' ? paramFilter : 'pending';
+
+const rows = await listWishlist(env.AUTH_DB, sess.username);
+
+const resolved = rows
+  .map((row) => {
+    const r = resolveWeapon(row.itemHash);
+    if (!r) return null;
+    return { row, weapon: r };
+  })
+  .filter(
+    (x): x is { row: typeof rows[number]; weapon: NonNullable<ReturnType<typeof resolveWeapon>> } =>
+      x !== null
+  );
+
+const pendingCount = resolved.filter((r) => !r.row.found).length;
+const foundCount = resolved.filter((r) => r.row.found).length;
+const totalCount = resolved.length;
+
+const visible =
+  currentFilter === 'pending'
+    ? resolved.filter((r) => !r.row.found)
+    : currentFilter === 'found'
+      ? resolved.filter((r) => r.row.found)
+      : resolved;
+---
+
+<BaseLayout title="D2 Wishlist — AppHub">
+  <div class="mb-6 flex items-baseline justify-between">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+        D2 Wishlist
+      </h1>
+      <p class="mt-1 text-sm text-zinc-500">
+        Tus armas favoritas de Destiny 2 con las perks más usadas de la comunidad.
+      </p>
+    </div>
+    <span class="text-xs uppercase tracking-wider text-zinc-500">
+      {totalCount} {totalCount === 1 ? 'arma' : 'armas'}
+    </span>
+  </div>
+
+  <div class="mb-6">
+    <WeaponChipInput />
+  </div>
+
+  {
+    totalCount > 0 && (
+      <div
+        class="mb-4 inline-flex rounded-lg border border-zinc-200 p-1 dark:border-white/10"
+        data-filter-group
+        role="tablist"
+        aria-label="Filtrar wishlist"
+      >
+        {(['pending', 'found', 'all'] as const).map((f) => (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={currentFilter === f}
+            data-filter-tab={f}
+            class:list={[
+              'rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition',
+              currentFilter === f
+                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
+                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white',
+            ]}
+          >
+            {f === 'pending' && `Pendientes (${pendingCount})`}
+            {f === 'found' && `Encontradas (${foundCount})`}
+            {f === 'all' && `Todas (${totalCount})`}
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    totalCount === 0 ? (
+      <p
+        class="rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500"
+        data-empty-state
+        data-scope="all"
+      >
+        Tu wishlist está vacía. Buscá un arma arriba y agregala con un click.
+      </p>
+    ) : (
+      <>
+        <div
+          class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+          data-weapons-grid
+          data-filter={currentFilter}
+        >
+          {visible.map(({ row, weapon }) => (
+            <WeaponCard
+              itemHash={weapon.itemHash}
+              name={weapon.name}
+              iconPath={weapon.iconPath}
+              perk1={weapon.perk1}
+              perk2={weapon.perk2}
+              found={row.found}
+              foundAt={row.foundAt}
+            />
+          ))}
+        </div>
+
+        <p
+          class="mt-4 hidden rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500"
+          data-empty-state
+          data-scope="filter"
+        >
+          {currentFilter === 'pending' &&
+            'No tenés armas pendientes — todas encontradas.'}
+          {currentFilter === 'found' &&
+            'Ninguna marcada como encontrada todavía.'}
+          {currentFilter === 'all' && 'Tu wishlist está vacía.'}
+        </p>
+      </>
+    )
+  }
+
+  <script is:inline define:vars={{ initialFilter: currentFilter }}>
+    window.currentFilter = initialFilter;
+
+    function setActiveTab(filter) {
+      document.querySelectorAll('[data-filter-tab]').forEach((tab) => {
+        const active = tab.dataset.filterTab === filter;
+        tab.setAttribute('aria-selected', String(active));
+        if (active) {
+          tab.classList.add('bg-zinc-900', 'text-white', 'dark:bg-white', 'dark:text-zinc-900');
+          tab.classList.remove('text-zinc-500', 'dark:text-zinc-500');
+        } else {
+          tab.classList.remove('bg-zinc-900', 'text-white', 'dark:bg-white', 'dark:text-zinc-900');
+          tab.classList.add('text-zinc-500', 'dark:text-zinc-500');
+        }
+      });
+    }
+
+    window.applyFilter = function applyFilter(filter) {
+      window.currentFilter = filter;
+      const grid = document.querySelector('[data-weapons-grid]');
+      if (grid) grid.dataset.filter = filter;
+      let visible = 0;
+      document.querySelectorAll('[data-weapon-card]').forEach((card) => {
+        const isFound = card.dataset.found === '1';
+        const show =
+          filter === 'all' ||
+          (filter === 'pending' && !isFound) ||
+          (filter === 'found' && isFound);
+        card.classList.toggle('hidden', !show);
+        if (show) visible++;
+      });
+      const scopedEmpty = document.querySelector('[data-empty-state][data-scope]');
+      if (scopedEmpty) {
+        const scope = scopedEmpty.dataset.scope;
+        const shouldShow = scope === filter && visible === 0;
+        scopedEmpty.classList.toggle('hidden', !shouldShow);
+      }
+      setActiveTab(filter);
+    };
+
+    window.updateFilterCounts = function updateFilterCounts() {
+      const cards = document.querySelectorAll('[data-weapon-card]');
+      let pending = 0;
+      let found = 0;
+      cards.forEach((c) => {
+        if (c.dataset.found === '1') found++;
+        else pending++;
+      });
+      const total = pending + found;
+      const setText = (key, txt) => {
+        const tab = document.querySelector('[data-filter-tab="' + key + '"]');
+        if (tab) tab.textContent = txt;
+      };
+      setText('pending', 'Pendientes (' + pending + ')');
+      setText('found', 'Encontradas (' + found + ')');
+      setText('all', 'Todas (' + total + ')');
+    };
+
+    document.querySelector('[data-filter-group]')?.addEventListener('click', (e) => {
+      const tab = e.target.closest('[data-filter-tab]');
+      if (!tab) return;
+      const filter = tab.dataset.filterTab;
+      const url = new URL(window.location.href);
+      url.searchParams.set('filter', filter);
+      history.replaceState(null, '', url.toString());
+      window.applyFilter(filter);
+    });
+
+    document.querySelector('[data-weapons-grid]')?.addEventListener('click', async (e) => {
+      const toggleBtn = e.target.closest('[data-toggle-found]');
+      const removeBtn = e.target.closest('[data-remove-weapon]');
+      if (toggleBtn) {
+        e.preventDefault();
+        const card = toggleBtn.closest('[data-weapon-card]');
+        const wasFound = toggleBtn.dataset.found === 'true';
+        const itemHash = toggleBtn.dataset.itemHash;
+        const nowFound = !wasFound;
+        toggleBtn.dataset.found = String(nowFound);
+        toggleBtn.textContent = nowFound ? 'Marcar pendiente' : 'Marcar encontrada';
+        if (card) {
+          card.dataset.found = nowFound ? '1' : '0';
+          const h3 = card.querySelector('h3');
+          if (h3) h3.classList.toggle('line-through', nowFound);
+          let badge = card.querySelector('[data-found-badge]');
+          if (nowFound && !badge) {
+            badge = document.createElement('span');
+            badge.dataset.foundBadge = '1';
+            badge.className =
+              'absolute left-3 top-3 grid h-6 w-6 place-items-center rounded-full bg-emerald-500 text-xs font-semibold text-white';
+            badge.setAttribute('aria-label', 'Encontrada');
+            badge.title = 'Encontrada';
+            badge.textContent = '✓';
+            card.appendChild(badge);
+          } else if (!nowFound && badge) {
+            badge.remove();
+          }
+        }
+        if (toggleBtn.dataset.found === 'true') {
+          toggleBtn.classList.add('text-emerald-600', 'dark:text-emerald-400');
+          toggleBtn.classList.remove('text-zinc-500', 'dark:text-zinc-500');
+        } else {
+          toggleBtn.classList.remove('text-emerald-600', 'dark:text-emerald-400');
+          toggleBtn.classList.add('text-zinc-500', 'dark:text-zinc-500');
+        }
+        window.updateFilterCounts();
+        window.applyFilter(window.currentFilter);
+        try {
+          const res = await fetch('/destiny/api/toggle-found', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemHash }),
+          });
+          if (!res.ok) throw new Error('toggle failed');
+        } catch {
+          // Rollback
+          toggleBtn.dataset.found = String(wasFound);
+          toggleBtn.textContent = wasFound ? 'Marcar pendiente' : 'Marcar encontrada';
+          if (card) {
+            card.dataset.found = wasFound ? '1' : '0';
+            const h3 = card.querySelector('h3');
+            if (h3) h3.classList.toggle('line-through', wasFound);
+            let badge = card.querySelector('[data-found-badge]');
+            if (wasFound && !badge) {
+              badge = document.createElement('span');
+              badge.dataset.foundBadge = '1';
+              badge.className =
+                'absolute left-3 top-3 grid h-6 w-6 place-items-center rounded-full bg-emerald-500 text-xs font-semibold text-white';
+              badge.setAttribute('aria-label', 'Encontrada');
+              badge.textContent = '✓';
+              card.appendChild(badge);
+            } else if (!wasFound && badge) {
+              badge.remove();
+            }
+          }
+          window.updateFilterCounts();
+          window.applyFilter(window.currentFilter);
+        }
+        return;
+      }
+      if (removeBtn) {
+        e.preventDefault();
+        const card = removeBtn.closest('[data-weapon-card]');
+        const itemHash = removeBtn.dataset.itemHash;
+        if (!card || !itemHash) return;
+        card.style.transition = 'opacity 0.2s';
+        card.style.opacity = '0';
+        try {
+          const res = await fetch('/destiny/api/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ itemHash }),
+          });
+          if (!res.ok && res.status !== 204) throw new Error('remove failed');
+        } catch {
+          card.style.opacity = '';
+          return;
+        }
+        setTimeout(() => {
+          card.remove();
+          window.updateFilterCounts();
+          window.applyFilter(window.currentFilter);
+          const grid = document.querySelector('[data-weapons-grid]');
+          const totalEmpty = document.querySelector('[data-empty-state][data-scope="all"]');
+          if (grid && grid.children.length === 0 && totalEmpty) {
+            grid.remove();
+            totalEmpty.classList.remove('hidden');
+          }
+        }, 200);
+      }
+    });
+  </script>
+</BaseLayout>

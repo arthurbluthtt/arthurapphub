@@ -4,6 +4,11 @@
       "id": "productividad",
       "label": "Productividad",
       "color": "#3b82f6"
+    },
+    {
+      "id": "gaming",
+      "label": "Gaming",
+      "color": "#fafafa"
     }
   ],
   "apps": [
@@ -16,6 +21,17 @@
       "icon": "📝",
       "category": "productividad",
       "tags": ["texto", "markdown"],
+      "featured": true
+    },
+    {
+      "id": "destiny-wishlist",
+      "name": "D2 Wishlist",
+      "description": "Mis armas de Destiny 2 con las perks más usadas",
+      "url": "https://arthurapphub.arthurbluthtt.workers.dev/destiny",
+      "redir": "/destiny",
+      "icon": "🎯",
+      "category": "gaming",
+      "tags": ["destiny", "wishlist"],
       "featured": true
     }
   ]

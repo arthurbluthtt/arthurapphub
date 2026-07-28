@@ -18,5 +18,11 @@
 			"database_id": "09663bc8-89c0-422f-833f-de9f48b0a8ab",
 			"migrations_dir": "./migrations"
 		}
+	],
+	"r2_buckets": [
+		{
+			"binding": "D2_ASSETS",
+			"bucket_name": "arthurapphub-d2-assets"
+		}
 	]
 }

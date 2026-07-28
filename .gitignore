@@ -24,3 +24,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# D2 wishlist: input files for build scripts (regenerated on demand)
+data/d2/source/dim-popular.txt

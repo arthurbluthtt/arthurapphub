@@ -1,24 +1,51 @@
 # ArthurAppHub
 
-Hub personal de apps — punto de partida a todas mis herramientas web. Construido con [Astro](https://astro.build), [Tailwind CSS 4](https://tailwindcss.com/) y desplegado como [Cloudflare Worker](https://workers.cloudflare.com/).
+Hub personal de apps **y** Identity Provider (SSO) para todas las apps vinculadas.
+Construido con [Astro](https://astro.build), [Tailwind CSS 4](https://tailwindcss.com/) y desplegado como [Cloudflare Worker](https://workers.cloudflare.com/).
 
 URL: <https://arthurapphub.arthurbluthtt.workers.dev>
 
+## Qué hace
+
+- **Lanzador de apps**: grid responsivo de tarjetas (ícono + nombre + descripción + link), tema dark/light persistente, indicador online/offline por app.
+- **Identity Provider**: el hub maneja la auth (username + PIN de 4 dígitos). Las apps vinculadas (hoy solo Notas) consumen identidad via exchange code. Una vez que el usuario entra su PIN en el hub, queda autenticado en todas las apps.
+
 ## Estado actual
 
-- Grid responsivo de tarjetas con ícono, nombre, descripción y link.
+- Grid responsivo de tarjetas (`src/data/apps.json`).
 - Toggle dark/light persistente (`localStorage`, respeta `prefers-color-scheme`).
 - Indicador online/offline por app (ping `HEAD` al endpoint `/api/health`).
 - Static assets servidos por la binding `ASSETS` desde Cloudflare.
-- Click en cada tarjeta abre en la **misma pestaña** (sin `target="_blank"`).
+- Click en cada tarjeta abre en la **misma pestaña**.
 - Auto-deploy en cada `push` a `main` vía GitHub Action.
+
+### Auth (Identity Provider)
+
+- **Login en el home** (`/`): si no hay sesión, el mismo home muestra el form de username + PIN. Con sesión, muestra el grid de apps. `/login` queda como shim que redirige a `/`.
+- **Multi-usuario**: cada usuario tiene su propio `username` (normalizado lowercase, `[a-z0-9_-]{3,20}`) y su propio PIN. El username entra al input del PBKDF2, así dos usuarios con el mismo PIN no colisionan.
+- **Mismo error** para "usuario no existe" y "PIN incorrecto" — evita enumeración.
+- **Algoritmo PIN**: `PBKDF2-SHA256(pin + ":" + username + ":" + AUTH_PEPPER, salt="arthurapphub-auth-v1", 100k iter)`.
+- **Per-app partition key**: `pin_hash = sha256(pin_hash_hub + ":" + app_id + ":" + pepper)`. El hub calcula, la app solo guarda.
+- **Sesión**: cookie `hub_sess` HttpOnly + cookie companion `hub_user` (no-HttpOnly, para mostrar username en el header).
+- **Códigos de exchange**: 60 s TTL, single-use. La app los consume via POST `/api/auth/exchange` con Bearer `INTERNAL_API_SECRET`.
 
 ## Estructura
 
-- `src/data/apps.json` — lista editable de apps (nombre, URL, ícono, categoría).
+- `src/data/apps.json` — lista editable de apps (cada app tiene `url` para health check + `redir` que apunta a `/api/redir?app=<id>`).
 - `src/components/` — `AppCard`, `AppGrid`, `Header`, `ThemeToggle`, `StatusDot`.
-- `src/pages/index.astro` — página principal (pre-renderizada).
-- `src/pages/api/health.ts` — endpoint SSR que hace `HEAD` a cada URL y devuelve estado online/offline (cache 5 min).
+- `src/pages/index.astro` — login (sin sesión) o grid de apps (con sesión).
+- `src/pages/signup.astro` — crear usuario.
+- `src/pages/login.astro` — shim que redirige a `/`.
+- `src/pages/api/health.ts` — endpoint SSR que hace `HEAD` a cada `app.url` y devuelve estado online/offline (cache 5 min).
+- `src/pages/api/redir.ts` — genera code + redirige a `${app.url}/api/auth/exchange?code=...` (o a `/login?next=...` si no hay sesión).
+- `src/pages/api/auth/issue.ts` — emite code (POST, cookie).
+- `src/pages/api/auth/exchange.ts` — consume code (POST, Bearer).
+- `src/pages/api/auth/logout.ts` — destruye sesión hub + limpia cookies.
+- `src/pages/api/auth/logout-all.ts` — stub simétrico (no-op hoy).
+- `src/lib/auth.ts` — `hashPin`, `createSession`, `lookupSession`, `createAuthCode`, `consumeAuthCode`, `deriveAppPinHash`, helpers de cookie.
+- `src/lib/internal.ts` — `verifyInternal`, helpers JSON.
+- `migrations/0001_auth_init.sql` — tablas `pin_credentials`, `sessions`, `auth_codes`.
+- `migrations/0002_username.sql` — borra `default` legacy, reemplaza `pin_credentials.user_id` con `username`.
 - `DESIGN.md` — sistema de diseño (paleta, tipografía, componentes). Single source of truth.
 - `astro.config.mjs` — adapter Cloudflare (Workers), Tailwind vía `@tailwindcss/vite`.
 - `.github/workflows/deploy.yml` — auto-deploy a Cloudflare Workers en cada push a `main`.
@@ -39,11 +66,11 @@ Requisitos: Node 22.12+.
 Push a `main` en GitHub dispara `.github/workflows/deploy.yml`:
 
 1. `npm ci` + `npm run build`
-2. `wrangler deploy` con los secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` en el repo (GitHub → Settings → Secrets and variables → Actions).
+2. `wrangler deploy` con `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` en el repo (GitHub → Settings → Secrets and variables → Actions).
 
 ## Agregar una app nueva
 
-Editar `src/data/apps.json`:
+1. Sumar entrada en `src/data/apps.json`:
 
 ```json
 {
@@ -51,6 +78,7 @@ Editar `src/data/apps.json`:
   "name": "Mi App",
   "description": "Una línea explicando qué hace",
   "url": "https://app.example.com",
+  "redir": "/api/redir?app=mi-app",
   "icon": "🚀",
   "category": "productividad",
   "tags": ["tag1"],
@@ -58,15 +86,9 @@ Editar `src/data/apps.json`:
 }
 ```
 
-- `icon` puede ser emoji (recomendado para empezar) o ruta a un SVG en `public/apps/<id>.svg`.
-- `category` debe existir en `categories[].id`. Para agregar una categoría nueva, sumarla al array `categories`.
-- Commit + push → redeploy automático.
-
-## Próximo: SSO multi-app
-
-Este hub se va a transformar en **Identity Provider** para todas las apps vinculadas. Hoy solo Notas; cuando se sumen más (tareas, pronóstico, etc.), compartirán el mismo PIN.
-
-Ver `STATE.md` para el plan completo de migración.
+2. La app debe implementar `GET /api/auth/exchange?code=...` que llame a `${HUB_URL}/api/auth/exchange` con `Authorization: Bearer ${INTERNAL_API_SECRET}` y body `{code, app: 'mi-app'}`. Recibirá `{session_token, pin_hash, expires_at}` y deberá almacenar la sesión + setear su propia cookie.
+3. Registrar el `app_id` en `ALLOWED_APPS` (en `src/pages/api/auth/issue.ts`) y `KNOWN_APPS` (en `src/pages/api/auth/exchange.ts`).
+4. Commit + push → redeploy automático.
 
 ## Features
 
@@ -74,4 +96,8 @@ Ver `STATE.md` para el plan completo de migración.
 - Toggle dark/light persistente.
 - Indicador online/offline por app.
 - Static assets servidos por la binding `ASSETS`.
+- Identity Provider multi-usuario con username + PIN.
+- SSO via exchange code hacia apps vinculadas.
 - Sin search bar ni filtros (versión mínima).
+
+Ver `STATE.md` para el plan completo y la historia del proyecto.

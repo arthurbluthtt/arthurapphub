@@ -163,6 +163,15 @@
             showFlash('Ya está en tu wishlist.', 'info');
             return;
           }
+          if (res.status === 422) {
+            const data = await res.json().catch(() => ({}));
+            showFlash(data.message || 'Esta arma no tiene perks disponibles.', 'error');
+            return;
+          }
+          if (res.status === 401) {
+            showFlash('Sesión expirada. Recargá la página.', 'error');
+            return;
+          }
           throw new Error('add failed');
         }
         const data = await res.json();

@@ -21,7 +21,14 @@ export const POST: APIRoute = async ({ request }) => {
 
   const resolved = resolveWeapon(body.itemHash);
   if (!resolved) {
-    return internalError('unknown weapon or no perks resolvable', 404);
+    return jsonOk(
+      {
+        error: 'no_perk_data',
+        message:
+          'Esta arma no tiene perks resolubles desde el manifest. Es un arma legacy. Agregala manualmente a data/d2/top-picks.json.',
+      },
+      422
+    );
   }
 
   const result = await addWishlist(env.AUTH_DB, sess.username, {

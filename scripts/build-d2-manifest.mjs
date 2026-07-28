@@ -60,10 +60,12 @@ async function getCdnJson(path) {
 // 1215804697 = perk column 3 (regular trait)
 // 1215804696 = perk column 4 (regular trait)
 // 514622187  = exotic trait column 4 (Ace of Spades, etc.)
-// Bungie clasifica barrels, mags y perks bajo la misma socketCategoryHash
-// "WEAPON PERKS" (4241085061), así que filtrar por categoría no alcanza.
-// Estos hashes son los que la API usa para diferenciar las perk columns.
 const KNOWN_PERK_SOCKET_HASHES = new Set([1215804697, 1215804696, 514622187]);
+
+// Socket types que NO queremos como fallback (no son perks random-rolleables).
+// 3956125808 = Intrinsic (frame del arma)
+// 1288200359 = Shader
+const EXCLUDED_SOCKET_TYPES = new Set([3956125808, 1288200359]);
 
 function pickWeapon(item) {
   if (item.itemType !== ITEM_TYPE_WEAPON) return null;
@@ -91,10 +93,22 @@ function pickWeapon(item) {
     .map((s) => (isValidHash(s.singleInitialItemHash) ? String(s.singleInitialItemHash) : null))
     .filter(Boolean);
 
-  // Si hay 2+ perk sockets identificados, usamos esos. Si no, caemos al pool
-  // genérico (sirve para armas exóticas con socket layout no estándar).
-  const mainPerkHashes =
-    perkSocketHashes.length >= 2 ? perkSocketHashes.slice(0, 2) : perkPoolHashes.slice(0, 2);
+  // Para el fallback (armas con perk sockets vacíos / legacy data), elegimos
+  // sockets que NO sean intrinsic ni shader para evitar mostrar el frame del arma
+  // o el Default Shader como si fueran perks.
+  const fallbackCandidates = sockets
+    .filter((s) => !EXCLUDED_SOCKET_TYPES.has(s.socketTypeHash) && isValidHash(s.singleInitialItemHash))
+    .map((s) => String(s.singleInitialItemHash));
+
+  let mainPerkHashes;
+  if (perkSocketHashes.length >= 2) {
+    mainPerkHashes = perkSocketHashes.slice(0, 2);
+  } else if (perkSocketHashes.length === 1) {
+    const second = fallbackCandidates.find((h) => h !== perkSocketHashes[0]);
+    mainPerkHashes = second ? [perkSocketHashes[0], second] : [perkSocketHashes[0]];
+  } else {
+    mainPerkHashes = fallbackCandidates.slice(0, 2);
+  }
 
   return {
     hash: String(item.hash),

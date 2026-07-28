@@ -42,7 +42,7 @@ export const GET: APIRoute = async ({ request, url, redirect }) => {
     return redirect(`/login?next=${encodeURIComponent(next)}`);
   }
 
-  const { code } = await createAuthCode(env.AUTH_DB, appId);
+  const { code } = await createAuthCode(env.AUTH_DB, sess.username, appId);
   const dest = new URL('/api/auth/exchange', baseUrl);
   dest.searchParams.set('code', code);
   return redirect(dest.toString(), 302);

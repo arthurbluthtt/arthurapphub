@@ -21,6 +21,6 @@ export const POST: APIRoute = async ({ request }) => {
   if (!body || !body.app) return internalError('missing app', 400);
   if (!ALLOWED_APPS.has(body.app)) return internalError('unknown app', 400);
 
-  const { code, expiresAt } = await createAuthCode(env.AUTH_DB, body.app);
+  const { code, expiresAt } = await createAuthCode(env.AUTH_DB, sess.username, body.app);
   return jsonOk({ code, expires_at: expiresAt });
 };

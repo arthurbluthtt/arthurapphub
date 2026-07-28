@@ -3,7 +3,7 @@ import { env } from 'cloudflare:workers';
 import {
   consumeAuthCode,
   deriveAppPinHash,
-  getPinHash,
+  getUserByUsername,
 } from '../../../lib/auth';
 import {
   internalError,
@@ -33,12 +33,12 @@ export const POST: APIRoute = async ({ request }) => {
   const consumed = await consumeAuthCode(env.AUTH_DB, body.code, body.app);
   if (!consumed) return internalError('invalid code', 400);
 
-  const pinHashHub = await getPinHash(env.AUTH_DB);
-  if (!pinHashHub) return internalError('no user', 500);
+  const user = await getUserByUsername(env.AUTH_DB, consumed.username);
+  if (!user) return internalError('no user', 500);
 
   const sessionToken = generateAppSessionToken();
   const expiresAt = Date.now() + 90 * 24 * 60 * 60 * 1000;
-  const pinHash = await deriveAppPinHash(pinHashHub, body.app, env.AUTH_PEPPER);
+  const pinHash = await deriveAppPinHash(user.pinHash, body.app, env.AUTH_PEPPER);
 
   return jsonOk({ session_token: sessionToken, pin_hash: pinHash, expires_at: expiresAt });
 };

@@ -13,6 +13,11 @@ import ThemeToggle from './ThemeToggle.astro';
       <span class="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
         {apps.length} {apps.length === 1 ? 'app' : 'apps'}
       </span>
+      <span
+        class="hidden text-sm text-zinc-500 dark:text-zinc-500"
+        data-auth-only
+        data-user-display
+      ></span>
       <form
         method="POST"
         action="/api/auth/logout"
@@ -34,8 +39,12 @@ import ThemeToggle from './ThemeToggle.astro';
 <script is:inline>
   (function () {
     try {
-      if (!document.cookie.includes('hub_sess=')) return;
+      const m = document.cookie.match(/(?:^|; )hub_user=([^;]+)/);
+      if (!m) return;
+      const username = decodeURIComponent(m[1]);
       document.querySelectorAll('[data-auth-only]').forEach((el) => el.classList.remove('hidden'));
+      const display = document.querySelector('[data-user-display]');
+      if (display) display.textContent = username;
     } catch {}
   })();
 </script>

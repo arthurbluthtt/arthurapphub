@@ -3,7 +3,8 @@ const PBKDF2_ITERATIONS = 100_000;
 const SESSION_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 const AUTH_CODE_TTL_MS = 60 * 1000;
 const SALT_BYTES = new TextEncoder().encode('arthurapphub-auth-v1');
-const DEFAULT_USER_ID = 'default';
+
+const USERNAME_RE = /^[a-z0-9_-]{3,20}$/;
 
 function base64Url(bytes: Uint8Array): string {
   let s = '';
@@ -17,11 +18,23 @@ function generateToken(): string {
   return base64Url(bytes);
 }
 
-export async function hashPin(pin: string, pepper: string): Promise<string> {
+export function normalizeUsername(s: string): string {
+  return s.trim().toLowerCase();
+}
+
+export function isValidUsername(username: string): boolean {
+  return USERNAME_RE.test(username);
+}
+
+export async function hashPin(
+  pin: string,
+  username: string,
+  pepper: string
+): Promise<string> {
   const enc = new TextEncoder();
   const baseKey = await crypto.subtle.importKey(
     'raw',
-    enc.encode(pin + pepper),
+    enc.encode(`${pin}:${username}:${pepper}`),
     { name: 'PBKDF2', hash: 'SHA-256' },
     false,
     ['deriveBits']
@@ -38,28 +51,46 @@ export function isValidPin(pin: string): boolean {
   return /^\d{4}$/.test(pin);
 }
 
-export async function getPinHash(db: D1Database): Promise<string | null> {
+export async function getUserByUsername(
+  db: D1Database,
+  username: string
+): Promise<{ pinHash: string } | null> {
   const row = await db
-    .prepare('SELECT pin_hash FROM pin_credentials WHERE user_id = ?')
-    .bind(DEFAULT_USER_ID)
+    .prepare('SELECT pin_hash FROM pin_credentials WHERE username = ?')
+    .bind(username)
     .first<{ pin_hash: string }>();
-  return row?.pin_hash ?? null;
+  return row ? { pinHash: row.pin_hash } : null;
 }
 
-export async function setPinHash(db: D1Database, pinHash: string): Promise<void> {
+export async function usernameTaken(
+  db: D1Database,
+  username: string
+): Promise<boolean> {
+  const row = await db
+    .prepare('SELECT 1 AS x FROM pin_credentials WHERE username = ?')
+    .bind(username)
+    .first();
+  return row !== null;
+}
+
+export async function createUser(
+  db: D1Database,
+  username: string,
+  pinHash: string
+): Promise<void> {
   const now = Date.now();
   await db
     .prepare(
-      `INSERT INTO pin_credentials (user_id, pin_hash, created_at, updated_at)
-       VALUES (?, ?, ?, ?)
-       ON CONFLICT(user_id) DO UPDATE SET pin_hash = excluded.pin_hash, updated_at = excluded.updated_at`
+      `INSERT INTO pin_credentials (username, pin_hash, created_at, updated_at)
+       VALUES (?, ?, ?, ?)`
     )
-    .bind(DEFAULT_USER_ID, pinHash, now, now)
+    .bind(username, pinHash, now, now)
     .run();
 }
 
 export async function createSession(
-  db: D1Database
+  db: D1Database,
+  username: string
 ): Promise<{ sessionId: string; expiresAt: number }> {
   const sessionId = generateToken();
   const now = Date.now();
@@ -68,7 +99,7 @@ export async function createSession(
     .prepare(
       'INSERT INTO sessions (session_id, user_id, created_at, expires_at) VALUES (?, ?, ?, ?)'
     )
-    .bind(sessionId, DEFAULT_USER_ID, now, expiresAt)
+    .bind(sessionId, username, now, expiresAt)
     .run();
   return { sessionId, expiresAt };
 }
@@ -76,7 +107,7 @@ export async function createSession(
 export async function lookupSession(
   db: D1Database,
   sessionId: string
-): Promise<{ userId: string; expiresAt: number } | null> {
+): Promise<{ username: string; expiresAt: number } | null> {
   const row = await db
     .prepare('SELECT user_id, expires_at FROM sessions WHERE session_id = ?')
     .bind(sessionId)
@@ -86,19 +117,20 @@ export async function lookupSession(
     await db.prepare('DELETE FROM sessions WHERE session_id = ?').bind(sessionId).run();
     return null;
   }
-  return { userId: row.user_id, expiresAt: row.expires_at };
+  return { username: row.user_id, expiresAt: row.expires_at };
 }
 
 export async function destroySession(db: D1Database, sessionId: string): Promise<void> {
   await db.prepare('DELETE FROM sessions WHERE session_id = ?').bind(sessionId).run();
 }
 
-export async function revokeAllSessions(db: D1Database): Promise<void> {
-  await db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(DEFAULT_USER_ID).run();
+export async function revokeAllSessions(db: D1Database, username: string): Promise<void> {
+  await db.prepare('DELETE FROM sessions WHERE user_id = ?').bind(username).run();
 }
 
 export async function createAuthCode(
   db: D1Database,
+  username: string,
   app: string
 ): Promise<{ code: string; expiresAt: number }> {
   const code = generateToken();
@@ -108,7 +140,7 @@ export async function createAuthCode(
     .prepare(
       'INSERT INTO auth_codes (code, user_id, app, created_at, expires_at, used_at) VALUES (?, ?, ?, ?, ?, NULL)'
     )
-    .bind(code, DEFAULT_USER_ID, app, now, expiresAt)
+    .bind(code, username, app, now, expiresAt)
     .run();
   return { code, expiresAt };
 }
@@ -117,7 +149,7 @@ export async function consumeAuthCode(
   db: D1Database,
   code: string,
   app: string
-): Promise<{ userId: string } | null> {
+): Promise<{ username: string } | null> {
   const now = Date.now();
   const row = await db
     .prepare(
@@ -134,7 +166,7 @@ export async function consumeAuthCode(
     .bind(now, code)
     .run();
   if ((result.meta?.changes ?? 0) === 0) return null;
-  return { userId: row.user_id };
+  return { username: row.user_id };
 }
 
 export async function deriveAppPinHash(

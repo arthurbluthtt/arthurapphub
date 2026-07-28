@@ -4,12 +4,22 @@ Hub personal de apps — punto de partida a todas mis herramientas web. Construi
 
 URL: <https://arthurapphub.arthurbluthtt.workers.dev>
 
+## Estado actual
+
+- Grid responsivo de tarjetas con ícono, nombre, descripción y link.
+- Toggle dark/light persistente (`localStorage`, respeta `prefers-color-scheme`).
+- Indicador online/offline por app (ping `HEAD` al endpoint `/api/health`).
+- Static assets servidos por la binding `ASSETS` desde Cloudflare.
+- Click en cada tarjeta abre en la **misma pestaña** (sin `target="_blank"`).
+- Auto-deploy en cada `push` a `main` vía GitHub Action.
+
 ## Estructura
 
 - `src/data/apps.json` — lista editable de apps (nombre, URL, ícono, categoría).
 - `src/components/` — `AppCard`, `AppGrid`, `Header`, `ThemeToggle`, `StatusDot`.
 - `src/pages/index.astro` — página principal (pre-renderizada).
 - `src/pages/api/health.ts` — endpoint SSR que hace `HEAD` a cada URL y devuelve estado online/offline (cache 5 min).
+- `DESIGN.md` — sistema de diseño (paleta, tipografía, componentes). Single source of truth.
 - `astro.config.mjs` — adapter Cloudflare (Workers), Tailwind vía `@tailwindcss/vite`.
 - `.github/workflows/deploy.yml` — auto-deploy a Cloudflare Workers en cada push a `main`.
 
@@ -23,6 +33,13 @@ npx wrangler dev           # simula el worker localmente
 ```
 
 Requisitos: Node 22.12+.
+
+## Deploy
+
+Push a `main` en GitHub dispara `.github/workflows/deploy.yml`:
+
+1. `npm ci` + `npm run build`
+2. `wrangler deploy` con los secrets `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` en el repo (GitHub → Settings → Secrets and variables → Actions).
 
 ## Agregar una app nueva
 
@@ -43,41 +60,18 @@ Editar `src/data/apps.json`:
 
 - `icon` puede ser emoji (recomendado para empezar) o ruta a un SVG en `public/apps/<id>.svg`.
 - `category` debe existir en `categories[].id`. Para agregar una categoría nueva, sumarla al array `categories`.
+- Commit + push → redeploy automático.
 
-Commit + push → redeploy automático via GitHub Action.
+## Próximo: SSO multi-app
 
-## Deploy
+Este hub se va a transformar en **Identity Provider** para todas las apps vinculadas. Hoy solo Notas; cuando se sumen más (tareas, pronóstico, etc.), compartirán el mismo PIN.
 
-Este proyecto usa **Cloudflare Workers** (no Pages — Astro 7 ya no soporta Pages vía el adapter oficial). Auto-deploy vía GitHub Action:
-
-1. Push a `main` en GitHub dispara `.github/workflows/deploy.yml`.
-2. Necesita dos secrets en el repo (Settings → Secrets and variables → Actions):
-   - `CLOUDFLARE_API_TOKEN`
-   - `CLOUDFLARE_ACCOUNT_ID`
-3. El workflow corre `npm ci`, `npm run build` y `wrangler deploy` contra el worker `arthurapphub`.
-
-Para deploys manuales desde la máquina local:
-
-```bash
-$env:CLOUDFLARE_API_TOKEN = "cfat_..."
-$env:CLOUDFLARE_ACCOUNT_ID = "..."
-npx wrangler deploy
-```
+Ver `STATE.md` para el plan completo de migración.
 
 ## Features
 
-- Grid responsive de tarjetas con ícono, nombre, descripción y link externo.
-- Toggle dark/light persistente (`localStorage`, respeta `prefers-color-scheme`).
-- Indicador de estado online/offline por app (ping `HEAD` al endpoint `/api/health`).
-- Static assets servidos por la binding `ASSETS` desde Cloudflare.
-- Sin search bar ni filtros (versión mínima). Se pueden agregar después sin cambios estructurales.
-
-## Nota técnica
-
-El adapter de Astro 7 habilita por defecto sesiones con Cloudflare KV (binding `SESSION`). Para evitar requerir permisos KV en el token de deploy, se usa `session: { driver: 'lruCache' }` en `astro.config.mjs` (driver en memoria — irrelevante porque no usamos sesiones). Si en el futuro agregás auth/sesiones, cambiá a `cloudflareKVBinding` y otorgá permiso `Workers KV Storage:Edit` al token.
-
-<!-- last verified 2026-07-26 22:12 Z -->
-
-<!-- retry deploy after ip allowlist fix 22:16:50 -->
-
-<!-- retry with new user api token 22:21:17 -->
+- Grid responsive de tarjetas con ícono, nombre, descripción y link.
+- Toggle dark/light persistente.
+- Indicador online/offline por app.
+- Static assets servidos por la binding `ASSETS`.
+- Sin search bar ni filtros (versión mínima).

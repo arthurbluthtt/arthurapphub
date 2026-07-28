@@ -3,6 +3,16 @@
 Estado actual del hub como **Identity Provider** (SSO multi-app) + lanzador de apps + sub-app de wishlist de Destiny 2.
 Última actualización: 2026-07-28.
 
+## D2 Wishlist — deploy status
+
+- ✅ Migración `0003_d2_wishlist.sql` aplicada a D1 remota.
+- ✅ R2 bucket `arthurapphub-d2-assets` creado.
+- ✅ Secret `BUNGIE_API_KEY` configurado en el worker.
+- ✅ Manifest build descargado: 2058 armas, 875 perks (`data/d2/weapons-index.json` + `data/d2/perks.json`).
+- ✅ Build pasa, deploy pasa, smoke test de rutas OK (200/302/401 según corresponde).
+- ⏳ `top-picks.json` vacío — pendiente de correr lightggtodim localmente y `npm run build:d2-picks`.
+- ⏳ Smoke test end-to-end (login → agregar arma → ver card) requiere sesión del browser.
+
 ## ¿Qué está hecho?
 
 - Grid responsivo de tarjetas (`src/data/apps.json`), tema dark grey + white details (`DESIGN.md`), toggle de tema, status dots online/offline.

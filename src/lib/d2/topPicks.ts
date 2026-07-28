@@ -16,8 +16,14 @@ const topPicks = topPicksRaw as Record<string, PerksPair>;
 function fallbackPerks(itemHash: string): PerksPair | null {
   const weapon = getWeapon(itemHash);
   if (!weapon) return null;
+  // Si mainPerkHashes está vacío, el build script no encontró perks confiables
+  // (arma legacy sin data en el manifest). Devolvemos null para que el arma no
+  // se pueda agregar hasta que se popule top-picks.json manualmente.
+  if (Array.isArray(weapon.mainPerkHashes) && weapon.mainPerkHashes.length === 0) {
+    return null;
+  }
   // Preferimos mainPerkHashes (trait 3 y trait 4, calculados en build-time).
-  // Fallback al pool genérico si el arma no tiene mainPerkHashes.
+  // Fallback al pool genérico si el arma no tiene mainPerkHashes (length > 0 pero < 2).
   const isValidHash = (h: unknown): h is string =>
     typeof h === 'string' && h.length > 0 && h !== '0';
   const candidates = Array.isArray(weapon.mainPerkHashes) && weapon.mainPerkHashes.length >= 2

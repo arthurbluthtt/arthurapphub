@@ -72,9 +72,9 @@ function pickWeapon(item) {
 
   const sockets = item.sockets?.socketEntries ?? [];
   // Coleccionamos singleInitialItemHash de cada socket que tenga uno.
-  // En armas random-rolled esto da barrel + mag + perk1 + perk2 + ...
+  // Bungie usa 0 como placeholder para sockets vacíos — los descartamos.
   const perkPoolHashes = sockets
-    .map((s) => (s.singleInitialItemHash ? String(s.singleInitialItemHash) : null))
+    .map((s) => (typeof s.singleInitialItemHash === 'number' && s.singleInitialItemHash > 0 ? String(s.singleInitialItemHash) : null))
     .filter(Boolean);
 
   if (perkPoolHashes.length < 2) return null;
@@ -82,18 +82,22 @@ function pickWeapon(item) {
   // Identificamos los perks principales (trait 3 y trait 4) por socket type hash.
   // Para armas con menos perks identificables, caemos a los índices 3 y 4
   // (que es donde típicamente caen perk1 y perk2 en legendarias estándar).
+  const isValidHash = (h) => typeof h === 'number' && h > 0;
   const perkSocketHashes = sockets
     .filter((s) => PERK_COLUMN_SOCKET_HASHES.has(s.socketTypeHash))
-    .map((s) => String(s.singleInitialItemHash))
+    .map((s) => (isValidHash(s.singleInitialItemHash) ? String(s.singleInitialItemHash) : null))
     .filter(Boolean);
 
   let mainPerkHashes;
   if (perkSocketHashes.length >= 2) {
     mainPerkHashes = perkSocketHashes.slice(0, 2);
   } else if (perkSocketHashes.length === 1 && sockets.length >= 5) {
-    mainPerkHashes = [perkSocketHashes[0], String(sockets[4].singleInitialItemHash)].filter(Boolean);
+    const b = isValidHash(sockets[4].singleInitialItemHash) ? String(sockets[4].singleInitialItemHash) : null;
+    mainPerkHashes = b ? [perkSocketHashes[0], b] : perkSocketHashes;
   } else if (sockets.length >= 5) {
-    mainPerkHashes = [String(sockets[3].singleInitialItemHash), String(sockets[4].singleInitialItemHash)].filter(Boolean);
+    const a = isValidHash(sockets[3].singleInitialItemHash) ? String(sockets[3].singleInitialItemHash) : null;
+    const b = isValidHash(sockets[4].singleInitialItemHash) ? String(sockets[4].singleInitialItemHash) : null;
+    mainPerkHashes = [a, b].filter(Boolean);
   } else {
     mainPerkHashes = perkPoolHashes.slice(0, 2);
   }

@@ -18,12 +18,15 @@ function fallbackPerks(itemHash: string): PerksPair | null {
   if (!weapon) return null;
   // Preferimos mainPerkHashes (trait 3 y trait 4, calculados en build-time).
   // Fallback al pool genérico si el arma no tiene mainPerkHashes.
+  const isValidHash = (h: unknown): h is string =>
+    typeof h === 'string' && h.length > 0 && h !== '0';
   const candidates = Array.isArray(weapon.mainPerkHashes) && weapon.mainPerkHashes.length >= 2
     ? weapon.mainPerkHashes
     : weapon.perkPoolHashes;
   if (!Array.isArray(candidates) || candidates.length < 2) return null;
-  const a = candidates[0];
-  const b = candidates[1];
+  const a = candidates.find(isValidHash);
+  const b = candidates.slice(1).find(isValidHash);
+  if (!a || !b) return null;
   if (getPerk(a) && getPerk(b)) return [a, b];
   return null;
 }

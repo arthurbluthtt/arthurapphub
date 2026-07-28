@@ -56,11 +56,14 @@ async function getCdnJson(path) {
   return await res.json();
 }
 
-// Socket type hashes que corresponden a las columnas de perks (trait 3 y trait 4).
+// Socket type hashes que corresponden a columnas de perks de arma (trait 3 y trait 4).
 // 1215804697 = perk column 3 (regular trait)
 // 1215804696 = perk column 4 (regular trait)
-// 514622187  = exotic trait (columna 4 de exóticas tipo Ace of Spades)
-const PERK_COLUMN_SOCKET_HASHES = new Set([1215804697, 1215804696, 514622187]);
+// 514622187  = exotic trait column 4 (Ace of Spades, etc.)
+// Bungie clasifica barrels, mags y perks bajo la misma socketCategoryHash
+// "WEAPON PERKS" (4241085061), así que filtrar por categoría no alcanza.
+// Estos hashes son los que la API usa para diferenciar las perk columns.
+const KNOWN_PERK_SOCKET_HASHES = new Set([1215804697, 1215804696, 514622187]);
 
 function pickWeapon(item) {
   if (item.itemType !== ITEM_TYPE_WEAPON) return null;
@@ -80,27 +83,18 @@ function pickWeapon(item) {
   if (perkPoolHashes.length < 2) return null;
 
   // Identificamos los perks principales (trait 3 y trait 4) por socket type hash.
-  // Para armas con menos perks identificables, caemos a los índices 3 y 4
-  // (que es donde típicamente caen perk1 y perk2 en legendarias estándar).
+  // Usamos los hashes conocidos porque filtrar por socketCategoryHash no funciona
+  // (barrels, mags y perks están todos bajo "WEAPON PERKS").
   const isValidHash = (h) => typeof h === 'number' && h > 0;
   const perkSocketHashes = sockets
-    .filter((s) => PERK_COLUMN_SOCKET_HASHES.has(s.socketTypeHash))
+    .filter((s) => KNOWN_PERK_SOCKET_HASHES.has(s.socketTypeHash))
     .map((s) => (isValidHash(s.singleInitialItemHash) ? String(s.singleInitialItemHash) : null))
     .filter(Boolean);
 
-  let mainPerkHashes;
-  if (perkSocketHashes.length >= 2) {
-    mainPerkHashes = perkSocketHashes.slice(0, 2);
-  } else if (perkSocketHashes.length === 1 && sockets.length >= 5) {
-    const b = isValidHash(sockets[4].singleInitialItemHash) ? String(sockets[4].singleInitialItemHash) : null;
-    mainPerkHashes = b ? [perkSocketHashes[0], b] : perkSocketHashes;
-  } else if (sockets.length >= 5) {
-    const a = isValidHash(sockets[3].singleInitialItemHash) ? String(sockets[3].singleInitialItemHash) : null;
-    const b = isValidHash(sockets[4].singleInitialItemHash) ? String(sockets[4].singleInitialItemHash) : null;
-    mainPerkHashes = [a, b].filter(Boolean);
-  } else {
-    mainPerkHashes = perkPoolHashes.slice(0, 2);
-  }
+  // Si hay 2+ perk sockets identificados, usamos esos. Si no, caemos al pool
+  // genérico (sirve para armas exóticas con socket layout no estándar).
+  const mainPerkHashes =
+    perkSocketHashes.length >= 2 ? perkSocketHashes.slice(0, 2) : perkPoolHashes.slice(0, 2);
 
   return {
     hash: String(item.hash),

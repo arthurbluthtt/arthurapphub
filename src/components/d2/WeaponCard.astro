@@ -53,13 +53,16 @@ const foundDateLabel = foundAt
     )
   }
 
-  <div class="flex aspect-square w-full items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-white/[0.04]">
-    <img
-      src={weaponIconUrl}
-      alt={name}
-      loading="lazy"
-      class="h-full w-full object-contain p-2"
-    />
+  <div class="flex items-center justify-center">
+    <div class="flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-white/[0.04]">
+      <img
+        src={weaponIconUrl}
+        alt={name}
+        loading="lazy"
+        class="h-24 w-24 object-contain"
+        style="image-rendering: -webkit-optimize-contrast;"
+      />
+    </div>
   </div>
 
   <h3

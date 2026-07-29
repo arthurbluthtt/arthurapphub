@@ -2,8 +2,7 @@
 import { env } from 'cloudflare:workers';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import WeaponCard from '../../components/d2/WeaponCard.astro';
-import WeaponChipInput from '../../components/d2/WeaponChipInput.astro';
-import PerkPicker from '../../components/d2/PerkPicker.astro';
+import AddWeaponDialog from '../../components/d2/AddWeaponDialog.astro';
 import { lookupSession, readCookie } from '../../lib/auth';
 import { listWishlist } from '../../lib/d2/wishlist';
 import { resolveWishlistRow } from '../../lib/d2/resolver';
@@ -65,7 +64,12 @@ const visible =
   </div>
 
   <div class="mb-6">
-    <WeaponChipInput />
+    <p
+      class="rounded-2xl border border-zinc-200 bg-white p-4 text-sm text-zinc-500 dark:border-white/10 dark:bg-white/[0.025]"
+      data-add-hint
+    >
+      Tocá <span class="font-medium text-zinc-900 dark:text-white">+ Agregar arma</span> abajo a la derecha para sumar un arma a tu wishlist.
+    </p>
   </div>
 
   {
@@ -144,6 +148,53 @@ const visible =
 
   <script is:inline define:vars={{ initialFilter: currentFilter }}>
     window.currentFilter = initialFilter;
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      })[c]);
+    }
+
+    function buildCard(w) {
+      const el = document.createElement('article');
+      el.dataset.weaponCard = '';
+      el.dataset.found = w.found ? '1' : '0';
+      el.dataset.itemHash = w.itemHash;
+      el.className =
+        'group relative flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-5 transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur';
+      el.innerHTML = `
+        <div class="flex items-center justify-center">
+          <div class="flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-white/[0.04]">
+            <img src="/destiny/api/icon?type=weapon&hash=${encodeURIComponent(w.itemHash)}" alt="${escapeHtml(w.name)}" loading="lazy" class="h-24 w-24 object-contain" style="image-rendering: -webkit-optimize-contrast;" />
+          </div>
+        </div>
+        <h3 class="font-semibold text-zinc-900 dark:text-white">${escapeHtml(w.name)}</h3>
+        <div class="flex items-center gap-2">
+          <img src="/destiny/api/icon?type=perk&hash=${encodeURIComponent(w.perk1.hash)}" alt="${escapeHtml(w.perk1.name)}" title="${escapeHtml(w.perk1.name)}" loading="lazy" class="h-10 w-10 rounded ring-1 ring-zinc-200 dark:ring-white/10" />
+          <img src="/destiny/api/icon?type=perk&hash=${encodeURIComponent(w.perk2.hash)}" alt="${escapeHtml(w.perk2.name)}" title="${escapeHtml(w.perk2.name)}" loading="lazy" class="h-10 w-10 rounded ring-1 ring-zinc-200 dark:ring-white/10" />
+        </div>
+        <div class="mt-auto flex items-center justify-between gap-2 pt-1">
+          <button type="button" data-toggle-found data-item-hash="${escapeHtml(w.itemHash)}" data-found="false" class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white">Marcar encontrada</button>
+          <button type="button" data-remove-weapon data-item-hash="${escapeHtml(w.itemHash)}" title="Quitar de la wishlist" aria-label="Quitar" class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400">×</button>
+        </div>
+      `;
+      return el;
+    }
+
+    window.addEventListener('destiny:weapon-added', (e) => {
+      const added = e && e.detail;
+      const grid = document.querySelector('[data-weapons-grid]');
+      const allEmpty = document.querySelector('[data-empty-state][data-scope="all"]');
+      const hint = document.querySelector('[data-add-hint]');
+      if (grid && added) {
+        const node = buildCard(added);
+        grid.prepend(node);
+      }
+      if (allEmpty) allEmpty.classList.add('hidden');
+      if (hint) hint.classList.add('hidden');
+      if (typeof window.updateFilterCounts === 'function') window.updateFilterCounts();
+      if (typeof window.applyFilter === 'function') window.applyFilter(window.currentFilter || 'pending');
+    });
 
     function setActiveTab(filter) {
       document.querySelectorAll('[data-filter-tab]').forEach((tab) => {
@@ -314,5 +365,5 @@ const visible =
     });
   </script>
 
-  <PerkPicker />
+  <AddWeaponDialog />
 </BaseLayout>

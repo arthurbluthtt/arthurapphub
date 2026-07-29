@@ -30,9 +30,11 @@ export type PerkCategoryValue = (typeof PERK_CATEGORIES)[PerkCategoryKey];
 export const PERK_CATEGORY_ORDER: PerkCategoryKey[] = ['barrel', 'magazine', 'trait'];
 
 const NOISE_NAME_PATTERN =
-  /\b(frame|shader|mod socket|masterwork|kill tracker|ornament|memento|tier \d|restore defaults|empty|tracking)\b/i;
-const BARREL_NAME_PATTERN = /\b(barrel|sights?|scope|launcher)\b/i;
-const MAGAZINE_NAME_PATTERN = /\b(mag(azine)?|rounds|cartridge|battery)\b/i;
+  /\b(frame|shader|mod socket|masterwork|kill tracker|ornament|memento|tier \d|restore defaults|empty mod|set\s?bonus)\b/i;
+const BARREL_NAME_PATTERN =
+  /\b(barrel|sights?|scope|launcher|bolt|chamber|arrow|nose|guard|muzzle|hatch|wire|coil|hammer|crown|tooth|talon)\b/i;
+const MAGAZINE_NAME_PATTERN =
+  /\b(mag(azine)?|rounds|cartridge|battery|projectile|composite|cone|paq)\b/i;
 
 const weapons = weaponsIndex as WeaponIndexEntry[];
 const perks = perksRaw as unknown as Record<string, PerkEntry>;

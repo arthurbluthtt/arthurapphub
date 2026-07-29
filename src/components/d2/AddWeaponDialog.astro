@@ -1,0 +1,567 @@
+---
+---
+<button
+  type="button"
+  class="fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-zinc-800 dark:text-white"
+  data-add-weapon-chip
+  aria-label="Agregar arma"
+>
+  <span class="text-base leading-none">+</span>
+  <span>Agregar arma</span>
+</button>
+
+<dialog
+  class="backdrop:bg-zinc-900/60 dark:bg-zinc-950/70 max-w-2xl rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+  data-add-dialog
+>
+  <header class="flex items-center gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
+    <button
+      type="button"
+      class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
+      data-add-back
+      aria-label="Volver"
+      hidden
+    >
+      ←
+    </button>
+    <div class="flex-1 min-w-0">
+      <h2 class="font-semibold truncate" data-add-title>Seleccioná un arma</h2>
+      <p class="text-xs uppercase tracking-wider text-zinc-500" data-add-subtitle>
+        Buscá por nombre y elegí 2 perks
+      </p>
+    </div>
+    <button
+      type="button"
+      class="grid h-8 w-8 place-items-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
+      data-add-close
+      aria-label="Cerrar"
+    >
+      ×
+    </button>
+  </header>
+
+  <div class="p-4" data-add-search-view>
+    <div class="relative">
+      <input
+        type="text"
+        placeholder="Buscar arma (ej. Fatebringer, Mountaintop…)"
+        autocomplete="off"
+        spellcheck="false"
+        autocapitalize="off"
+        autocorrect="off"
+        class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+        data-add-input
+        aria-autocomplete="list"
+        aria-controls="add-weapon-suggestions"
+        aria-expanded="false"
+      />
+      <ul
+        id="add-weapon-suggestions"
+        class="mt-1 max-h-72 space-y-1 overflow-y-auto"
+        data-add-suggestions
+      ></ul>
+    </div>
+  </div>
+
+  <div class="p-4" data-add-perks-view hidden>
+    <div class="mb-4 flex items-center gap-3 rounded-lg bg-zinc-100 p-3 dark:bg-white/[0.04]">
+      <img alt="" class="h-12 w-12 rounded bg-white object-contain p-1 dark:bg-white/[0.02]" data-add-weapon-icon />
+      <div class="min-w-0 flex-1">
+        <div class="truncate font-medium" data-add-weapon-name></div>
+        <div class="text-xs uppercase tracking-wider text-zinc-500" data-add-weapon-meta></div>
+      </div>
+    </div>
+
+    <div class="mb-4 grid grid-cols-2 gap-2" data-add-slots>
+      <div
+        class="flex items-center gap-2 rounded-lg border border-dashed border-zinc-300 p-2 text-xs text-zinc-500 dark:border-white/10"
+        data-add-slot="0"
+      >
+        <span class="grid h-9 w-9 shrink-0 place-items-center rounded bg-zinc-100 text-zinc-400 dark:bg-white/[0.04]">1</span>
+        <span class="flex-1 truncate" data-add-slot-label>Elegí una perk</span>
+        <button
+          type="button"
+          class="text-zinc-400 hover:text-red-500 dark:hover:text-red-400"
+          data-add-slot-clear
+          aria-label="Quitar"
+          hidden
+        >×</button>
+      </div>
+      <div
+        class="flex items-center gap-2 rounded-lg border border-dashed border-zinc-300 p-2 text-xs text-zinc-500 dark:border-white/10"
+        data-add-slot="1"
+      >
+        <span class="grid h-9 w-9 shrink-0 place-items-center rounded bg-zinc-100 text-zinc-400 dark:bg-white/[0.04]">2</span>
+        <span class="flex-1 truncate" data-add-slot-label>Elegí una perk</span>
+        <button
+          type="button"
+          class="text-zinc-400 hover:text-red-500 dark:hover:text-red-400"
+          data-add-slot-clear
+          aria-label="Quitar"
+          hidden
+        >×</button>
+      </div>
+    </div>
+
+    <div class="max-h-[40vh] overflow-y-auto pr-1" data-add-body>
+      <div
+        class="rounded-xl border border-dashed border-zinc-300 p-6 text-center text-sm text-zinc-500 dark:border-white/10"
+        data-add-empty
+        hidden
+      >
+        Esta arma no tiene perks configurables.
+      </div>
+      <div class="space-y-5" data-add-sections></div>
+    </div>
+  </div>
+
+  <footer class="flex items-center justify-end gap-3 border-t border-zinc-200 p-4 dark:border-white/10">
+    <button
+      type="button"
+      class="rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-zinc-700 hover:bg-zinc-100 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/10"
+      data-add-cancel
+    >
+      Cancelar
+    </button>
+    <button
+      type="button"
+      class="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-white transition disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-zinc-900"
+      data-add-confirm
+      disabled
+    >
+      Agregar
+    </button>
+  </footer>
+
+  <p
+    class="m-0 border-t border-zinc-200 px-4 py-2 text-center text-xs text-zinc-500 dark:border-white/10"
+    data-add-status
+    hidden
+  ></p>
+</dialog>
+
+<template data-add-suggestion-template>
+  <li
+    role="option"
+    class="flex cursor-pointer items-center gap-3 rounded-lg border border-zinc-200 bg-white p-2 text-sm text-zinc-900 hover:border-zinc-400 hover:bg-zinc-50 dark:border-white/10 dark:bg-white/[0.02] dark:text-white dark:hover:bg-white/[0.06]"
+    data-add-suggestion
+  >
+    <img alt="" class="h-8 w-8 shrink-0 rounded object-contain" data-add-suggestion-icon />
+    <span class="flex-1 truncate" data-add-suggestion-name></span>
+    <span
+      class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-zinc-500"
+      data-add-suggestion-meta
+    ></span>
+  </li>
+</template>
+
+<template data-add-section-template>
+  <section data-add-section>
+    <h3
+      class="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-500"
+      data-add-section-title
+    ></h3>
+    <div class="grid grid-cols-1 gap-2" data-add-section-grid></div>
+  </section>
+</template>
+
+<template data-add-perk-template>
+  <button
+    type="button"
+    class="flex items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 text-left text-sm transition hover:border-zinc-400 data-[selected]:border-emerald-500 data-[selected]:bg-emerald-500/10 dark:border-white/10 dark:bg-white/[0.02] dark:hover:border-white/30"
+    data-add-perk
+  >
+    <img alt="" class="h-9 w-9 shrink-0 rounded object-contain" data-add-perk-icon />
+    <span class="flex-1 truncate text-xs" data-add-perk-name></span>
+    <span
+      class="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-emerald-500 text-[10px] font-semibold text-white"
+      data-add-perk-check
+      aria-hidden="true"
+    >
+      ✓
+    </span>
+  </button>
+</template>
+
+<script is:inline>
+  (function () {
+    const chip = document.querySelector('[data-add-weapon-chip]');
+    const dialog = document.querySelector('[data-add-dialog]');
+    if (!chip || !dialog) return;
+
+    const titleEl = dialog.querySelector('[data-add-title]');
+    const subtitleEl = dialog.querySelector('[data-add-subtitle]');
+    const backBtn = dialog.querySelector('[data-add-back]');
+    const closeBtn = dialog.querySelector('[data-add-close]');
+    const cancelBtn = dialog.querySelector('[data-add-cancel]');
+
+    const searchView = dialog.querySelector('[data-add-search-view]');
+    const perksView = dialog.querySelector('[data-add-perks-view]');
+    const input = dialog.querySelector('[data-add-input]');
+    const suggestionsEl = dialog.querySelector('[data-add-suggestions]');
+
+    const weaponIcon = dialog.querySelector('[data-add-weapon-icon]');
+    const weaponName = dialog.querySelector('[data-add-weapon-name]');
+    const weaponMeta = dialog.querySelector('[data-add-weapon-meta]');
+
+    const slotsEl = dialog.querySelector('[data-add-slots]');
+    const sectionsEl = dialog.querySelector('[data-add-sections]');
+    const emptyEl = dialog.querySelector('[data-add-empty]');
+    const statusEl = dialog.querySelector('[data-add-status]');
+    const confirmBtn = dialog.querySelector('[data-add-confirm]');
+
+    const suggestionTpl = document.querySelector('[data-add-suggestion-template]');
+    const sectionTpl = document.querySelector('[data-add-section-template]');
+    const perkTpl = document.querySelector('[data-add-perk-template]');
+
+    const MAX_PICKS = 2;
+
+    let viewMode = 'search';
+    let currentItemHash = null;
+    let allPerks = [];
+    let selected = [];
+    let lastInputValue = '';
+    let debounce;
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      })[c]);
+    }
+
+    function showView(mode) {
+      viewMode = mode;
+      if (mode === 'search') {
+        searchView.hidden = false;
+        perksView.hidden = true;
+        backBtn.hidden = true;
+        titleEl.textContent = 'Seleccioná un arma';
+        subtitleEl.textContent = 'Buscá por nombre y elegí 2 perks';
+        statusEl.hidden = true;
+      } else {
+        searchView.hidden = true;
+        perksView.hidden = false;
+        backBtn.hidden = false;
+        titleEl.textContent = 'Elegí 2 perks';
+        subtitleEl.textContent = 'Tu wishlist queda guardada con este combo';
+      }
+    }
+
+    function resetState({ keepSearch } = {}) {
+      selected = [];
+      allPerks = [];
+      currentItemHash = null;
+      sectionsEl.innerHTML = '';
+      emptyEl.hidden = true;
+      statusEl.hidden = true;
+      statusEl.textContent = '';
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Agregar';
+      weaponIcon.removeAttribute('src');
+      weaponName.textContent = '';
+      weaponMeta.textContent = '';
+      renderSlots();
+      if (!keepSearch) {
+        input.value = '';
+        lastInputValue = '';
+        closeSuggestions();
+      }
+      showView('search');
+    }
+
+    function closeSuggestions() {
+      suggestionsEl.innerHTML = '';
+      input.setAttribute('aria-expanded', 'false');
+    }
+
+    function renderSuggestions(items) {
+      suggestionsEl.innerHTML = '';
+      if (!items.length) {
+        input.setAttribute('aria-expanded', 'false');
+        return;
+      }
+      for (const w of items) {
+        const node = suggestionTpl.content.firstElementChild.cloneNode(true);
+        node.dataset.itemHash = w.hash;
+        node.dataset.weaponName = w.name;
+        const icon = node.querySelector('[data-add-suggestion-icon]');
+        icon.src = '/destiny/api/icon?type=weapon&hash=' + encodeURIComponent(w.hash);
+        icon.alt = '';
+        node.querySelector('[data-add-suggestion-name]').textContent = w.name;
+        const meta = node.querySelector('[data-add-suggestion-meta]');
+        meta.textContent = w.tier === 'exotic' ? 'exotic' : (w.damage || '');
+        suggestionsEl.appendChild(node);
+      }
+      input.setAttribute('aria-expanded', 'true');
+    }
+
+    async function search(q) {
+      try {
+        const res = await fetch('/destiny/api/search?q=' + encodeURIComponent(q));
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data.results || [];
+      } catch {
+        return [];
+      }
+    }
+
+    async function fetchWeaponPerks(hash) {
+      try {
+        const res = await fetch('/destiny/api/weapon-perks?hash=' + encodeURIComponent(hash));
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          showStatus(err.message || 'No se pudo cargar el arma.', true);
+          return null;
+        }
+        const data = await res.json();
+        if (data.error) {
+          showStatus(data.message || 'No se pudo cargar el arma.', true);
+          return null;
+        }
+        return data;
+      } catch {
+        showStatus('Error de red. Probá de nuevo.', true);
+        return null;
+      }
+    }
+
+    function showStatus(msg, isError) {
+      statusEl.textContent = msg;
+      statusEl.hidden = false;
+      statusEl.classList.toggle('text-red-500', isError);
+      statusEl.classList.toggle('dark:text-red-400', isError);
+    }
+
+    function renderSlots() {
+      const slotNodes = slotsEl.querySelectorAll('[data-add-slot]');
+      slotNodes.forEach((slot, i) => {
+        const labelEl = slot.querySelector('[data-add-slot-label]');
+        const clearBtn = slot.querySelector('[data-add-slot-clear]');
+        const hash = selected[i];
+        if (hash) {
+          const perk = allPerks.find((p) => p.hash === hash);
+          if (perk) {
+            labelEl.textContent = perk.name;
+            labelEl.classList.remove('text-zinc-500');
+            labelEl.classList.add('text-zinc-900', 'dark:text-white');
+            slot.classList.remove('border-dashed', 'border-zinc-300', 'dark:border-white/10');
+            slot.classList.add('border-solid', 'border-emerald-500/40');
+            clearBtn.hidden = false;
+            return;
+          }
+        }
+        labelEl.textContent = i === 0 && selected.length === 0 ? 'Elegí una perk' : 'Elegí una perk';
+        labelEl.classList.add('text-zinc-500');
+        labelEl.classList.remove('text-zinc-900', 'dark:text-white');
+        slot.classList.add('border-dashed', 'border-zinc-300', 'dark:border-white/10');
+        slot.classList.remove('border-solid', 'border-emerald-500/40');
+        clearBtn.hidden = true;
+      });
+    }
+
+    function renderPerks(perks) {
+      sectionsEl.innerHTML = '';
+      if (!perks.length) {
+        emptyEl.hidden = false;
+        return;
+      }
+      emptyEl.hidden = true;
+      const ORDER = [
+        { key: 'barrel', label: 'Barrels' },
+        { key: 'magazine', label: 'Magazines' },
+        { key: 'trait', label: 'Traits' },
+      ];
+      for (const cat of ORDER) {
+        const items = perks.filter((p) => p.category === cat.key);
+        if (items.length === 0) continue;
+        const sorted = items.slice().sort((a, b) => a.name.localeCompare(b.name));
+        const sectionNode = sectionTpl.content.firstElementChild.cloneNode(true);
+        sectionNode.querySelector('[data-add-section-title]').textContent = cat.label;
+        const grid = sectionNode.querySelector('[data-add-section-grid]');
+        for (const p of sorted) {
+          const perkNode = perkTpl.content.firstElementChild.cloneNode(true);
+          perkNode.dataset.perkHash = p.hash;
+          perkNode.dataset.perkName = p.name;
+          const icon = perkNode.querySelector('[data-add-perk-icon]');
+          icon.src = '/destiny/api/icon?type=perk&hash=' + encodeURIComponent(p.hash);
+          icon.alt = '';
+          perkNode.querySelector('[data-add-perk-name]').textContent = p.name;
+          perkNode.title = p.description || p.name;
+          perkNode.addEventListener('click', () => togglePerk(p.hash));
+          grid.appendChild(perkNode);
+        }
+        sectionsEl.appendChild(sectionNode);
+      }
+    }
+
+    function refreshSelection() {
+      const set = new Set(selected);
+      let count = 0;
+      dialog.querySelectorAll('[data-add-perk]').forEach((node) => {
+        const isSelected = set.has(node.dataset.perkHash);
+        node.dataset.selected = isSelected ? '1' : '';
+        const check = node.querySelector('[data-add-perk-check]');
+        if (check) check.style.opacity = isSelected ? '1' : '0';
+        if (isSelected) count++;
+      });
+      renderSlots();
+      confirmBtn.disabled = count !== MAX_PICKS;
+      cancelBtn.textContent = selected.length > 0 ? 'Cancelar' : 'Cancelar';
+    }
+
+    function togglePerk(hash) {
+      const idx = selected.indexOf(hash);
+      if (idx >= 0) {
+        selected.splice(idx, 1);
+      } else if (selected.length < MAX_PICKS) {
+        selected.push(hash);
+      } else {
+        selected.shift();
+        selected.push(hash);
+      }
+      refreshSelection();
+    }
+
+    async function pickWeapon(itemHash, weaponName) {
+      closeSuggestions();
+      showView('perks');
+      const data = await fetchWeaponPerks(itemHash);
+      if (!data) {
+        showView('search');
+        return;
+      }
+      currentItemHash = itemHash;
+      weaponIcon.src = '/destiny/api/icon?type=weapon&hash=' + encodeURIComponent(data.weapon.hash);
+      weaponIcon.alt = data.weapon.name;
+      weaponName.textContent = data.weapon.name;
+      const meta = [];
+      if (data.weapon.tier === 'exotic') meta.push('Exotic');
+      if (data.weapon.damage) meta.push(data.weapon.damage);
+      weaponMeta.textContent = meta.join(' · ');
+      allPerks = data.perks;
+      renderPerks(data.perks);
+      refreshSelection();
+    }
+
+    input.addEventListener('input', () => {
+      clearTimeout(debounce);
+      const q = input.value.trim();
+      lastInputValue = q;
+      if (q.length < 2) {
+        closeSuggestions();
+        return;
+      }
+      debounce = setTimeout(async () => {
+        if (lastInputValue !== q) return;
+        const items = await search(q);
+        renderSuggestions(items);
+      }, 150);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeSuggestions();
+      }
+    });
+
+    suggestionsEl.addEventListener('click', (e) => {
+      const li = e.target.closest('[data-add-suggestion]');
+      if (!li) return;
+      pickWeapon(li.dataset.itemHash, li.dataset.weaponName);
+    });
+
+    slotsEl.addEventListener('click', (e) => {
+      const clearBtn = e.target.closest('[data-add-slot-clear]');
+      if (!clearBtn) return;
+      const slot = clearBtn.closest('[data-add-slot]');
+      const idx = Number(slot.dataset.addSlot);
+      if (selected[idx]) {
+        selected.splice(idx, 1);
+        refreshSelection();
+      }
+    });
+
+    backBtn.addEventListener('click', () => {
+      if (viewMode === 'perks') showView('search');
+    });
+
+    closeBtn.addEventListener('click', closeDialog);
+    cancelBtn.addEventListener('click', closeDialog);
+    chip.addEventListener('click', () => {
+      resetState();
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+      setTimeout(() => input.focus(), 50);
+    });
+
+    function closeDialog() {
+      if (typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
+    }
+
+    // Close on direct dialog click (backdrop), not on children
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) closeDialog();
+    });
+    dialog.addEventListener('cancel', closeDialog);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dialog.open) closeDialog();
+    });
+
+    async function confirmAdd() {
+      if (!currentItemHash || selected.length !== MAX_PICKS) return;
+      confirmBtn.disabled = true;
+      cancelBtn.disabled = true;
+      const originalText = confirmBtn.textContent;
+      confirmBtn.textContent = 'Agregando…';
+      try {
+        const res = await fetch('/destiny/api/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ itemHash: currentItemHash, perkHashes: selected }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          if (res.status === 409) {
+            showStatus('Ya está en tu wishlist.', true);
+          } else if (res.status === 400) {
+            showStatus(data.message || 'Perks inválidas.', true);
+          } else if (res.status === 401) {
+            showStatus('Sesión expirada. Recargá la página.', true);
+          } else if (res.status === 404) {
+            showStatus('Arma no encontrada.', true);
+          } else {
+            showStatus(data.message || 'Error al agregar.', true);
+          }
+          confirmBtn.disabled = false;
+          cancelBtn.disabled = false;
+          confirmBtn.textContent = originalText;
+          refreshSelection();
+          return;
+        }
+        const data = await res.json();
+        closeDialog();
+        window.dispatchEvent(
+          new CustomEvent('destiny:weapon-added', { detail: data.weapon })
+        );
+      } catch {
+        showStatus('Error de red. Probá de nuevo.', true);
+        confirmBtn.disabled = false;
+        cancelBtn.disabled = false;
+        confirmBtn.textContent = originalText;
+        refreshSelection();
+      }
+    }
+
+    confirmBtn.addEventListener('click', confirmAdd);
+
+    window.addEventListener('destiny:open-add-weapon', () => {
+      resetState();
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+      setTimeout(() => input.focus(), 50);
+    });
+  })();
+</script>

@@ -42,10 +42,23 @@ URL: <https://arthurapphub.arthurbluthtt.workers.dev>
 - `src/pages/api/auth/exchange.ts` — consume code (POST, Bearer).
 - `src/pages/api/auth/logout.ts` — destruye sesión hub + limpia cookies.
 - `src/pages/api/auth/logout-all.ts` — stub simétrico (no-op hoy).
+- `src/pages/destiny/api/search.ts` — autocomplete armas (`?q=`).
+- `src/pages/destiny/api/weapon-perks.ts` — perks elegibles agrupadas por categoría (`?hash=`).
+- `src/pages/destiny/api/add.ts` — agrega arma con `perkHashes` elegidas.
+- `src/pages/destiny/api/remove.ts` — DELETE.
+- `src/pages/destiny/api/toggle-found.ts` — toggle found/found_at.
+- `src/pages/destiny/api/icon.ts` — proxy R2 con fallback Bungie CDN.
+- `src/components/d2/WeaponChipInput.astro` — search + abre picker.
+- `src/components/d2/PerkPicker.astro` — modal de selección de perks.
+- `src/components/d2/WeaponCard.astro` — card con weapon icon + 2 perks.
 - `src/lib/auth.ts` — `hashPin`, `createSession`, `lookupSession`, `createAuthCode`, `consumeAuthCode`, `deriveAppPinHash`, helpers de cookie.
+- `src/lib/d2/manifest.ts` — lookup de armas y perks, filtrado por categoría.
+- `src/lib/d2/wishlist.ts` — CRUD de `d2_wishlist`.
+- `src/lib/d2/resolver.ts` — `resolveWishlistRow(row)` (arma + perks desde `topPerkHashes`).
 - `src/lib/internal.ts` — `verifyInternal`, helpers JSON.
 - `migrations/0001_auth_init.sql` — tablas `pin_credentials`, `sessions`, `auth_codes`.
 - `migrations/0002_username.sql` — borra `default` legacy, reemplaza `pin_credentials.user_id` con `username`.
+- `migrations/0003_d2_wishlist.sql` — tabla `d2_wishlist`.
 - `DESIGN.md` — sistema de diseño (paleta, tipografía, componentes). Single source of truth.
 - `astro.config.mjs` — adapter Cloudflare (Workers), Tailwind vía `@tailwindcss/vite`.
 - `.github/workflows/deploy.yml` — auto-deploy a Cloudflare Workers en cada push a `main`.
@@ -98,36 +111,29 @@ Push a `main` en GitHub dispara `.github/workflows/deploy.yml`:
 - Static assets servidos por la binding `ASSETS`.
 - Identity Provider multi-usuario con username + PIN.
 - SSO via exchange code hacia apps vinculadas.
-- **Sub-app `/destiny`** — wishlist de armas de Destiny 2 con autocompletado desde el manifest oficial de Bungie, perks "más usadas" importadas desde [lightggtodim](https://github.com/CryoTheRenegade/lightggtodim), imágenes cacheadas en R2, filtro (Pendientes/Encontradas/Todas), botón para marcar armas como conseguidas.
+- **Sub-app `/destiny`** — wishlist de armas de Destiny 2 con autocompletado desde el manifest oficial de Bungie, selección manual de perks (barrels/mags/traits filtrados del pool), imágenes cacheadas en R2, filtro (Pendientes/Encontradas/Todas), botón para marcar armas como conseguidas.
 
 Ver `STATE.md` para el plan completo y la historia del proyecto.
 
 ## D2 Wishlist (sub-app)
 
-Una página interna en `/destiny` que mantiene una wishlist personal de armas de Destiny 2 con las perks más populares según la comunidad (vía lightggtodim).
+Una página interna en `/destiny` que mantiene una wishlist personal de armas de Destiny 2. Al agregar un arma, abrís un picker que lista sus perks agrupadas por categoría (Barrels → Mags → Traits) y elegís las 2 que querés trackear.
 
 ### Datos
 
-- **Manifest**: `data/d2/weapons-index.json` + `data/d2/perks.json` generados con `npm run build:d2-manifest`. Necesita `BUNGIE_API_KEY` (gratis en https://www.bungie.net/en/Application).
-- **Top picks**: `data/d2/top-picks.json` generado con `npm run build:d2-picks`. Lee `data/d2/source/dim-popular.txt` (output de lightggtodim en formato DIM-wishlist).
+- **Manifest**: `data/d2/weapons-index.json` + `data/d2/perks.json` generados con `npm run build:d2-manifest`. Necesita `BUNGIE_API_KEY` (gratis en https://www.bungie.net/en/Application). Cada perk trae `category` desde `itemTypeDisplayName` (`Barrel` / `Magazine` / `Trait`).
 - **Iconos**: primer hit baja desde Bungie CDN → se guarda en R2 (`arthurapphub-d2-assets`). Después se sirve desde R2 con cache de 30 días.
+- Si el manifest está desactualizado y `category` viene vacío, hay un fallback por nombre (`barrel|sights|scope|launcher` → barrel; `mag|magazine|rounds|cartridge|battery` → magazine; resto → trait).
 
 ### Storage
 
 - D1 tabla `d2_wishlist` (migración `migrations/0003_d2_wishlist.sql`): `(username, item_hash, weapon_name, weapon_icon_path, top_perk_hashes, found, found_at, added_at)`.
 - R2 bucket `arthurapphub-d2-assets`: `weapons/<hash>.png` + `perks/<hash>.png`.
 
-### Refrescar top picks (~cada season de D2)
+### Refrescar manifest (~cada season de D2)
 
 ```bash
-# 1. En una copia local de lightggtodim:
-pnpm generate
-
-# 2. Copiar el output a este repo:
-cp dist/wishlists/lightgg-popular-pve.txt ../arthurapphub/data/d2/source/dim-popular.txt
-
-# 3. Regenerar el JSON consumido por el hub:
-cd ../arthurapphub
-npm run build:d2-picks
-git add data/d2/top-picks.json && git commit -m "d2: refresh top picks" && git push
+BUNGIE_API_KEY=<key> npm run build:d2-manifest
+git add data/d2/weapons-index.json data/d2/perks.json
+git commit -m "d2: refresh manifest" && git push
 ```

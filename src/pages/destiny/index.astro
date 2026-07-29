@@ -3,9 +3,10 @@ import { env } from 'cloudflare:workers';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import WeaponCard from '../../components/d2/WeaponCard.astro';
 import WeaponChipInput from '../../components/d2/WeaponChipInput.astro';
+import PerkPicker from '../../components/d2/PerkPicker.astro';
 import { lookupSession, readCookie } from '../../lib/auth';
-import { resolveWeapon } from '../../lib/d2/topPicks';
 import { listWishlist } from '../../lib/d2/wishlist';
+import { resolveWishlistRow } from '../../lib/d2/resolver';
 
 export const prerender = false;
 
@@ -24,24 +25,27 @@ const rows = await listWishlist(env.AUTH_DB, sess.username);
 
 const resolved = rows
   .map((row) => {
-    const r = resolveWeapon(row.itemHash);
-    if (!r) return null;
-    return { row, weapon: r };
+    const r = resolveWishlistRow(row);
+    return r ? { row, resolved: r } : null;
   })
   .filter(
-    (x): x is { row: typeof rows[number]; weapon: NonNullable<ReturnType<typeof resolveWeapon>> } =>
-      x !== null
+    (
+      x
+    ): x is {
+      row: typeof rows[number];
+      resolved: NonNullable<ReturnType<typeof resolveWishlistRow>>;
+    } => x !== null
   );
 
-const pendingCount = resolved.filter((r) => !r.row.found).length;
-const foundCount = resolved.filter((r) => r.row.found).length;
+const pendingCount = resolved.filter((r) => !r.resolved.found).length;
+const foundCount = resolved.filter((r) => r.resolved.found).length;
 const totalCount = resolved.length;
 
 const visible =
   currentFilter === 'pending'
-    ? resolved.filter((r) => !r.row.found)
+    ? resolved.filter((r) => !r.resolved.found)
     : currentFilter === 'found'
-      ? resolved.filter((r) => r.row.found)
+      ? resolved.filter((r) => r.resolved.found)
       : resolved;
 ---
 
@@ -110,15 +114,15 @@ const visible =
           data-weapons-grid
           data-filter={currentFilter}
         >
-          {visible.map(({ row, weapon }) => (
+          {visible.map(({ resolved }) => (
             <WeaponCard
-              itemHash={weapon.itemHash}
-              name={weapon.name}
-              iconPath={weapon.iconPath}
-              perk1={weapon.perk1}
-              perk2={weapon.perk2}
-              found={row.found}
-              foundAt={row.foundAt}
+              itemHash={resolved.itemHash}
+              name={resolved.name}
+              iconPath={resolved.iconPath}
+              perk1={resolved.perk1 ?? { hash: '', name: '', icon: '' }}
+              perk2={resolved.perk2 ?? { hash: '', name: '', icon: '' }}
+              found={resolved.found}
+              foundAt={resolved.foundAt}
             />
           ))}
         </div>
@@ -309,4 +313,6 @@ const visible =
       }
     });
   </script>
+
+  <PerkPicker />
 </BaseLayout>

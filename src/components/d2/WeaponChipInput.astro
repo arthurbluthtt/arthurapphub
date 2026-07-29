@@ -152,43 +152,23 @@
     async function pick(weapon) {
       closeList();
       input.value = '';
-      try {
-        const res = await fetch('/destiny/api/add', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ itemHash: weapon.hash }),
+      if (typeof window.openPerkPicker === 'function') {
+        window.openPerkPicker(weapon.hash, (added) => {
+          const grid = document.querySelector('[data-weapons-grid]');
+          const empty = document.querySelector('[data-empty-state]');
+          if (grid && added) {
+            const node = buildCard(added);
+            grid.prepend(node);
+          }
+          if (empty && empty.dataset.scope === 'all') {
+            empty.classList.add('hidden');
+          }
+          if (typeof window.updateFilterCounts === 'function') window.updateFilterCounts();
+          if (typeof window.applyFilter === 'function') window.applyFilter(window.currentFilter || 'pending');
+          showFlash('Agregada a tu wishlist.', 'success');
         });
-        if (!res.ok) {
-          if (res.status === 409) {
-            showFlash('Ya está en tu wishlist.', 'info');
-            return;
-          }
-          if (res.status === 422) {
-            const data = await res.json().catch(() => ({}));
-            showFlash(data.message || 'Esta arma no tiene perks disponibles.', 'error');
-            return;
-          }
-          if (res.status === 401) {
-            showFlash('Sesión expirada. Recargá la página.', 'error');
-            return;
-          }
-          throw new Error('add failed');
-        }
-        const data = await res.json();
-        const grid = document.querySelector('[data-weapons-grid]');
-        const empty = document.querySelector('[data-empty-state]');
-        if (grid && data.weapon) {
-          const node = buildCard(data.weapon);
-          grid.prepend(node);
-        }
-        if (empty && empty.dataset.scope === 'all') {
-          empty.classList.add('hidden');
-        }
-        if (typeof window.updateFilterCounts === 'function') window.updateFilterCounts();
-        if (typeof window.applyFilter === 'function') window.applyFilter(window.currentFilter || 'pending');
-        showFlash('Agregada a tu wishlist.', 'success');
-      } catch (err) {
-        showFlash('Error al agregar. Probá de nuevo.', 'error');
+      } else {
+        showFlash('Error al abrir el selector de perks.', 'error');
       }
     }
 

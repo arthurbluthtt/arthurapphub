@@ -107,9 +107,8 @@ function pickWeapon(item) {
     const second = fallbackCandidates.find((h) => h !== perkSocketHashes[0]);
     mainPerkHashes = second ? [perkSocketHashes[0], second] : [];
   } else {
-    // Si no encontramos ningún perk socket, NO mostramos mod/masterwork como perks.
-    // Devolvemos array vacío; resolveWeapon en runtime devolverá null y el usuario
-    // no podrá agregar esta arma (debería poblar top-picks.json manualmente).
+    // Si no encontramos ningún perk socket, devolvemos array vacío. La app
+    // seguirá listando el arma en autocomplete y el picker quedará vacío.
     mainPerkHashes = [];
   }
 
@@ -131,6 +130,7 @@ function pickPerk(item) {
     name: item.displayProperties.name,
     icon: item.displayProperties.icon ?? '',
     description: item.displayProperties.description ?? '',
+    category: item.itemTypeDisplayName ?? '',
   };
 }
 

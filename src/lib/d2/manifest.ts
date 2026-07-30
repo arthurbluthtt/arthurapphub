@@ -40,6 +40,7 @@ const weaponsByHash = new Map<string, WeaponIndexEntry>(
 
 const perksByNormalizedName = new Map<string, string>();
 const perksByHash = new Map<string, PerkEntry>();
+const perksByCategory = new Map<string, PerkWithIcon[]>();
 
 function buildPerksIndex() {
   for (const [hash, perk] of Object.entries(perks)) {
@@ -49,6 +50,18 @@ function buildPerksIndex() {
     const normalized = perk.name.toLowerCase();
     if (!perksByNormalizedName.has(normalized)) {
       perksByNormalizedName.set(normalized, hash);
+    }
+    if (perk.category) {
+      const arr = perksByCategory.get(perk.category);
+      const entry: PerkWithIcon = {
+        hash,
+        name: perk.name,
+        icon: perk.icon,
+        description: perk.description,
+        category: perk.category,
+      };
+      if (arr) arr.push(entry);
+      else perksByCategory.set(perk.category, [entry]);
     }
   }
 }
@@ -64,6 +77,10 @@ export function getWeapon(hash: string): WeaponIndexEntry | null {
 
 export function getPerk(hash: string): PerkEntry | null {
   return perksByHash.get(hash) ?? null;
+}
+
+export function listPerksByCategory(category: string): PerkWithIcon[] {
+  return perksByCategory.get(category) ?? [];
 }
 
 export function searchPerkByName(name: string): PerkLookupResult | null {

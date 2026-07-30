@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { lookupSession, readCookie } from '../../../../lib/auth';
 import { listCustomPerkIcons } from '../../../../lib/d2/perkIcons';
+import { listPerksByCategory } from '../../../../lib/d2/manifest';
 import { jsonOk } from '../../../../lib/internal';
 
 export const prerender = false;
@@ -22,7 +23,7 @@ interface PerkMatch {
   icon: string;
   isCustom: boolean;
   category: string;
-  source: 'wishlist' | 'custom';
+  source: 'wishlist' | 'custom' | 'manifest';
   useCount: number;
 }
 
@@ -225,6 +226,38 @@ export const GET: APIRoute = async ({ request, url }) => {
         category: ic.category,
         source: 'custom',
         useCount: 0,
+        _score: score,
+      });
+    }
+  }
+
+  // Fallback final: si el usuario nunca uso esta perk (no esta en su
+  // wishlist ni tiene icono custom), consultar el manifest de Bungie
+  // por la categoria del slot. Esto es lo que permite descubrir perks
+  // nuevas (ej: 'Incandescent' si nunca la trackeaste).
+  if (results.length < limit && slotCategory) {
+    const manifestPerks = listPerksByCategory(slotCategory);
+    for (const mp of manifestPerks) {
+      if (results.length >= limit) break;
+      const lowerName = mp.name.toLowerCase();
+      if (seen.has(lowerName)) continue;
+      const score = rankMatch(mp.name, q);
+      if (score < 0) continue;
+      const custom = customIconByName.get(lowerName);
+      const icon = custom?.iconPath
+        ? custom.iconPath
+        : `/destiny/api/icon?type=perk&hash=${encodeURIComponent(mp.hash)}`;
+      const isCustom = !!custom?.iconPath;
+      const effectiveCategory = custom?.category || mp.category;
+      seen.add(lowerName);
+      results.push({
+        name: mp.name,
+        hash: mp.hash,
+        icon,
+        isCustom,
+        category: effectiveCategory,
+        source: 'manifest',
+        useCount: useCounts.get(lowerName) ?? 0,
         _score: score,
       });
     }

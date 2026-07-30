@@ -122,7 +122,7 @@
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
         <div
-          class="absolute left-0 right-0 top-full z-20 mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-white/10 dark:bg-white/[0.02]"
+          class="hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           data-add-perk-suggestions
           data-add-perk-suggestions-for="barrel"
         ></div>
@@ -143,7 +143,7 @@
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
         <div
-          class="absolute left-0 right-0 top-full z-20 mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-white/10 dark:bg-white/[0.02]"
+          class="hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           data-add-perk-suggestions
           data-add-perk-suggestions-for="magazine"
         ></div>
@@ -164,7 +164,7 @@
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
         <div
-          class="absolute left-0 right-0 top-full z-20 mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-white/10 dark:bg-white/[0.02]"
+          class="hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           data-add-perk-suggestions
           data-add-perk-suggestions-for="perk1"
         ></div>
@@ -185,7 +185,7 @@
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
         <div
-          class="absolute left-0 right-0 top-full z-20 mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 shadow-lg dark:border-white/10 dark:bg-white/[0.02]"
+          class="hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           data-add-perk-suggestions
           data-add-perk-suggestions-for="perk2"
         ></div>
@@ -458,6 +458,38 @@
       }
     }
 
+    // Posiciona el dropdown como fixed (coordenadas de viewport) para
+    // escapar el clipping del <dialog>. El dropdown se ve por encima del
+    // footer del dialog si la lista de perks crece hacia abajo.
+    function positionDropdown(slot) {
+      const slotIndex = PERK_SLOTS.indexOf(slot);
+      if (slotIndex < 0) return;
+      const input = perkSlotInputs[slotIndex];
+      const dropdown = perkSuggestionContainers[slot];
+      if (!input || !dropdown || dropdown.classList.contains('hidden')) return;
+      const rect = input.getBoundingClientRect();
+      const gap = 4;
+      const maxH = 288;
+      const viewportH = window.innerHeight;
+      const spaceBelow = viewportH - rect.bottom - gap - 16;
+      const spaceAbove = rect.top - gap - 16;
+      const useAbove = spaceBelow < 160 && spaceAbove > spaceBelow;
+      const top = useAbove
+        ? Math.max(8, rect.top - gap - Math.min(maxH, spaceAbove))
+        : rect.bottom + gap;
+      const height = useAbove
+        ? Math.min(maxH, spaceAbove)
+        : Math.min(maxH, Math.max(120, spaceBelow));
+      dropdown.style.position = 'fixed';
+      dropdown.style.top = top + 'px';
+      dropdown.style.left = Math.max(8, Math.min(window.innerWidth - rect.width - 8, rect.left)) + 'px';
+      dropdown.style.width = rect.width + 'px';
+      dropdown.style.maxHeight = height + 'px';
+      dropdown.style.zIndex = '9999';
+      // Quitar las clases absolute y mt-1
+      dropdown.classList.remove('absolute', 'left-0', 'right-0', 'top-full', 'mt-1');
+    }
+
     function renderPerkSuggestions(input, slot, items, groups) {
       const c = perkSuggestionContainers[slot];
       if (!c) return;
@@ -475,7 +507,7 @@
         if (group.label) {
           const header = document.createElement('div');
           header.className =
-            'px-2 pt-1.5 pb-1 text-[10px] font-medium uppercase tracking-wider text-zinc-500';
+            'px-2 pt-1.5 pb-1 text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400';
           header.textContent = group.label;
           c.appendChild(header);
         }
@@ -485,13 +517,13 @@
           btn.dataset.perkName = it.name;
           btn.dataset.perkSlot = slot;
           btn.className =
-            'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-zinc-900 hover:bg-zinc-100 dark:text-white dark:hover:bg-white/10';
+            'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-zinc-900 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-white/10';
           const iconUrl = it.icon || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23e4e4e7'/></svg>";
           const tag = it.isCustom ? 'custom' : (it.category || '');
           btn.innerHTML = `
             <img alt="" class="h-7 w-7 shrink-0 rounded object-contain" src="${escapeHtml(iconUrl)}" />
             <span class="flex-1 truncate text-xs">${escapeHtml(it.name)}</span>
-            ${tag ? `<span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-zinc-500">${escapeHtml(tag)}</span>` : ''}
+            ${tag ? `<span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">${escapeHtml(tag)}</span>` : ''}
           `;
           btn.addEventListener('click', () => {
             input.value = it.name;
@@ -503,6 +535,7 @@
         }
       }
       c.classList.remove('hidden');
+      positionDropdown(slot);
     }
 
     perkInputs.forEach((el) => {
@@ -519,7 +552,7 @@
                 encodeURIComponent(el.value.trim()) +
                 '&slot=' +
                 encodeURIComponent(slot) +
-                '&limit=12'
+                '&limit=30'
             );
             if (!res.ok) {
               closePerkSuggestions(slot);
@@ -545,6 +578,19 @@
         }
       });
     });
+
+    // Re-posicionar dropdowns cuando el usuario scrollea dentro del dialog
+    // o redimensiona la ventana. Como el dropdown es fixed, sigue al input.
+    function repositionAllDropdowns() {
+      for (const slot of PERK_SLOTS) {
+        const dropdown = perkSuggestionContainers[slot];
+        if (dropdown && !dropdown.classList.contains('hidden')) {
+          positionDropdown(slot);
+        }
+      }
+    }
+    window.addEventListener('scroll', repositionAllDropdowns, true);
+    window.addEventListener('resize', repositionAllDropdowns);
 
     function backToSearch() {
       if (state.viewMode === 'perks') showView('search');

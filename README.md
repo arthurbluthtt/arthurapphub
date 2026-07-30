@@ -1,23 +1,24 @@
 # ArthurAppHub
 
-Hub personal de apps **y** Identity Provider (SSO) para todas las apps vinculadas.
-Construido con [Astro](https://astro.build), [Tailwind CSS 4](https://tailwindcss.com/) y desplegado como [Cloudflare Worker](https://workers.cloudflare.com/).
+Hub personal de apps **y** **Identity Provider (SSO)** para todas las apps vinculadas. Construido con [Astro](https://astro.build), [Tailwind CSS 4](https://tailwindcss.com/) y desplegado como [Cloudflare Worker](https://workers.cloudflare.com/).
 
 URL: <https://arthurapphub.arthurbluthtt.workers.dev>
 
 ## Qué hace
 
 - **Lanzador de apps**: grid responsivo de tarjetas (ícono + nombre + descripción + link), tema dark/light persistente, indicador online/offline por app.
-- **Identity Provider**: el hub maneja la auth (username + PIN de 4 dígitos). Las apps vinculadas (hoy solo Notas) consumen identidad via exchange code. Una vez que el usuario entra su PIN en el hub, queda autenticado en todas las apps.
+- **Identity Provider (SSO)**: el hub maneja la auth (username + PIN de 4 dígitos). Las apps vinculadas consumen identidad vía exchange code. Una vez que el usuario entra su PIN en el hub, queda autenticado en todas las apps.
+- **Sub-app `/destiny`**: wishlist de armas de Destiny 2 con búsqueda desde el manifest oficial de Bungie, selección manual de perks (Cañón / Cargador / Rasgo 1 / Rasgo 2), iconos custom, filtros por estado y tipo de arma.
 
 ## Estado actual
 
 - Grid responsivo de tarjetas (`src/data/apps.json`).
 - Toggle dark/light persistente (`localStorage`, respeta `prefers-color-scheme`).
-- Indicador online/offline por app (ping `HEAD` al endpoint `/api/health`).
-- Static assets servidos por la binding `ASSETS` desde Cloudflare.
+- `color-scheme: light/dark` sincronizado en `<html>` para que form controls nativos (options de `<select>`, scrollbars) respeten el tema.
+- Indicador online/offline por app (HEAD al endpoint `/api/health`, cache 5 min).
+- Static assets servidos por el worker.
 - Click en cada tarjeta abre en la **misma pestaña**.
-- Auto-deploy en cada `push` a `main` vía GitHub Action.
+- Auto-deploy en cada `push` a `main` vía GitHub Action (~30 s).
 
 ### Auth (Identity Provider)
 
@@ -27,41 +28,82 @@ URL: <https://arthurapphub.arthurbluthtt.workers.dev>
 - **Algoritmo PIN**: `PBKDF2-SHA256(pin + ":" + username + ":" + AUTH_PEPPER, salt="arthurapphub-auth-v1", 100k iter)`.
 - **Per-app partition key**: `pin_hash = sha256(pin_hash_hub + ":" + app_id + ":" + pepper)`. El hub calcula, la app solo guarda.
 - **Sesión**: cookie `hub_sess` HttpOnly + cookie companion `hub_user` (no-HttpOnly, para mostrar username en el header).
-- **Códigos de exchange**: 60 s TTL, single-use. La app los consume via POST `/api/auth/exchange` con Bearer `INTERNAL_API_SECRET`.
+- **Códigos de exchange**: 60 s TTL, single-use. La app los consume vía `POST /api/auth/exchange` con Bearer `INTERNAL_API_SECRET`.
 
 ## Estructura
 
-- `src/data/apps.json` — lista editable de apps (cada app tiene `url` para health check + `redir` que apunta a `/api/redir?app=<id>`).
-- `src/components/` — `AppCard`, `AppGrid`, `Header`, `ThemeToggle`, `StatusDot`.
-- `src/pages/index.astro` — login (sin sesión) o grid de apps (con sesión).
-- `src/pages/signup.astro` — crear usuario.
-- `src/pages/login.astro` — shim que redirige a `/`.
-- `src/pages/api/health.ts` — endpoint SSR que hace `HEAD` a cada `app.url` y devuelve estado online/offline (cache 5 min).
-- `src/pages/api/redir.ts` — genera code + redirige a `${app.url}/api/auth/exchange?code=...` (o a `/login?next=...` si no hay sesión).
-- `src/pages/api/auth/issue.ts` — emite code (POST, cookie).
-- `src/pages/api/auth/exchange.ts` — consume code (POST, Bearer).
-- `src/pages/api/auth/logout.ts` — destruye sesión hub + limpia cookies.
-- `src/pages/api/auth/logout-all.ts` — stub simétrico (no-op hoy).
-- `src/pages/destiny/api/search.ts` — autocomplete armas (`?q=`).
-- `src/pages/destiny/api/weapon-perks.ts` — perks elegibles agrupadas por categoría (`?hash=`).
-- `src/pages/destiny/api/add.ts` — agrega arma con `perkHashes` elegidas.
-- `src/pages/destiny/api/remove.ts` — DELETE.
-- `src/pages/destiny/api/toggle-found.ts` — toggle found/found_at.
-- `src/pages/destiny/api/icon.ts` — proxy R2 con fallback Bungie CDN.
-- `src/components/d2/WeaponChipInput.astro` — search + abre picker.
-- `src/components/d2/PerkPicker.astro` — modal de selección de perks.
-- `src/components/d2/WeaponCard.astro` — card con weapon icon + 2 perks.
-- `src/lib/auth.ts` — `hashPin`, `createSession`, `lookupSession`, `createAuthCode`, `consumeAuthCode`, `deriveAppPinHash`, helpers de cookie.
-- `src/lib/d2/manifest.ts` — lookup de armas y perks, filtrado por categoría.
-- `src/lib/d2/wishlist.ts` — CRUD de `d2_wishlist`.
-- `src/lib/d2/resolver.ts` — `resolveWishlistRow(row)` (arma + perks desde `topPerkHashes`).
-- `src/lib/internal.ts` — `verifyInternal`, helpers JSON.
-- `migrations/0001_auth_init.sql` — tablas `pin_credentials`, `sessions`, `auth_codes`.
-- `migrations/0002_username.sql` — borra `default` legacy, reemplaza `pin_credentials.user_id` con `username`.
-- `migrations/0003_d2_wishlist.sql` — tabla `d2_wishlist`.
-- `DESIGN.md` — sistema de diseño (paleta, tipografía, componentes). Single source of truth.
-- `astro.config.mjs` — adapter Cloudflare (Workers), Tailwind vía `@tailwindcss/vite`.
-- `.github/workflows/deploy.yml` — auto-deploy a Cloudflare Workers en cada push a `main`.
+```
+src/
+├── data/
+│   └── apps.json                       # lista editable de apps
+├── components/
+│   ├── Header.astro
+│   ├── ThemeToggle.astro
+│   ├── StatusDot.astro
+│   ├── AppCard.astro
+│   ├── AppGrid.astro
+│   └── d2/                             # componentes sub-app D2
+│       ├── AddWeaponDialog.astro       # modal: search arma + 4 inputs perk
+│       ├── CustomPerkIconDialog.astro  # modal: pool de iconos custom
+│       ├── PerkSuggestionDropdown...   # (legacy, integrado en AddWeaponDialog)
+│       ├── WeaponCard.astro            # card de arma en wishlist
+│       └── WeaponFilters.astro         # chips de filtro
+├── layouts/
+│   └── BaseLayout.astro
+├── lib/
+│   ├── auth.ts                         # hashPin, sesiones, codes, deriveAppPinHash
+│   ├── internal.ts                     # verifyInternal, helpers JSON
+│   └── d2/
+│       ├── manifest.ts                 # lookup de armas y perks
+│       ├── wishlist.ts                 # CRUD de d2_wishlist
+│       ├── perkIcons.ts                # CRUD de d2_perk_icons
+│       └── resolver.ts                 # resolveWishlistRow(row)
+├── pages/
+│   ├── index.astro                     # login (sin sesión) o grid (con sesión)
+│   ├── signup.astro
+│   ├── login.astro                     # shim → /
+│   ├── api/
+│   │   ├── health.ts                   # status por app (HEAD)
+│   │   ├── redir.ts                    # genera code + redirige a la app
+│   │   └── auth/
+│   │       ├── issue.ts                # cookie → code
+│   │       ├── exchange.ts             # code → {session_token, pin_hash, expires_at}
+│   │       ├── logout.ts               # destruye sesión hub
+│   │       └── logout-all.ts           # stub simétrico (no-op hoy)
+│   └── destiny/
+│       ├── index.astro                 # página /destiny (wishlist)
+│       └── api/
+│           ├── search.ts               # autocomplete armas
+│           ├── add.ts                  # POST: agregar arma
+│           ├── update.ts               # POST: editar perks
+│           ├── remove.ts               # POST: eliminar
+│           ├── toggle-found.ts         # POST: toggle found
+│           ├── icon.ts                 # proxy R2 con fallback Bungie
+│           ├── perk-icon.ts            # GET/POST: pool de iconos custom
+│           └── perks/
+│               └── match.ts            # GET: perks elegibles por slot
+├── styles/
+│   └── global.css                      # tokens + color-scheme
+└── env.d.ts
+
+migrations/
+├── 0001_auth_init.sql
+├── 0002_username.sql
+├── 0003_d2_wishlist.sql
+├── 0004_d2_wishlist_perks_json.sql
+├── 0005_drop_top_perk_hashes.sql
+├── 0006_d2_perk_icons.sql
+└── 0007_d2_perk_icons_category.sql
+
+data/d2/
+├── weapons-index.json                  # generado por build:d2-manifest
+└── perks.json                          # generado por build:d2-manifest
+
+DESIGN.md                               # sistema de diseño (single source of truth)
+STATE.md                                # estado + próximos pasos + recap credenciales
+astro.config.mjs                        # adapter Cloudflare (Workers), Tailwind 4
+.github/workflows/deploy.yml            # auto-deploy a Cloudflare Workers en cada push a main
+```
 
 ## Local
 
@@ -69,7 +111,7 @@ URL: <https://arthurapphub.arthurbluthtt.workers.dev>
 npm install
 npm run dev                # http://localhost:4321
 npm run build              # genera dist/
-npx wrangler dev           # simula el worker localmente
+npx wrangler dev           # simula el worker localmente (con bindings remotos)
 ```
 
 Requisitos: Node 22.12+.
@@ -106,29 +148,40 @@ Push a `main` en GitHub dispara `.github/workflows/deploy.yml`:
 ## Features
 
 - Grid responsive de tarjetas con ícono, nombre, descripción y link.
-- Toggle dark/light persistente.
+- Toggle dark/light persistente + `color-scheme` sincronizado (form controls nativos respetan el tema).
 - Indicador online/offline por app.
-- Static assets servidos por la binding `ASSETS`.
 - Identity Provider multi-usuario con username + PIN.
-- SSO via exchange code hacia apps vinculadas.
-- **Sub-app `/destiny`** — wishlist de armas de Destiny 2 con autocompletado desde el manifest oficial de Bungie, selección manual de perks (barrels/mags/traits filtrados del pool), imágenes cacheadas en R2, filtro (Pendientes/Encontradas/Todas), botón para marcar armas como conseguidas.
+- SSO vía exchange code hacia apps vinculadas.
+- Header con username del usuario logueado + botón "Salir".
+- **Sub-app `/destiny`** — wishlist de armas de Destiny 2.
 
-Ver `STATE.md` para el plan completo y la historia del proyecto.
+## D2 Wishlist (sub-app interna)
 
-## D2 Wishlist (sub-app)
-
-Una página interna en `/destiny` que mantiene una wishlist personal de armas de Destiny 2. Al agregar un arma, abrís un picker que lista sus perks agrupadas por categoría (Barrels → Mags → Traits) y elegís las 2 que querés trackear.
+Una página en `/destiny` (login requerido) que mantiene una wishlist personal de armas de Destiny 2. Al agregar un arma, abrís un modal con 4 inputs manuales para los perks (Cañón, Cargador, Rasgo 1, Rasgo 2) — el server los busca por nombre en el manifest oficial y, si no existen, los guarda como "custom" con placeholder SVG.
 
 ### Datos
 
-- **Manifest**: `data/d2/weapons-index.json` + `data/d2/perks.json` generados con `npm run build:d2-manifest`. Necesita `BUNGIE_API_KEY` (gratis en https://www.bungie.net/en/Application). Cada perk trae `category` desde `itemTypeDisplayName` (`Barrel` / `Magazine` / `Trait`).
-- **Iconos**: primer hit baja desde Bungie CDN → se guarda en R2 (`arthurapphub-d2-assets`). Después se sirve desde R2 con cache de 30 días.
-- Si el manifest está desactualizado y `category` viene vacío, hay un fallback por nombre (`barrel|sights|scope|launcher` → barrel; `mag|magazine|rounds|cartridge|battery` → magazine; resto → trait).
+- **Manifest**: `data/d2/weapons-index.json` + `data/d2/perks.json` generados con `npm run build:d2-manifest`. Necesita `BUNGIE_API_KEY` (gratis en https://www.bungie.net/en/Application).
+  - 2058 armas con `weaponType` real (Hand Cannon, Auto Rifle, etc.) vía `DestinyItemCategoryDefinition`.
+  - 2000 perks con `category` real (`Barrel` / `Magazine` / `Trait`) vía `itemTypeDisplayName`.
+- **Fallback de categoría**: si el manifest no tiene `category`, el endpoint `perks/match` clasifica por regex (`barrel|sights|scope|launcher` → barrel; `mag|magazine|rounds|cartridge|battery` → magazine; resto → trait). Es heurístico — un rebuild del manifest elimina la dependencia.
+- **Iconos**: primer hit baja desde Bungie CDN → se guarda en R2 (`arthurapphub-d2-assets` binding `D2_ASSETS`). Después se sirve desde R2 con cache de 30 días.
+- **Iconos custom**: pool personal del usuario en `d2_perk_icons`. Cada icono tiene `category` asignable (Cañón/Cargador/Rasgo/Sin tipo) para que el picker los filtre correctamente.
 
 ### Storage
 
-- D1 tabla `d2_wishlist` (migración `migrations/0003_d2_wishlist.sql` + `0004_d2_wishlist_perks_json.sql` + `0005_drop_top_perk_hashes.sql`): `(username, item_hash, weapon_name, weapon_icon_path, perks_json, found, found_at, added_at)` + índice `(username, found, added_at DESC)`. Cada fila guarda 4 perks (Cañón, Cargador, Rasgo 1, Rasgo 2) en `perks_json` como `{name, hash, icon, category}` por slot.
+- D1 tabla `d2_wishlist` (migraciones `0003` + `0004` + `0005`): `(username, item_hash, weapon_name, weapon_icon_path, perks_json, found, found_at, added_at)` + índice `(username, found, added_at DESC)`. Cada fila guarda 4 perks en `perks_json` como `{name, hash, icon, category}` por slot.
+- D1 tabla `d2_perk_icons` (migraciones `0006` + `0007`): `(username, perk_name_lower, perk_name_display, icon_path, category, created_at)`.
 - R2 bucket `arthurapphub-d2-assets`: `weapons/<hash>.png` + `perks/<hash>.png`.
+
+### UX
+
+- **Filtros por estado** (Todas/Pendientes/Encontradas) + **por tipo de arma** (chips pill con conteo).
+- **Type-ahead en inputs de perk**: vacío = muestra todos los elegibles del slot (`rankMatch` trata `q` vacío como match-all).
+- **Dropdown fixed-position**: escapa el clipping del `<dialog>` nativo usando coordenadas de viewport (`getBoundingClientRect()` + `position:fixed` + `z-index:9999`).
+- **Re-posicionamiento**: en scroll/resize del window, con filtro para no reposicionar cuando el scroll es interno al propio dropdown.
+- **No reabri Conserve perk**: `state.perkConfirmed[slot]` evita que el dropdown se reabra con la perk recién seleccionada cuando el usuario vuelve a hacer focus en el input.
+- **Dialogs robustos**: `overflow-y-auto` + `overscroll-contain` (scroll interno no propaga al body) + `lockBodyScroll()` (lockea `body.overflow:hidden` con compensación de scrollbar para evitar layout shift al abrir/cerrar).
 
 ### Refrescar manifest (~cada season de D2)
 
@@ -137,3 +190,5 @@ BUNGIE_API_KEY=<key> npm run build:d2-manifest
 git add data/d2/weapons-index.json data/d2/perks.json
 git commit -m "d2: refresh manifest" && git push
 ```
+
+Ver `STATE.md` para el plan completo, próximos pasos y la historia del proyecto.

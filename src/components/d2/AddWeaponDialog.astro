@@ -464,7 +464,7 @@
     function positionDropdown(slot) {
       const slotIndex = PERK_SLOTS.indexOf(slot);
       if (slotIndex < 0) return;
-      const input = perkSlotInputs[slotIndex];
+      const input = perkInputs[slotIndex];
       const dropdown = perkSuggestionContainers[slot];
       if (!input || !dropdown || dropdown.classList.contains('hidden')) return;
       const rect = input.getBoundingClientRect();
@@ -486,8 +486,6 @@
       dropdown.style.width = rect.width + 'px';
       dropdown.style.maxHeight = height + 'px';
       dropdown.style.zIndex = '9999';
-      // Quitar las clases absolute y mt-1
-      dropdown.classList.remove('absolute', 'left-0', 'right-0', 'top-full', 'mt-1');
     }
 
     function renderPerkSuggestions(input, slot, items, groups) {

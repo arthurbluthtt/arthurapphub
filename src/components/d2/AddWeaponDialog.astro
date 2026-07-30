@@ -259,13 +259,15 @@
     const PERK_SLOTS = ['barrel', 'magazine', 'perk1', 'perk2'];
     const perkMatchTimers = {};
 
-    const state = {
+const state = {
       viewMode: 'search',
       mode: 'add',
       currentWeaponHash: null,
       currentWeaponName: '',
       weaponTimer: null,
       lastSearchValue: '',
+      perkConfirmed: {},
+      perkConfirmedValue: {},
     };
 
     function showView(mode) {
@@ -324,11 +326,13 @@
       searchEmpty.classList.add('hidden');
     }
 
-    function resetState() {
+function resetState() {
       state.currentWeaponHash = null;
       state.currentWeaponName = '';
       state.mode = 'add';
       state.lastSearchValue = '';
+      state.perkConfirmed = {};
+      state.perkConfirmedValue = {};
       input.value = '';
       clearWeaponSuggestion();
       searchEmpty.classList.add('hidden');
@@ -343,7 +347,7 @@
       showView('search');
     }
 
-    function openForEdit(row) {
+function openForEdit(row) {
       resetState();
       state.mode = 'edit';
       state.currentWeaponHash = row.itemHash;
@@ -355,7 +359,12 @@
       perkInputs.forEach((el) => {
         const slot = el.getAttribute('data-add-perk-slot');
         const v = row.perks && row.perks[slot];
-        el.value = typeof v === 'string' ? v : '';
+        const val = typeof v === 'string' ? v : '';
+        el.value = val;
+        if (val) {
+          state.perkConfirmed[slot] = true;
+          state.perkConfirmedValue[slot] = val;
+        }
       });
       confirmBtn.textContent = 'Guardar';
       checkPerksComplete();
@@ -390,7 +399,7 @@
       }
     }
 
-    async function pickWeapon(weaponHash, name) {
+async function pickWeapon(weaponHash, name) {
       if (!weaponHash) return;
       clearWeaponSuggestion();
       state.currentWeaponHash = weaponHash;
@@ -399,6 +408,8 @@
       weaponName.textContent = name || '';
       weaponMeta.textContent = '';
       showView('perks');
+      state.perkConfirmed = {};
+      state.perkConfirmedValue = {};
       perkInputs.forEach((el) => { el.value = ''; });
       checkPerksComplete();
       setTimeout(() => perkInputs[0].focus(), 50);
@@ -525,6 +536,8 @@
           `;
           btn.addEventListener('click', () => {
             input.value = it.name;
+            state.perkConfirmed[slot] = true;
+            state.perkConfirmedValue[slot] = it.name;
             closePerkSuggestions(slot);
             checkPerksComplete();
             input.focus();
@@ -539,6 +552,15 @@
     perkInputs.forEach((el) => {
       const slot = el.getAttribute('data-add-perk-slot');
       el.addEventListener('input', () => {
+        const currentVal = el.value.trim();
+        if (state.perkConfirmed[slot] && currentVal === state.perkConfirmedValue[slot]) {
+          checkPerksComplete();
+          return;
+        }
+        if (state.perkConfirmed[slot] && currentVal !== state.perkConfirmedValue[slot]) {
+          state.perkConfirmed[slot] = false;
+          state.perkConfirmedValue[slot] = '';
+        }
         checkPerksComplete();
         clearTimeout(perkMatchTimers[slot]);
         // Siempre hacemos fetch: con q vacio el endpoint devuelve TODOS los
@@ -587,7 +609,18 @@
         }
       }
     }
-    window.addEventListener('scroll', repositionAllDropdowns, true);
+    window.addEventListener('scroll', (e) => {
+      // Si el scroll ocurre dentro del propio dropdown, no reposicionar
+      // (seria molesto: el dropdown se moveria mientras el usuario baja
+      // en la lista de perks).
+      for (const slot of PERK_SLOTS) {
+        const dropdown = perkSuggestionContainers[slot];
+        if (dropdown && !dropdown.classList.contains('hidden') && dropdown.contains(e.target)) {
+          return;
+        }
+      }
+      repositionAllDropdowns();
+    }, true);
     window.addEventListener('resize', repositionAllDropdowns);
 
     function backToSearch() {

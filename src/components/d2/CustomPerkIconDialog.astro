@@ -62,7 +62,7 @@
           Tipo del perk
         </span>
         <select
-          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:focus:border-white/30 [&>option]:bg-white [&>option]:text-zinc-900 dark:[&>option]:bg-zinc-800 dark:[&>option]:text-white"
           data-perk-icon-category
         >
           <option value="">Sin tipo (aparece en Custom)</option>
@@ -175,7 +175,7 @@
         li.innerHTML = `
           <img alt="" class="h-8 w-8 shrink-0 rounded object-contain" src="${escapeHtml(ic.iconPath)}" />
           <span class="flex-1 min-w-0 truncate text-xs">${escapeHtml(ic.perkName)}</span>
-          <select class="rounded border border-zinc-200 bg-white px-1 py-0.5 text-[10px] uppercase tracking-wider dark:border-white/10 dark:bg-white/[0.04]" data-perk-icon-edit-cat data-perk-icon-edit-name="${escapeHtml(ic.perkName)}">${options}</select>
+          <select class="rounded border border-zinc-200 bg-white px-1 py-0.5 text-[10px] uppercase tracking-wider text-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white [&>option]:bg-white [&>option]:text-zinc-900 dark:[&>option]:bg-zinc-800 dark:[&>option]:text-white" data-perk-icon-edit-cat data-perk-icon-edit-name="${escapeHtml(ic.perkName)}">${options}</select>
           <button type="button" data-perk-icon-delete data-perk-icon-delete-name="${escapeHtml(ic.perkName)}" class="shrink-0 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400">Quitar</button>
         `;
         listEl.appendChild(li);

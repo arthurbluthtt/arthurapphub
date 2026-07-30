@@ -148,14 +148,35 @@ Llamar `lockBodyScroll()` antes de `dialog.showModal()` en **todos** los puntos 
 
 Cuando se necesita un dropdown que escapa el clipping del `<dialog>`, usar el patrón **fixed-position** calculado por JS:
 
-- **Shell**: `max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100` (sin clases de posición — las setea JS).
+- **Shell CSS**: `fixed z-[9999] mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100` — `position:fixed` se aplica desde el CSS inicial (no esperar al JS), así nunca se renderiza con `position:static`.
 - **JS** (`positionDropdown(slot)`):
   - Calcular `getBoundingClientRect()` del input asociado.
-  - Setear `position: fixed`, `top`/`left`/`width` en coords de viewport.
+  - Setear `top`/`left`/`width`/`maxHeight` en coords de viewport.
+  - Invertir `top`↔`bottom` según `spaceBelow < minSpace && spaceAbove > spaceBelow`.
   - `z-index: 9999` (queda por encima del backdrop).
-  - Decidir si abrir hacia arriba según `spaceBelow < 160 && spaceAbove > spaceBelow`.
+- **Atomic reveal — crítico**: `positionDropdown(slot)` se invoca **antes** de `classList.remove('hidden')` en `renderPerkSuggestions`. El navegador nunca ve el dropdown sin posicionamiento (causa raíz del bug "a la mitad" original, donde un frame intermedio con `position:static` desincronizaba las coords).
+- **No auto-focus**: nunca hacer `perkInputs[0].focus()` al cargar el dialog, porque el focus listener dispara el fetch+render del dropdown y se abre solo. El usuario hace click en el input cuando quiere tipear.
 - **Re-posicionamiento en scroll/resize** del window, **con filtro** para no reposicionar cuando el scroll es interno al propio dropdown (`dropdown.contains(e.target)`).
 - **No reabrir tras selección**: usar un flag `state.perkConfirmed[slot]` que el `input` handler respeta para evitar re-render cuando el valor coincide con el último confirmado. Limpiar el flag cuando el usuario edita el valor.
+
+### Listas (chips de filtro)
+
+Para listas de filtros (estado, tipo de arma, etc.) usar chips pill con conteo:
+
+- **Container**: `flex flex-wrap items-center gap-2`.
+- **Chip base**: `rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-zinc-700 hover:bg-zinc-100 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:bg-white/10`.
+- **Chip activo**: `bg-zinc-900 text-white dark:bg-white dark:text-zinc-900` (invertido, alto contraste).
+- **Conteo**: badge pequeño dentro del chip con `bg-white/20` o `bg-zinc-200 dark:bg-white/10`. El número va separado visualmente (`ml-1.5 text-zinc-500`).
+
+### Orden de resultados en dropdowns
+
+Cuando el dropdown muestra perks/items con un ranking útil:
+
+1. **Score de match** (rankMatch: exact > prefix > word-prefix > -1) — siempre primero.
+2. **Popularidad / uso** del usuario (cuántas veces aparece en su wishlist/historial) — desempate secundario.
+3. **Nombre alfabético** — desempate final.
+
+Cada item con `useCount > 1` muestra un chip `×N` (estilo `bg-zinc-200 px-1 text-[10px] tabular-nums dark:bg-white/10`) con tooltip "Usada en N armas".
 
 ### Selects nativos
 

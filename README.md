@@ -164,7 +164,13 @@ Una página en `/destiny` (login requerido) que mantiene una wishlist personal d
 - **Manifest**: `data/d2/weapons-index.json` + `data/d2/perks.json` generados con `npm run build:d2-manifest`. Necesita `BUNGIE_API_KEY` (gratis en https://www.bungie.net/en/Application).
   - 2058 armas con `weaponType` real (Hand Cannon, Auto Rifle, etc.) vía `DestinyItemCategoryDefinition`.
   - 2000 perks con `category` real (`Barrel` / `Magazine` / `Trait`) vía `itemTypeDisplayName`.
-- **Fallback de categoría**: si el manifest no tiene `category`, el endpoint `perks/match` clasifica por regex (`barrel|sights|scope|launcher` → barrel; `mag|magazine|rounds|cartridge|battery` → magazine; resto → trait). Es heurístico — un rebuild del manifest elimina la dependencia.
+- **Sub-categorías del manifest mapeadas a slots canónicos**: Bungie tiene muchas sub-categorías para armas especiales que son funcionalmente Barrel o Magazine pero el manifest las etiqueta distinto. El endpoint aplica una whitelist por slot:
+  - `barrel` ← {Barrel, Bowstring, Scope, Sight, Launcher Barrel, Guard, Enhanced Guard, Stock, Grip, Grips, Handle, Tang, Rail, Praxic Blade Form}
+  - `magazine` ← {Magazine, Battery, Arrow}
+  - `perk1`/`perk2` ← {Trait, Enhanced Trait}
+- **Blacklist global**: Intrinsic, Weapon Ornament, Origin Trait, Enhanced Origin Trait, Weapon Mod, Enhanced Weapon Mod, Memento, Shader, Combat Flair, Resonant Material, Restore Defaults — nunca son perks trackeables y se filtran en todos los slots.
+- **Normalización al slot al guardar**: `add.ts`/`update.ts` usan `SLOT_CATEGORY` para que la perk guardada tenga la categoría del slot donde el usuario la puso (no la del manifest). Así "Agile Bowstring" (Trait en manifest) guardada en magazine slot queda con `category: 'Magazine'` y aparece correctamente en futuras aperturas.
+- **Fallback de categoría legacy**: si el manifest no tiene `category`, el endpoint `perks/match` clasifica por regex (`barrel|sights|scope|launcher` → barrel; `mag|magazine|rounds|cartridge|battery` → magazine; resto → trait). Es heurístico — un rebuild del manifest elimina la dependencia.
 - **Iconos**: primer hit baja desde Bungie CDN → se guarda en R2 (`arthurapphub-d2-assets` binding `D2_ASSETS`). Después se sirve desde R2 con cache de 30 días.
 - **Iconos custom**: pool personal del usuario en `d2_perk_icons`. Cada icono tiene `category` asignable (Cañón/Cargador/Rasgo/Sin tipo) para que el picker los filtre correctamente.
 
@@ -177,10 +183,12 @@ Una página en `/destiny` (login requerido) que mantiene una wishlist personal d
 ### UX
 
 - **Filtros por estado** (Todas/Pendientes/Encontradas) + **por tipo de arma** (chips pill con conteo).
-- **Type-ahead en inputs de perk**: vacío = muestra todos los elegibles del slot (`rankMatch` trata `q` vacío como match-all).
-- **Dropdown fixed-position**: escapa el clipping del `<dialog>` nativo usando coordenadas de viewport (`getBoundingClientRect()` + `position:fixed` + `z-index:9999`).
+- **Type-ahead en inputs de perk**: tres fuentes combinadas con dedup por nombre — (1) perks ya guardadas por el usuario (`d2_wishlist.perks_json`), (2) pool de iconos custom (`d2_perk_icons`), (3) fallback al manifest de Bungie (`listAllPerks()`) **solo cuando hay `q`** para no abrumar con 2000 perks cuando el dropdown abre vacío. Permite typeahead cross-categoría (e.g. tipear "bowstring" en slot magazine).
+- **Orden por uso**: `countPerkUses()` cuenta ocurrencias de cada nombre en la wishlist del usuario. Sort: `_score` ASC → `useCount` DESC → nombre ASC. Chip `×N` al lado del nombre cuando `useCount > 1` con tooltip "Usada en N armas".
+- **Dropdown fixed-position**: `position:fixed` con coordenadas del viewport (`getBoundingClientRect()` + `z-index:9999`) para escapar el clipping del `<dialog>`. **Atomic reveal**: `position:fixed` + coords se aplican **antes** de remover `hidden` — el navegador nunca ve el dropdown con `position:static` (causaba bug "a la mitad").
 - **Re-posicionamiento**: en scroll/resize del window, con filtro para no reposicionar cuando el scroll es interno al propio dropdown.
-- **No reabri Conserve perk**: `state.perkConfirmed[slot]` evita que el dropdown se reabra con la perk recién seleccionada cuando el usuario vuelve a hacer focus en el input.
+- **`state.perkConfirmed[slot]`**: evita que el dropdown se reabra con la perk recién seleccionada cuando el usuario vuelve a hacer focus en el input.
+- **Sin auto-focus**: el primer perk input no recibe focus automático al abrir el modal de perks (el focus listener disparaba el dropdown). El usuario hace click cuando quiere tipear.
 - **Dialogs robustos**: `overflow-y-auto` + `overscroll-contain` (scroll interno no propaga al body) + `lockBodyScroll()` (lockea `body.overflow:hidden` con compensación de scrollbar para evitar layout shift al abrir/cerrar).
 
 ### Refrescar manifest (~cada season de D2)

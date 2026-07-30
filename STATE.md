@@ -45,14 +45,17 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - ✅ R2 bucket `arthurapphub-d2-assets` creado (binding `D2_ASSETS`).
 - ✅ Secret `BUNGIE_API_KEY` configurado en el worker.
 - ✅ Manifest build: 2058 armas con `weaponType` real (Hand Cannon, Auto Rifle, etc — vía `DestinyItemCategoryDefinition`), 2000 perks con `category` real (`Barrel` / `Magazine` / `Trait` vía `itemTypeDisplayName`).
-- ✅ Selección manual de **4 perks por arma**: **Cañón / Cargador / Rasgo 1 / Rasgo 2**. Usuario tipéa el nombre; server busca en el manifest por nombre y si no está, guarda como "custom" con placeholder SVG inline.
-- ✅ Type-ahead en inputs de perk: vacío = muestra todos los elegibles del slot (`rankMatch` trata `q` vacío como match-all). Endpoint `GET /destiny/api/perks/match?q=&slot=&limit=30`.
+- ✅ Selección manual de **4 perks por arma**: **Cañón / Cargador / Rasgo 1 / Rasgo 2**. Usuario tipéa el nombre; server busca en el manifest por nombre y guarda con `category` normalizada al slot (no del manifest). Perks no encontradas se guardan como "custom" con placeholder SVG inline.
+- ✅ Type-ahead en inputs de perk (`/destiny/api/perks/match?q=&slot=&limit=30`). Tres fuentes combinadas con dedup por nombre: (1) userPool de la wishlist del usuario, (2) pool de iconos custom (`d2_perk_icons`), (3) fallback al manifest de Bungie (`listAllPerks()`) **solo cuando hay `q`** para no abrumar con 2000 perks cuando el dropdown abre vacío. Permite typeahead cross-categoría (e.g. tipear "bowstring" en slot magazine).
+- ✅ **Whitelist de categorías por slot** en el filtro del dropdown + **blacklist de categorías inválidas**. Map: `barrel` ← {Barrel, Bowstring, Scope, Sight, Launcher Barrel, Guard, Enhanced Guard, Stock, Grip, Grips, Handle, Tang, Rail, Praxic Blade Form}; `magazine` ← {Magazine, Battery, Arrow}; `perk1/perk2` ← {Trait, Enhanced Trait}. Blacklist global: Intrinsic, Weapon Ornament, Origin Trait, Enhanced Origin Trait, Weapon Mod, Enhanced Weapon Mod, Memento, Shader, Combat Flair, Resonant Material, Restore Defaults — estas nunca son perks trackeables.
+- ✅ **Orden por uso**: `countPerkUses()` cuenta ocurrencias de cada nombre en la wishlist del usuario (across all slots + weapons). Sort del dropdown: score ASC → useCount DESC → nombre ASC. Chip `×N` al lado del nombre cuando `useCount > 1` con tooltip "Usada en N armas".
+- ✅ No auto-focus del primer perk input al cambiar a vista perks (causaba que el focus listener abriera el dropdown automáticamente). El usuario hace click cuando quiere tipear.
 - ✅ Pool de iconos custom (`d2_perk_icons`) con tipo asignable (Cañón/Cargador/Rasgo/Sin tipo). Migración `0006` + `0007` aplicada.
 - ✅ Botón editar en cada card → modal abre con los 4 inputs pre-llenados.
 - ✅ Chip "✦ Icono perk" arriba del "+ Agregar arma" → dialog `CustomPerkIconDialog` para gestionar iconos custom (agregar URL + asignar/cambiar tipo inline + borrar).
 - ✅ Filtros por estado (Todas/Pendientes/Encontradas) + por tipo de arma (chips pill por tipo con conteo).
 - ✅ Container ancho escalado en ultrawide (`max-w-[1760px] 2xl:max-w-[2240px]`) — grid de 8 columnas en 2xl.
-- ✅ Dropdown de perks fixed-position para escapar el clipping del `<dialog>` (`positionDropdown` calcula `getBoundingClientRect()` + aplica `position:fixed` con coords de viewport + `z-index:9999`). Re-posicionamiento en scroll/resize (con filtro para no reposicionar cuando el scroll es interno al propio dropdown).
+- ✅ Dropdown de perks: `position:fixed` con coordenadas del viewport (calculadas vía `getBoundingClientRect()` del input) para escapar el clipping del `<dialog>` nativo. **Atomic reveal**: `position:fixed` + coords se aplican **antes** de remover `hidden` (en `renderPerkSuggestions` se invoca `positionDropdown` antes de `classList.remove('hidden')`), así el navegador nunca ve el dropdown con `position:static` (causa del bug "a la mitad" original). Re-posicionamiento en scroll/resize del window, con filtro para no reposicionar cuando el scroll ocurre dentro del propio dropdown.
 - ✅ `state.perkConfirmed[slot]` evita que el dropdown se reabra automáticamente después de seleccionar una perk (el focus listener reabría con la perk ya seleccionada).
 - ✅ Dialogs con `overflow-y-auto` + `overscroll-contain` (scroll interno no propaga al body) + `lockBodyScroll()` que setea `body.overflow:hidden` con compensación de scrollbar (compensación evita layout shift al abrir/cerrar).
 - ✅ `color-scheme: light/dark` en `html` (CSS global) para que los form controls nativos (options de `<select>`, scrollbars) respeten el tema de la página.
@@ -94,7 +97,7 @@ git commit -m "d2: refresh manifest" && git push
 
 Pendiente en orden de prioridad:
 
-1. Smoke test end-to-end en el browser (login → /destiny → search → modal → escribir 4 perks → agregar → editar → toggle found → filter por tipo → marcar encontrada → reload).
+1. Smoke test end-to-end final en el browser (login → /destiny → search → modal → escribir 4 perks con typeahead cross-categoría → agregar → editar perks → toggle found → filter por tipo → reload).
 2. Agregar una segunda app al SSO (5-10 líneas en la nueva app + 2 entradas en el hub).
 3. Si se quiere extender más allá del círculo personal, mejorar el handler de errores en `/api/redir` cuando el hub está caído.
 4. El `AUTH_PEPPER` de notes-app (legacy) ya no se usa — puede limpiarse del worker + GH secret.
@@ -111,7 +114,11 @@ Pendiente en orden de prioridad:
 - Secret compartido `INTERNAL_API_SECRET`: 64 chars alfanuméricos random.
 - D2 perks manuales (no auto top-picks) — el usuario decide qué perks trackear.
 - D2 perks custom (placeholder SVG) si el manifest no tiene la perk — el usuario tipéa y el server la guarda sin fallar.
+- D2 perks cross-categoría aceptadas (e.g. "Agile Bowstring" del manifest como Trait va en columna Cañón de los arcos) — el manifiesto de Bungie tiene sub-categorías como Bowstring/Scope/Sight/Battery/Arrow que son funcionalmente Barrel o Magazine pero no usan esos nombres. **Whitelist por slot** mapea cada sub-categoría a su slot canónico.
+- D2 perks categorías inválidas (Intrinsic, Weapon Ornament, Origin Trait, Weapon Mod, Memento, Shader, etc.) **filtradas siempre** vía blacklist global — nunca aparecen en el dropdown.
+- D2 perks `category` se normaliza al slot al guardar (`add.ts`/`update.ts` usan `SLOT_CATEGORY`). Si el usuario guardó "Agile Bowstring" en slot magazine, queda con `category: 'Magazine'` en la wishlist y aparece correctamente en futuras aperturas del dropdown magazine sin tipear.
 - D2 iconos custom con tipo asignable para que el picker los filtre correctamente.
+- D2 orden del dropdown por uso: las perks más usadas primero (count desde `d2_wishlist.perks_json`).
 
 ## Riesgos remanentes
 
@@ -145,8 +152,8 @@ Pendiente en orden de prioridad:
 - Si el hub se rompe, `wrangler dev` localmente con `--remote` puede ayudar a debug.
 - El `session_token` que el hub emite ya viene en el formato que la app destino espera (base64Url de 32 bytes random).
 - El `pin_hash` per-app se calcula en el hub; las apps lo usan directamente como partition key.
-- **D2 perk picker**: si el manifest está desactualizado (falta `perk.category`), el fallback por nombre clasifica por regex (`barrel|sights|scope|launcher` → barrel; `mag|magazine|rounds|cartridge|battery` → magazine; resto → trait). Funciona pero es heurístico — un rebuild elimina la dependencia.
-- **D2 perks manuales**: el usuario tipéa el nombre en cada uno de los 4 inputs (Cañón/Cargador/Rasgo 1/Rasgo 2). El server busca por nombre en el manifest y, si no existe, guarda como "custom" con placeholder SVG inline (sigue funcionando, sin error).
-- **D2 dropdown position**: el dropdown usa `position:fixed` con coordenadas del viewport (calculadas vía `getBoundingClientRect()` del input) para escapar el clipping del `<dialog>` nativo. Re-posicionamiento en scroll/resize del window, con filtro para no reposicionar cuando el scroll ocurre dentro del propio dropdown.
+- **D2 perk picker**: si el manifest está desactualizado (falta `perk.category`), el fallback por nombre clasifica por regex (`barrel|sights|scope|launcher` → barrel; `mag|magazine|rounds|cartridge|battery` → magazine; resto → trait). Funciona pero es heurístico — un rebuild elimina la dependencia. **PERO** el whitelist/blacklist actual en `perks/match.ts` es independiente del fallback: si la perk del manifest tiene categoría válida, pasa; si no, depende del fallback legacy.
+- **D2 perks manuales**: el usuario tipéa el nombre en cada uno de los 4 inputs (Cañón/Cargador/Rasgo 1/Rasgo 2). El server normaliza la `category` al slot (no usa la del manifest), busca por nombre en el manifest y, si no existe, guarda como "custom" con placeholder SVG inline (sigue funcionando, sin error).
+- **D2 dropdown position**: el dropdown usa `position:fixed` con coordenadas del viewport (calculadas vía `getBoundingClientRect()` del input) para escapar el clipping del `<dialog>` nativo. **Atomic reveal**: `position:fixed` + coords se aplican antes de remover `hidden` para evitar que el navegador vea el dropdown con `position:static` (causaba bug "a la mitad"). Re-posicionamiento en scroll/resize del window, con filtro para no reposicionar cuando el scroll ocurre dentro del propio dropdown.
 - **D2 scroll lock**: los dialogs lockean `body.overflow:hidden` al abrir y restauran al cerrar, con compensación de scrollbar (`padding-right = scrollbarWidth`) para evitar layout shift.
 - **`AUTH_PEPPER` de notes-app es legacy**: el hub ahora deriva todo. Se puede limpiar para reducir superficie.

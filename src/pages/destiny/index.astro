@@ -73,7 +73,7 @@ const visible =
         role="tablist"
         aria-label="Filtrar wishlist"
       >
-        {(['pending', 'found', 'all'] as const).map((f) => (
+        {(['all', 'pending', 'found'] as const).map((f) => (
           <button
             type="button"
             role="tab"

@@ -127,7 +127,7 @@ Una página interna en `/destiny` que mantiene una wishlist personal de armas de
 
 ### Storage
 
-- D1 tabla `d2_wishlist` (migración `migrations/0003_d2_wishlist.sql`): `(username, item_hash, weapon_name, weapon_icon_path, top_perk_hashes, found, found_at, added_at)`.
+- D1 tabla `d2_wishlist` (migración `migrations/0003_d2_wishlist.sql` + `0004_d2_wishlist_perks_json.sql` + `0005_drop_top_perk_hashes.sql`): `(username, item_hash, weapon_name, weapon_icon_path, perks_json, found, found_at, added_at)` + índice `(username, found, added_at DESC)`. Cada fila guarda 4 perks (Cañón, Cargador, Rasgo 1, Rasgo 2) en `perks_json` como `{name, hash, icon, category}` por slot.
 - R2 bucket `arthurapphub-d2-assets`: `weapons/<hash>.png` + `perks/<hash>.png`.
 
 ### Refrescar manifest (~cada season de D2)

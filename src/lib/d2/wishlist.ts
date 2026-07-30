@@ -39,8 +39,7 @@ interface D1Row {
   item_hash: string;
   weapon_name: string;
   weapon_icon_path: string;
-  perks_json: string | null;
-  top_perk_hashes: string;
+  perks_json: string;
   found: number;
   found_at: number | null;
   added_at: number;
@@ -48,21 +47,6 @@ interface D1Row {
 
 function emptyPerks(): WishlistPerks {
   return { barrel: null, magazine: null, perk1: null, perk2: null };
-}
-
-function parsePerksJson(json: string | null): WishlistPerks | null {
-  if (!json) return null;
-  try {
-    const obj = JSON.parse(json) as Partial<WishlistPerks>;
-    return {
-      barrel: obj.barrel ?? null,
-      magazine: obj.magazine ?? null,
-      perk1: obj.perk1 ?? null,
-      perk2: obj.perk2 ?? null,
-    };
-  } catch {
-    return null;
-  }
 }
 
 function stripPerk(input: unknown): WishlistPerkSlot {
@@ -78,32 +62,22 @@ function stripPerk(input: unknown): WishlistPerkSlot {
 }
 
 function toRow(r: D1Row): WishlistRow {
-  const fromJson = parsePerksJson(r.perks_json);
-  let perks: WishlistPerks;
-  if (fromJson) {
-    perks = fromJson;
-  } else {
-    let hashes: string[] = [];
-    try {
-      hashes = JSON.parse(r.top_perk_hashes);
-    } catch {
-      hashes = [];
-    }
-    perks = emptyPerks();
-    const emptyPerk: WishlistPerk = { name: '', hash: '', icon: '', category: '' };
-    if (hashes[0]) perks.perk1 = { ...emptyPerk, hash: hashes[0] };
-    if (hashes[1]) perks.perk2 = { ...emptyPerk, hash: hashes[1] };
+  const perks = emptyPerks();
+  try {
+    const obj = JSON.parse(r.perks_json) as Partial<WishlistPerks>;
+    perks.barrel = stripPerk(obj.barrel);
+    perks.magazine = stripPerk(obj.magazine);
+    perks.perk1 = stripPerk(obj.perk1);
+    perks.perk2 = stripPerk(obj.perk2);
+  } catch {
+    // perks remain empty — old data without perks_json should not exist after
+    // migration 0005, but be defensive.
   }
   return {
     itemHash: r.item_hash,
     weaponName: r.weapon_name,
     weaponIconPath: r.weapon_icon_path,
-    perks: {
-      barrel: stripPerk(perks.barrel),
-      magazine: stripPerk(perks.magazine),
-      perk1: stripPerk(perks.perk1),
-      perk2: stripPerk(perks.perk2),
-    },
+    perks,
     found: r.found === 1,
     foundAt: r.found_at,
     addedAt: r.added_at,
@@ -117,7 +91,7 @@ export async function listWishlist(
   const res = await db
     .prepare(
       `SELECT item_hash, weapon_name, weapon_icon_path, perks_json,
-              top_perk_hashes, found, found_at, added_at
+              found, found_at, added_at
        FROM d2_wishlist
        WHERE username = ?
        ORDER BY found ASC, added_at DESC`
@@ -143,9 +117,8 @@ export async function addWishlist(
       .prepare(
         `INSERT INTO d2_wishlist
            (username, item_hash, weapon_name, weapon_icon_path,
-            perks_json, top_perk_hashes,
-            found, found_at, added_at)
-         VALUES (?, ?, ?, ?, ?, ?, 0, NULL, ?)`
+            perks_json, found, found_at, added_at)
+         VALUES (?, ?, ?, ?, ?, 0, NULL, ?)`
       )
       .bind(
         username,
@@ -153,7 +126,6 @@ export async function addWishlist(
         data.weaponName,
         data.weaponIconPath,
         JSON.stringify(data.perks),
-        '[]',
         now
       )
       .run();

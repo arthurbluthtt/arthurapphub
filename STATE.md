@@ -46,7 +46,7 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + lanzador de a
 - **Selección manual de perks** (`PerkPicker`): al agregar un arma, el picker lista las perks del `perkPoolHashes` filtradas a categorías `Barrel | Magazine | Trait` (orden: barrel → mag → trait). El usuario elige 2. Fallback por nombre de la perk si `category` está vacío (no se rebuildeó el manifest).
 - **Top picks**: **eliminado**. Ya no se auto-aplican ni se importan desde lightggtodim. `data/d2/top-picks.json` y `scripts/build-d2-top-picks.mjs` borrados.
 - **Iconos**: primer hit → R2 (`arthurapphub-d2-assets` binding `D2_ASSETS`). Después cache 30 días.
-- **D1 tabla `d2_wishlist`** (migración `0003`): `(username, item_hash, weapon_name, weapon_icon_path, top_perk_hashes, found, found_at, added_at)` + índice `(username, found, added_at DESC)`. Las filas viejas (auto-tops) siguen funcionando: lookup por hash directo.
+- **D1 tabla `d2_wishlist`** (migration `0003` + `0004` + `0005`): `(username, item_hash, weapon_name, weapon_icon_path, perks_json, found, found_at, added_at)` + índice `(username, found, added_at DESC)`. Cada fila guarda 4 perks (Cañón, Cargador, Rasgo 1, Rasgo 2) en `perks_json`. El usuario tipéa el nombre del perk y el server lo busca por nombre en el manifest; si no existe, se guarda como "custom" con placeholder SVG inline.
 - **API**:
   - `GET /destiny/api/search?q=...` — top 10 armas coincidentes (case-insensitive).
   - `GET /destiny/api/weapon-perks?hash=...` — devuelve arma + perks elegibles agrupadas por categoría (para el picker).

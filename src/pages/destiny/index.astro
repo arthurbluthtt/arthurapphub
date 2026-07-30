@@ -16,9 +16,11 @@ if (!sess) {
 }
 
 type Filter = 'pending' | 'found' | 'all';
-const paramFilter = Astro.url.searchParams.get('filter') ?? 'pending';
+const paramFilter = Astro.url.searchParams.get('filter') ?? 'all';
 const currentFilter: Filter =
-  paramFilter === 'found' || paramFilter === 'all' ? paramFilter : 'pending';
+  paramFilter === 'pending' || paramFilter === 'found' || paramFilter === 'all'
+    ? paramFilter
+    : 'all';
 
 const rows = await listWishlist(env.AUTH_DB, sess.username);
 

@@ -57,7 +57,7 @@ AppHub/
 │   │   │   ├── health.ts                   # GET /api/health → status por app
 │   │   │   ├── redir.ts                    # GET /api/redir?app= → code + 302
 │   │   │   └── auth/
-│   │   │       ├── issue.ts                # POST /api/auth/issue (cookie → code)
+│   │   │       ├── issue.ts                # POST /api/auth/issue (cookie → code; sso:true)
 │   │   │       ├── exchange.ts             # POST /api/auth/exchange (code → session_token)
 │   │   │       ├── logout.ts               # POST/GET /api/auth/logout
 │   │   │       └── logout-all.ts           # POST /api/auth/logout-all (stub no-op)

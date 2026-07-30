@@ -125,7 +125,28 @@ Push a `main` en GitHub dispara `.github/workflows/deploy.yml`:
 
 ## Agregar una app nueva
 
-1. Sumar entrada en `src/data/apps.json`:
+El registro vive en un solo lugar: `src/data/apps.json`. Solo se modifica **un archivo** + la app externa implementa su endpoint `/api/auth/exchange` (si es app externa con SSO).
+
+### App interna (sin SSO — accede con cookie `hub_sess` directa)
+
+```json
+{
+  "id": "mi-app-interna",
+  "name": "Mi App",
+  "description": "Una línea explicando qué hace",
+  "url": "/mi-app",
+  "redir": "/mi-app",
+  "icon": "🚀",
+  "category": "productividad",
+  "tags": ["tag1"],
+  "featured": false,
+  "sso": false
+}
+```
+
+Si `sso` se omite o es `false`, la app es interna. La card del grid navega directo a `redir`. Si se accede manualmente y no hay sesión, la app redirige a `/?next=...` y maneja su propio gate.
+
+### App externa (con SSO — flujo exchange code)
 
 ```json
 {
@@ -137,13 +158,16 @@ Push a `main` en GitHub dispara `.github/workflows/deploy.yml`:
   "icon": "🚀",
   "category": "productividad",
   "tags": ["tag1"],
-  "featured": false
+  "featured": false,
+  "sso": true
 }
 ```
 
-2. La app debe implementar `GET /api/auth/exchange?code=...` que llame a `${HUB_URL}/api/auth/exchange` con `Authorization: Bearer ${INTERNAL_API_SECRET}` y body `{code, app: 'mi-app'}`. Recibirá `{session_token, pin_hash, expires_at}` y deberá almacenar la sesión + setear su propia cookie.
-3. Registrar el `app_id` en `ALLOWED_APPS` (en `src/pages/api/auth/issue.ts`) y `KNOWN_APPS` (en `src/pages/api/auth/exchange.ts`).
-4. Commit + push → redeploy automático.
+Con `sso: true`, el hub autoriza a la app a pedir codes (`/api/auth/issue`), consumirlos (`/api/auth/exchange`) y notificar sign-outs (`/api/auth/logout-all`). La app debe implementar `GET|POST /api/auth/exchange?code=...` que llame a `${HUB_URL}/api/auth/exchange` con `Authorization: Bearer ${INTERNAL_API_SECRET}` y body `{code, app: 'mi-app'}`. Recibirá `{session_token, pin_hash, expires_at}` y deberá almacenar la sesión + setear su propia cookie.
+
+La lista de apps con SSO se deriva automáticamente desde `apps.json` vía `lib/apps.ts → isSsoApp(id)`. No hay que tocar handlers ni sets hardcoded.
+
+Commit + push → redeploy automático.
 
 ## Features
 

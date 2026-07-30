@@ -23,12 +23,13 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
   - `/signup`: crear usuario (username + PIN, sin confirmación).
   - `/login`: shim que redirige a `/` (preserva `?next=`).
 - **API**:
-  - `POST /api/auth/issue` — cookie → code (60 s TTL, app_id a registrar cuando se sume la próxima app externa).
-  - `POST /api/auth/exchange` — Bearer `INTERNAL_API_SECRET` + `{code, app}` → `{session_token, pin_hash, expires_at}`.
+  - `POST /api/auth/issue` — cookie → code (60 s TTL). App debe tener `sso: true` en `apps.json`.
+  - `POST /api/auth/exchange` — Bearer `INTERNAL_API_SECRET` + `{code, app}` → `{session_token, pin_hash, expires_at}`. App con `sso: true`.
   - `POST/GET /api/auth/logout` — destruye sesión hub + limpia cookies (`hub_sess` y `hub_user`).
   - `POST /api/auth/logout-all` — stub simétrico (no-op; el hub no trackea sesiones por app).
-  - `GET /api/redir?app=<id>` — con sesión: code + 302 a `${app.url}/api/auth/exchange?code=...`. Sin sesión: 302 a `/login?next=...`.
+  - `GET /api/redir?app=<id>` — con sesión: code + 302 a `${app.url}/api/auth/exchange?code=...`. Sin sesión: 302 a `/login?next=...`. (No se invoca si la app tiene `redir` directo a una ruta interna.)
   - `GET /api/health` — HEAD a cada `app.url`, devuelve `{id, ok, status, ms}` con cache 5 min.
+- **Registro de apps**: una sola fuente en `src/data/apps.json`. Campo `sso: true|false`. `lib/apps.ts` exporta `getAllApps()`, `getSsoApps()`, `findApp(id)`, `isSsoApp(id)`. Los handlers SSO consultan `isSsoApp(body.app)` en vez de mantener sets hardcoded. Apps internas (D2 Wishlist) tienen `sso: false` y acceso via cookie `hub_sess` directa.
 - **Algoritmo PIN**: `PBKDF2-SHA256(pin + ":" + username + ":" + pepper, salt="arthurapphub-auth-v1", 100k iter)`. Username entra al input para evitar colisiones entre usuarios con mismo PIN.
 - **Per-app partition key**: `pin_hash_app = sha256(pin_hash_hub + ":" + app_id + ":" + pepper)`. El hub calcula; cada app lo guarda como su propia partition key.
 - **Astro v7**: usa `import { env } from "cloudflare:workers"` (no `Astro.locals.runtime.env`).

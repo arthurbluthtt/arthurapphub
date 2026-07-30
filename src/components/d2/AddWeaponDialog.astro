@@ -122,7 +122,7 @@
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
         <div
-          class="absolute z-20 mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          class="fixed z-[9999] mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           data-add-perk-suggestions
           data-add-perk-suggestions-for="barrel"
         ></div>
@@ -143,7 +143,7 @@
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
         <div
-          class="absolute z-20 mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          class="fixed z-[9999] mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           data-add-perk-suggestions
           data-add-perk-suggestions-for="magazine"
         ></div>
@@ -164,7 +164,7 @@
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
         <div
-          class="absolute z-20 mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          class="fixed z-[9999] mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           data-add-perk-suggestions
           data-add-perk-suggestions-for="perk1"
         ></div>
@@ -185,7 +185,7 @@
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
         <div
-          class="absolute z-20 mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
+          class="fixed z-[9999] mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
           data-add-perk-suggestions
           data-add-perk-suggestions-for="perk2"
         ></div>
@@ -470,15 +470,12 @@ async function pickWeapon(weaponHash, name) {
       }
     }
 
-    // Posiciona el dropdown debajo del input (position:absolute relativo
-    // al <label class="relative"> que ya lo contiene). El dialog tiene
-    // overflow-y-auto asi que no hay clipping, y el dropdown sigue
-    // naturalmente el flow del label al scrollear.
+    // Posiciona el dropdown como fixed (coordenadas de viewport) para
+    // escapar el clipping del <dialog> (que tiene overflow-y-auto).
     //
-    // Solo ajustamos ancho/offset horizontal para alinearlo al input
-    // (no al label, que es la columna completa del grid), y max-height
-    // + inversion (top<->bottom) segun el espacio disponible en el
-    // viewport: si no entra abajo, abre hacia arriba.
+    // Se invoca ANTES de remover la clase 'hidden' en renderPerkSuggestions,
+//    asi el navegador nunca ve el dropdown con position:static (causa
+    //    raiz del bug "a la mitad" en el intento anterior).
     function positionDropdown(slot) {
       const slotIndex = PERK_SLOTS.indexOf(slot);
       if (slotIndex < 0) return;
@@ -486,38 +483,29 @@ async function pickWeapon(weaponHash, name) {
       const dropdown = perkSuggestionContainers[slot];
       if (!input || !dropdown) return;
       const rect = input.getBoundingClientRect();
-      const label = input.parentElement;
-      const labelRect = label ? label.getBoundingClientRect() : rect;
       const gap = 4;
       const maxH = 288;
       const viewportH = window.innerHeight;
-      const spaceBelow = viewportH - rect.bottom - gap;
-      const spaceAbove = rect.top - gap;
+      const spaceBelow = viewportH - rect.bottom - gap - 8;
+      const spaceAbove = rect.top - gap - 8;
       const minSpace = 120;
+      const useAbove = spaceBelow < minSpace && spaceAbove > spaceBelow;
+      const width = Math.min(rect.width, window.innerWidth - 16);
+      const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.left));
 
-      // Ancho y offset horizontal: alinear al input, no al label.
-      dropdown.style.left = (rect.left - labelRect.left) + 'px';
-      dropdown.style.width = rect.width + 'px';
+      dropdown.style.position = 'fixed';
+      dropdown.style.width = width + 'px';
+      dropdown.style.left = left + 'px';
+      dropdown.style.zIndex = '9999';
 
-      // Vertical: debajo por default; arriba si no hay espacio.
-      if (spaceBelow >= minSpace) {
-        dropdown.style.top = '100%';
-        dropdown.style.bottom = 'auto';
-        dropdown.style.marginTop = gap + 'px';
-        dropdown.style.marginBottom = '0';
-        dropdown.style.maxHeight = Math.min(maxH, spaceBelow) + 'px';
-      } else if (spaceAbove > spaceBelow) {
-        dropdown.style.top = 'auto';
-        dropdown.style.bottom = '100%';
-        dropdown.style.marginTop = '0';
-        dropdown.style.marginBottom = gap + 'px';
-        dropdown.style.maxHeight = Math.min(maxH, spaceAbove) + 'px';
+      if (useAbove) {
+        const height = Math.min(maxH, spaceAbove);
+        dropdown.style.top = Math.max(8, rect.top - gap - height) + 'px';
+        dropdown.style.maxHeight = height + 'px';
       } else {
-        dropdown.style.top = '100%';
-        dropdown.style.bottom = 'auto';
-        dropdown.style.marginTop = gap + 'px';
-        dropdown.style.marginBottom = '0';
-        dropdown.style.maxHeight = Math.min(maxH, Math.max(spaceBelow, spaceAbove)) + 'px';
+        const height = Math.min(maxH, Math.max(minSpace, spaceBelow));
+        dropdown.style.top = (rect.bottom + gap) + 'px';
+        dropdown.style.maxHeight = height + 'px';
       }
     }
 
@@ -567,8 +555,8 @@ async function pickWeapon(weaponHash, name) {
           c.appendChild(btn);
         }
       }
-      c.classList.remove('hidden');
       positionDropdown(slot);
+      c.classList.remove('hidden');
     }
 
     perkInputs.forEach((el) => {

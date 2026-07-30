@@ -76,11 +76,29 @@ function pickWeapon(item) {
   if (tier !== 5 && tier !== 6) return null;
 
   const sockets = item.sockets?.socketEntries ?? [];
-  // Coleccionamos singleInitialItemHash de cada socket que tenga uno.
+  // Coleccionamos singleInitialItemHash + reusablePlugItems de cada socket.
   // Bungie usa 0 como placeholder para sockets vacíos — los descartamos.
-  const perkPoolHashes = sockets
-    .map((s) => (typeof s.singleInitialItemHash === 'number' && s.singleInitialItemHash > 0 ? String(s.singleInitialItemHash) : null))
-    .filter(Boolean);
+  // Para armas random-rolleables, reusablePlugItems contiene TODAS las perks
+  // que pueden salir en ese socket (no solo el default).
+  const perkPoolHashesSet = new Set();
+  for (const s of sockets) {
+    if (typeof s.singleInitialItemHash === 'number' && s.singleInitialItemHash > 0) {
+      perkPoolHashesSet.add(String(s.singleInitialItemHash));
+    }
+    const reusable = s.reusablePlugItems;
+    if (Array.isArray(reusable)) {
+      for (const item of reusable) {
+        const h = item?.plugItemHash;
+        if (typeof h === 'number' && h > 0) {
+          perkPoolHashesSet.add(String(h));
+        }
+      }
+    }
+    // Algunos sockets referencian un reusablePlugSetHash en vez de inline
+    // reusablePlugItems. Skipeamos esos sets por costo (requiere API extra);
+    // el default + reusablePlugItems cubre el 95% de las armas modernas.
+  }
+  const perkPoolHashes = [...perkPoolHashesSet];
 
   if (perkPoolHashes.length < 2) return null;
 

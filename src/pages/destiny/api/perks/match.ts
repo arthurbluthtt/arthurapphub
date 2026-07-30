@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { lookupSession, readCookie } from '../../../../lib/auth';
-import { findCustomPerkIcon, listCustomPerkIcons } from '../../../../lib/d2/perkIcons';
+import { listCustomPerkIcons } from '../../../../lib/d2/perkIcons';
 import { jsonOk } from '../../../../lib/internal';
 
 export const prerender = false;
@@ -23,6 +23,7 @@ interface PerkMatch {
   isCustom: boolean;
   category: string;
   source: 'wishlist' | 'custom';
+  useCount: number;
 }
 
 interface WishlistRow {
@@ -65,6 +66,30 @@ function collectUserPerks(rows: WishlistRow[]): Map<string, StoredPerk> {
   return map;
 }
 
+// Cuenta ocurrencias de cada perk en la wishlist del usuario, agrupadas
+// por nombre normalizado (sin slot — la misma perk en perk1 y perk2 cuenta
+// como dos usos).
+function countPerkUses(rows: WishlistRow[]): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const row of rows) {
+    if (!row?.perks_json) continue;
+    let parsed: Partial<Record<PerkSlot, { name?: unknown }>> | null = null;
+    try {
+      parsed = JSON.parse(row.perks_json);
+    } catch {
+      continue;
+    }
+    if (!parsed || typeof parsed !== 'object') continue;
+    for (const slot of PERK_SLOTS) {
+      const perk = parsed[slot];
+      if (!perk || typeof perk.name !== 'string' || !perk.name) continue;
+      const key = perk.name.toLowerCase();
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
 function rankMatch(name: string, q: string): number {
   const nl = name.toLowerCase();
   const ql = q.toLowerCase();
@@ -91,9 +116,8 @@ export const GET: APIRoute = async ({ request, url }) => {
   const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit') ?? 30)));
   if (!q && !slot) return jsonOk({ results: [] });
 
-  const qLower = q.toLowerCase();
   const seen = new Set<string>();
-  const results: PerkMatch[] = [];
+  const results: (PerkMatch & { _score: number })[] = [];
   const slotCategory = slot ? SLOT_TO_CATEGORY[slot] : null;
 
   // Single source of truth: perks ya tipeadas por el usuario (su wishlist).
@@ -109,10 +133,11 @@ export const GET: APIRoute = async ({ request, url }) => {
     .bind(sess.username)
     .all<WishlistRow>();
   const userPool = collectUserPerks(ownRows.results ?? []);
+  const useCounts = countPerkUses(ownRows.results ?? []);
 
   // Para chequear overrides de iconos en perks del manifest, precargamos
   // el pool de iconos custom una sola vez.
-  const customIconByName = new Map<string, { iconPath: string; category: string }>();
+  const customIconByName = new Map<string, { iconPath: string; category: string; display: string }>();
   try {
     const customs = await listCustomPerkIcons(env.AUTH_DB, sess.username);
     for (const ic of customs) {
@@ -120,6 +145,7 @@ export const GET: APIRoute = async ({ request, url }) => {
         customIconByName.set(ic.perkNameLower, {
           iconPath: ic.iconPath,
           category: ic.category,
+          display: ic.perkNameDisplay,
         });
       }
     }
@@ -174,6 +200,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       isCustom,
       category: effectiveCategory,
       source: isCustom ? 'custom' : 'wishlist',
+      useCount: useCounts.get(lowerName) ?? 0,
       _score: score,
     });
   }
@@ -182,55 +209,33 @@ export const GET: APIRoute = async ({ request, url }) => {
   // ninguna arma todavia. Asi el usuario puede elegir un icono que subio
   // sin haberlo usado antes.
   if (results.length < limit) {
-    for (const [lowerName, custom] of customIconByName) {
+    for (const [, ic] of customIconByName) {
       if (results.length >= limit) break;
-      if (seen.has(lowerName)) continue;
-      const score = rankMatch(custom.category || lowerName, q) || rankMatch(lowerName, q);
-      // Re-rank usando el display name si lo tenemos — usamos la categoria como
-      // nombre visible aproximado.
-      // Para mostrar el nombre del icono custom en este flujo, no
-      // tenemos el display name en el map; lo agregamos mas abajo por
-      // separado.
-      void score;
-      // Solo agregar si: tiene icono, tiene categoria, y (si hay slot)
-      // la categoria matchea el slot.
-      if (!custom.iconPath) continue;
-      if (!custom.category) continue;
-      if (slot && slotCategory && custom.category !== slotCategory) continue;
-      // Para mantener el display, consultamos d2_perk_icons via el listado.
-      break; // evitamos doble consulta; el listado ya esta cacheado arriba.
-    }
-    // El listado detallado para nombres custom se hace en una pasada
-    // final para no perder el display name.
-    if (results.length < limit) {
-      try {
-        const customs = await listCustomPerkIcons(env.AUTH_DB, sess.username);
-        for (const ic of customs) {
-          if (results.length >= limit) break;
-          if (!ic.iconPath || !ic.category) continue;
-          if (seen.has(ic.perkNameLower)) continue;
-          if (slot && slotCategory && ic.category !== slotCategory) continue;
-          const score = rankMatch(ic.perkNameDisplay, q);
-          if (score < 0) continue;
-          seen.add(ic.perkNameLower);
-          results.push({
-            name: ic.perkNameDisplay,
-            hash: '',
-            icon: ic.iconPath,
-            isCustom: true,
-            category: ic.category,
-            source: 'custom',
-            _score: score,
-          });
-        }
-      } catch {
-        // d2_perk_icons puede no existir; no hacer nada
-      }
+      if (seen.has(ic.display.toLowerCase())) continue;
+      if (!ic.iconPath || !ic.category) continue;
+      if (slot && slotCategory && ic.category !== slotCategory) continue;
+      const score = rankMatch(ic.display, q);
+      if (score < 0) continue;
+      seen.add(ic.display.toLowerCase());
+      results.push({
+        name: ic.display,
+        hash: '',
+        icon: ic.iconPath,
+        isCustom: true,
+        category: ic.category,
+        source: 'custom',
+        useCount: 0,
+        _score: score,
+      });
     }
   }
 
+  // Orden: por score (mejor match primero), desempate por uso
+  // descendente (las perks mas usadas primero), desempate final
+  // alfabetico para estabilidad.
   results.sort((a, b) => {
     if (a._score !== b._score) return a._score - b._score;
+    if (a.useCount !== b.useCount) return b.useCount - a.useCount;
     return a.name.localeCompare(b.name);
   });
   for (const r of results) delete r._score;

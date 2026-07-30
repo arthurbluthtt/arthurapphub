@@ -542,6 +542,7 @@ async function pickWeapon(weaponHash, name) {
           btn.innerHTML = `
             <img alt="" class="h-7 w-7 shrink-0 rounded object-contain" src="${escapeHtml(iconUrl)}" />
             <span class="flex-1 truncate text-xs">${escapeHtml(it.name)}</span>
+            ${it.useCount > 1 ? `<span class="shrink-0 rounded bg-zinc-200 px-1 text-[10px] font-medium tabular-nums text-zinc-600 dark:bg-white/10 dark:text-zinc-300" title="Usada en ${it.useCount} armas">×${it.useCount}</span>` : ''}
             ${tag ? `<span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400">${escapeHtml(tag)}</span>` : ''}
           `;
           btn.addEventListener('click', () => {

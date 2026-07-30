@@ -23,6 +23,8 @@ const currentFilter: Filter =
     ? paramFilter
     : 'all';
 
+const paramType = Astro.url.searchParams.get('type') ?? 'all';
+
 const rows = await listWishlist(env.AUTH_DB, sess.username);
 
 const resolvedRaw = await Promise.all(
@@ -40,16 +42,37 @@ const resolved = resolvedRaw.filter(
   } => x !== null
 );
 
+// Conteos status (Pendientes / Encontradas / Todas).
 const pendingCount = resolved.filter((r) => !r.resolved.found).length;
 const foundCount = resolved.filter((r) => r.resolved.found).length;
 const totalCount = resolved.length;
 
+// Conteos por tipo de arma (Hand Cannon / Auto Rifle / etc.).
+const typeCounts = new Map<string, number>();
+for (const r of resolved) {
+  const t = r.resolved.weaponType || 'Weapon';
+  typeCounts.set(t, (typeCounts.get(t) || 0) + 1);
+}
+const allTypes = [...typeCounts.entries()].sort((a, b) => {
+  const ca = a[1];
+  const cb = b[1];
+  if (cb !== ca) return cb - ca; // mas usadas primero
+  return a[0].localeCompare(b[0]);
+});
+const currentType = allTypes.find((t) => t[0] === paramType)?.[0] ?? 'all';
+
 const visible =
-  currentFilter === 'pending'
-    ? resolved.filter((r) => !r.resolved.found)
-    : currentFilter === 'found'
-      ? resolved.filter((r) => r.resolved.found)
-      : resolved;
+  resolved
+    .filter((r) =>
+      currentFilter === 'pending'
+        ? !r.resolved.found
+        : currentFilter === 'found'
+          ? r.resolved.found
+          : true
+    )
+    .filter((r) =>
+      currentType === 'all' ? true : (r.resolved.weaponType || 'Weapon') === currentType
+    );
 ---
 
 <BaseLayout title="D2 Wishlist — AppHub" contentMaxWidth="max-w-[1760px] 2xl:max-w-[2240px]">
@@ -69,31 +92,73 @@ const visible =
 
   {
     totalCount > 0 && (
-      <div
-        class="mb-4 inline-flex rounded-lg border border-zinc-200 p-1 dark:border-white/10"
-        data-filter-group
-        role="tablist"
-        aria-label="Filtrar wishlist"
-      >
-        {(['all', 'pending', 'found'] as const).map((f) => (
+      <>
+        <div
+          class="mb-2 inline-flex rounded-lg border border-zinc-200 p-1 dark:border-white/10"
+          data-filter-group
+          data-filter-status
+          role="tablist"
+          aria-label="Filtrar wishlist"
+        >
+          {(['all', 'pending', 'found'] as const).map((f) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={currentFilter === f}
+              data-filter-tab={f}
+              class:list={[
+                'rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition',
+                currentFilter === f
+                  ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
+                  : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white',
+              ]}
+            >
+              {f === 'pending' && `Pendientes (${pendingCount})`}
+              {f === 'found' && `Encontradas (${foundCount})`}
+              {f === 'all' && `Todas (${totalCount})`}
+            </button>
+          ))}
+        </div>
+
+        <div
+          class="mb-4 flex flex-wrap gap-2"
+          data-filter-group
+          data-filter-type
+          role="tablist"
+          aria-label="Filtrar por tipo de arma"
+        >
           <button
             type="button"
             role="tab"
-            aria-selected={currentFilter === f}
-            data-filter-tab={f}
+            aria-selected={currentType === 'all'}
+            data-type-tab="all"
             class:list={[
-              'rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition',
-              currentFilter === f
-                ? 'bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
-                : 'text-zinc-500 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white',
+              'rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition',
+              currentType === 'all'
+                ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900'
+                : 'border-zinc-200 text-zinc-500 hover:border-zinc-400 hover:text-zinc-900 dark:border-white/10 dark:text-zinc-500 dark:hover:border-white/30 dark:hover:text-white',
             ]}
           >
-            {f === 'pending' && `Pendientes (${pendingCount})`}
-            {f === 'found' && `Encontradas (${foundCount})`}
-            {f === 'all' && `Todas (${totalCount})`}
+            Todas ({totalCount})
           </button>
-        ))}
-      </div>
+          {allTypes.map(([typeName, count]) => (
+            <button
+              type="button"
+              role="tab"
+              aria-selected={currentType === typeName}
+              data-type-tab={typeName}
+              class:list={[
+                'rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition',
+                currentType === typeName
+                  ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900'
+                  : 'border-zinc-200 text-zinc-500 hover:border-zinc-400 hover:text-zinc-900 dark:border-white/10 dark:text-zinc-500 dark:hover:border-white/30 dark:hover:text-white',
+              ]}
+            >
+              {typeName} ({count})
+            </button>
+          ))}
+        </div>
+      </>
     )
   }
 
@@ -112,6 +177,7 @@ const visible =
           class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8"
           data-weapons-grid
           data-filter={currentFilter}
+          data-filter-type={currentType}
         >
           {visible.map(({ resolved }) => (
             <WeaponCard
@@ -119,6 +185,7 @@ const visible =
               name={resolved.name}
               iconPath={resolved.iconPath}
               perks={resolved.perks}
+              weaponType={resolved.weaponType}
               found={resolved.found}
               foundAt={resolved.foundAt}
             />
@@ -146,18 +213,17 @@ const visible =
           data-empty-state
           data-scope="filter"
         >
-          {currentFilter === 'pending' &&
-            'No tenés armas pendientes — todas encontradas.'}
-          {currentFilter === 'found' &&
-            'Ninguna marcada como encontrada todavía.'}
-          {currentFilter === 'all' && 'Tu wishlist está vacía.'}
+          {(currentFilter !== 'all' || currentType !== 'all')
+            ? 'No hay armas que coincidan con el filtro.'
+            : 'Tu wishlist está vacía.'}
         </p>
       </>
     )
   }
 
-  <script is:inline define:vars={{ initialFilter: currentFilter }}>
+  <script is:inline define:vars={{ initialFilter: currentFilter, initialType: currentType }}>
     window.currentFilter = initialFilter;
+    window.currentType = initialType;
 
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, (c) => ({
@@ -174,6 +240,7 @@ const visible =
       el.dataset.weaponCard = '';
       el.dataset.found = w.found ? '1' : '0';
       el.dataset.itemHash = w.itemHash;
+      const typeAttr = w.weaponType ? ' data-weapon-type="' + escapeHtml(w.weaponType) + '"' : '';
       el.className =
         'group relative flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-5 transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur';
       const perksHtml = SLOT_ORDER.map((slot) => {
@@ -194,6 +261,9 @@ const visible =
           </div>
         `;
       }).join('');
+      const typeLabel = w.weaponType
+        ? `<p class="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">${escapeHtml(w.weaponType)}</p>`
+        : '';
       el.innerHTML = `
         <div class="flex items-center justify-center">
           <div class="flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-white/[0.04]">
@@ -201,10 +271,14 @@ const visible =
           </div>
         </div>
         <h3 class="font-semibold text-zinc-900 dark:text-white">${escapeHtml(w.name)}</h3>
+        ${typeLabel}
         <div class="flex flex-col gap-1.5">${perksHtml}</div>
         <div class="mt-auto flex items-center justify-between gap-2 pt-1">
           <button type="button" data-toggle-found data-item-hash="${escapeHtml(w.itemHash)}" data-found="false" class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white">Marcar encontrada</button>
-          <button type="button" data-remove-weapon data-item-hash="${escapeHtml(w.itemHash)}" title="Quitar de la wishlist" aria-label="Quitar" class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400">×</button>
+          <div class="flex items-center gap-3">
+            <button type="button" data-edit-weapon data-item-hash="${escapeHtml(w.itemHash)}" class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white">editar</button>
+            <button type="button" data-remove-weapon data-item-hash="${escapeHtml(w.itemHash)}" title="Quitar de la wishlist" aria-label="Quitar" class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400">×</button>
+          </div>
         </div>
       `;
       return el;
@@ -220,7 +294,7 @@ const visible =
       }
       if (allEmpty) allEmpty.classList.add('hidden');
       if (typeof window.updateFilterCounts === 'function') window.updateFilterCounts();
-      if (typeof window.applyFilter === 'function') window.applyFilter(window.currentFilter || 'pending');
+      if (typeof window.applyFilter === 'function') window.applyFilter();
     });
 
     window.addEventListener('destiny:weapon-updated', (e) => {
@@ -232,50 +306,70 @@ const visible =
         card.replaceWith(newNode);
       }
       if (typeof window.updateFilterCounts === 'function') window.updateFilterCounts();
-      if (typeof window.applyFilter === 'function') window.applyFilter(window.currentFilter || 'pending');
+      if (typeof window.applyFilter === 'function') window.applyFilter();
     });
 
     window.addEventListener('destiny:perk-icons-changed', () => {
-      // Recargar la página para que las cards vuelvan a resolver sus perks
-      // (los nuevos iconos custom se aplican en el render server-side).
       window.location.reload();
     });
 
-    function setActiveTab(filter) {
-      document.querySelectorAll('[data-filter-tab]').forEach((tab) => {
+    function setActiveStatusTab(filter) {
+      const group = document.querySelector('[data-filter-status]');
+      if (!group) return;
+      group.querySelectorAll('[data-filter-tab]').forEach((tab) => {
         const active = tab.dataset.filterTab === filter;
         tab.setAttribute('aria-selected', String(active));
+        const baseClasses = 'rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition';
         if (active) {
-          tab.classList.add('bg-zinc-900', 'text-white', 'dark:bg-white', 'dark:text-zinc-900');
-          tab.classList.remove('text-zinc-500', 'dark:text-zinc-500');
+          tab.className = baseClasses + ' bg-zinc-900 text-white dark:bg-white dark:text-zinc-900';
         } else {
-          tab.classList.remove('bg-zinc-900', 'text-white', 'dark:bg-white', 'dark:text-zinc-900');
-          tab.classList.add('text-zinc-500', 'dark:text-zinc-500');
+          tab.className = baseClasses + ' text-zinc-500 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white';
         }
       });
     }
 
-    window.applyFilter = function applyFilter(filter) {
-      window.currentFilter = filter;
+    function setActiveTypeTab(type) {
+      const group = document.querySelector('[data-filter-type]');
+      if (!group) return;
+      group.querySelectorAll('[data-type-tab]').forEach((tab) => {
+        const active = tab.dataset.typeTab === type;
+        tab.setAttribute('aria-selected', String(active));
+        const activeCls = 'rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900';
+        const idleCls = 'rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition border-zinc-200 text-zinc-500 hover:border-zinc-400 hover:text-zinc-900 dark:border-white/10 dark:text-zinc-500 dark:hover:border-white/30 dark:hover:text-white';
+        tab.className = active ? activeCls : idleCls;
+      });
+    }
+
+    function passes(card) {
+      const statusOk =
+        window.currentFilter === 'all' ||
+        (window.currentFilter === 'pending' && card.dataset.found !== '1') ||
+        (window.currentFilter === 'found' && card.dataset.found === '1');
+      const typeOk =
+        window.currentType === 'all' ||
+        card.dataset.weaponType === window.currentType;
+      return statusOk && typeOk;
+    }
+
+    window.applyFilter = function applyFilter() {
       const grid = document.querySelector('[data-weapons-grid]');
-      if (grid) grid.dataset.filter = filter;
+      if (grid) {
+        grid.dataset.filter = window.currentFilter;
+        grid.dataset.filterType = window.currentType;
+      }
       let visible = 0;
       document.querySelectorAll('[data-weapon-card]').forEach((card) => {
-        const isFound = card.dataset.found === '1';
-        const show =
-          filter === 'all' ||
-          (filter === 'pending' && !isFound) ||
-          (filter === 'found' && isFound);
+        const show = passes(card);
         card.classList.toggle('hidden', !show);
         if (show) visible++;
       });
-      const scopedEmpty = document.querySelector('[data-empty-state][data-scope]');
+      const scopedEmpty = document.querySelector('[data-empty-state][data-scope="filter"]');
       if (scopedEmpty) {
-        const scope = scopedEmpty.dataset.scope;
-        const shouldShow = scope === filter && visible === 0;
-        scopedEmpty.classList.toggle('hidden', !shouldShow);
+        const hasFilter = window.currentFilter !== 'all' || window.currentType !== 'all';
+        scopedEmpty.classList.toggle('hidden', !(hasFilter && visible === 0));
       }
-      setActiveTab(filter);
+      setActiveStatusTab(window.currentFilter);
+      setActiveTypeTab(window.currentType);
     };
 
     window.updateFilterCounts = function updateFilterCounts() {
@@ -296,14 +390,27 @@ const visible =
       setText('all', 'Todas (' + total + ')');
     };
 
-    document.querySelector('[data-filter-group]')?.addEventListener('click', (e) => {
+    document.querySelector('[data-filter-status]')?.addEventListener('click', (e) => {
       const tab = e.target.closest('[data-filter-tab]');
       if (!tab) return;
       const filter = tab.dataset.filterTab;
+      window.currentFilter = filter;
       const url = new URL(window.location.href);
       url.searchParams.set('filter', filter);
       history.replaceState(null, '', url.toString());
-      window.applyFilter(filter);
+      window.applyFilter();
+    });
+
+    document.querySelector('[data-filter-type]')?.addEventListener('click', (e) => {
+      const tab = e.target.closest('[data-type-tab]');
+      if (!tab) return;
+      const t = tab.dataset.typeTab;
+      window.currentType = t;
+      const url = new URL(window.location.href);
+      if (t === 'all') url.searchParams.delete('type');
+      else url.searchParams.set('type', t);
+      history.replaceState(null, '', url.toString());
+      window.applyFilter();
     });
 
     document.querySelector('[data-weapons-grid]')?.addEventListener('click', async (e) => {
@@ -363,7 +470,7 @@ const visible =
           toggleBtn.classList.add('text-zinc-500', 'dark:text-zinc-500');
         }
         window.updateFilterCounts();
-        window.applyFilter(window.currentFilter);
+        window.applyFilter();
         try {
           const res = await fetch('/destiny/api/toggle-found', {
             method: 'POST',
@@ -372,7 +479,6 @@ const visible =
           });
           if (!res.ok) throw new Error('toggle failed');
         } catch {
-          // Rollback
           toggleBtn.dataset.found = String(wasFound);
           toggleBtn.textContent = wasFound ? 'Marcar pendiente' : 'Marcar encontrada';
           if (card) {
@@ -388,12 +494,12 @@ const visible =
               badge.setAttribute('aria-label', 'Encontrada');
               badge.textContent = '✓';
               card.appendChild(badge);
-            } else if (!wasFound && badge) {
+            } else if (!nowFound && badge) {
               badge.remove();
             }
           }
           window.updateFilterCounts();
-          window.applyFilter(window.currentFilter);
+          window.applyFilter();
         }
         return;
       }
@@ -418,7 +524,7 @@ const visible =
         setTimeout(() => {
           card.remove();
           window.updateFilterCounts();
-          window.applyFilter(window.currentFilter);
+          window.applyFilter();
           const grid = document.querySelector('[data-weapons-grid]');
           const totalEmpty = document.querySelector('[data-empty-state][data-scope="all"]');
           if (grid && grid.children.length === 0 && totalEmpty) {

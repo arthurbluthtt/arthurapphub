@@ -14,6 +14,7 @@ interface Props {
   name: string;
   iconPath: string;
   perks: Partial<Record<PerkSlot, PerkLite | null>>;
+  weaponType?: string;
   found: boolean;
   foundAt: number | null;
 }
@@ -26,7 +27,7 @@ const SLOT_LABELS: Record<PerkSlot, string> = {
   perk2: 'Rasgo 2',
 };
 
-const { itemHash, name, iconPath, perks, found, foundAt } = Astro.props;
+const { itemHash, name, iconPath, perks, weaponType, found, foundAt } = Astro.props;
 
 const weaponIconUrl = `/destiny/api/icon?type=weapon&hash=${itemHash}`;
 const emptyIconUrl =
@@ -84,6 +85,11 @@ const foundDateLabel = foundAt
   >
     {name}
   </h3>
+  {weaponType && (
+    <p class="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
+      {weaponType}
+    </p>
+  )}
 
   <div class="flex flex-col gap-1.5">
     {

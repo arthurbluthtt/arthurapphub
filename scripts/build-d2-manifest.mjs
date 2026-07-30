@@ -130,12 +130,26 @@ function pickWeapon(item) {
     mainPerkHashes = [];
   }
 
+  // Tomamos el último itemCategoryHash (el más específico). Bungie's
+  // itemSubType enum es poco confiable (ej. Fatebringer tiene subType=9
+  // 'Auto Rifle' cuando en verdad es Hand Cannon). Las categorías son
+  // la fuente de verdad.
+  let weaponType = 'Weapon';
+  if (item.itemCategoryHashes && item.itemCategoryHashes.length) {
+    const lastCatHash = item.itemCategoryHashes[item.itemCategoryHashes.length - 1];
+    const catDef = categoryLookup.get(lastCatHash);
+    if (catDef?.displayProperties?.name) {
+      weaponType = catDef.displayProperties.name;
+    }
+  }
+
   return {
     hash: String(item.hash),
     name: item.displayProperties.name,
     icon: item.displayProperties.icon ?? '',
     damage: DAMAGE_TYPES[item.defaultDamageType] ?? 'kinetic',
     tier: tier === 6 ? 'exotic' : 'legendary',
+    weaponType,
     perkPoolHashes,
     mainPerkHashes,
   };
@@ -152,9 +166,23 @@ function pickPerk(item) {
   };
 }
 
+let categoryLookup = new Map();
+
 async function build() {
   console.log('Fetching manifest index...');
   const manifest = await getApiJson('/Destiny2/Manifest/');
+
+  const catPath =
+    manifest.jsonWorldComponentContentPaths?.en?.DestinyItemCategoryDefinition ??
+    manifest.jsonWorldComponentPaths?.en?.DestinyItemCategoryDefinition;
+  if (catPath) {
+    console.log(`Fetching item categories (${catPath})...`);
+    const cats = await getCdnJson(catPath);
+    categoryLookup = new Map(
+      Object.entries(cats).map(([hash, def]) => [Number(hash), def])
+    );
+    console.log(`  → ${categoryLookup.size} categorias.`);
+  }
 
   const invPath =
     manifest.jsonWorldComponentContentPaths?.en?.DestinyInventoryItemDefinition ??
@@ -202,6 +230,7 @@ async function build() {
     icon: w.icon,
     damage: w.damage,
     tier: w.tier,
+    weaponType: w.weaponType,
     perkPoolHashes: w.perkPoolHashes,
     mainPerkHashes: w.mainPerkHashes,
   }));

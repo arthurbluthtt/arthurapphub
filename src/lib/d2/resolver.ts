@@ -14,6 +14,8 @@ export interface ResolvedWishlistRow {
   itemHash: string;
   name: string;
   iconPath: string;
+  weaponType: string;
+  damage: string;
   perks: Record<PerkSlot, ResolvedPerk | null>;
   found: boolean;
   foundAt: number | null;
@@ -76,6 +78,8 @@ export async function resolveWishlistRow(
     itemHash: row.itemHash,
     name: row.weaponName || weapon.name,
     iconPath: row.weaponIconPath || weapon.icon,
+    weaponType: weapon.weaponType ?? '',
+    damage: weapon.damage ?? '',
     perks,
     found: row.found,
     foundAt: row.foundAt,

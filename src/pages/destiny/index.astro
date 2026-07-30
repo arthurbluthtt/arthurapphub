@@ -54,9 +54,9 @@ const visible =
       <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
         D2 Wishlist
       </h1>
-      <p class="mt-1 text-sm text-zinc-500">
-        Tus armas favoritas de Destiny 2 con las perks más usadas de la comunidad.
-      </p>
+    <p class="mt-1 text-sm text-zinc-500">
+      Tus armas con cañón, cargador y rasgos. Vos escribís los perks, la página busca el icono.
+    </p>
     </div>
     <span class="text-xs uppercase tracking-wider text-zinc-500">
       {totalCount} {totalCount === 1 ? 'arma' : 'armas'}
@@ -114,8 +114,7 @@ const visible =
               itemHash={resolved.itemHash}
               name={resolved.name}
               iconPath={resolved.iconPath}
-              perk1={resolved.perk1 ?? { hash: '', name: '', icon: '' }}
-              perk2={resolved.perk2 ?? { hash: '', name: '', icon: '' }}
+              perks={resolved.perks}
               found={resolved.found}
               foundAt={resolved.foundAt}
             />
@@ -146,6 +145,10 @@ const visible =
       })[c]);
     }
 
+    const SLOT_ORDER = ['barrel', 'magazine', 'perk1', 'perk2'];
+    const SLOT_LABELS = { barrel: 'Cañón', magazine: 'Cargador', perk1: 'Rasgo 1', perk2: 'Rasgo 2' };
+    const EMPTY_ICON_DATA_URL = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23e4e4e7'/><text x='50%' y='58%' font-size='14' text-anchor='middle' fill='%2371717a' font-family='sans-serif'>?</text></svg>";
+
     function buildCard(w) {
       const el = document.createElement('article');
       el.dataset.weaponCard = '';
@@ -153,6 +156,21 @@ const visible =
       el.dataset.itemHash = w.itemHash;
       el.className =
         'group relative flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-5 transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur';
+      const perksHtml = SLOT_ORDER.map((slot) => {
+        const perk = w.perks && w.perks[slot];
+        if (!perk || !perk.name) return '';
+        const iconUrl = perk.hash
+          ? '/destiny/api/icon?type=perk&hash=' + encodeURIComponent(perk.hash)
+          : EMPTY_ICON_DATA_URL;
+        return `
+          <div class="flex items-center gap-2">
+            <img src="${iconUrl}" alt="${escapeHtml(perk.name)}" title="${escapeHtml(perk.name)}" loading="lazy" class="h-8 w-8 shrink-0 rounded ring-1 ring-zinc-200 dark:ring-white/10" />
+            <span class="flex-1 truncate text-xs text-zinc-600 dark:text-zinc-300">
+              <span class="font-medium uppercase tracking-wider text-[10px] text-zinc-400 dark:text-zinc-500 mr-1">${SLOT_LABELS[slot]}</span>${escapeHtml(perk.name)}
+            </span>
+          </div>
+        `;
+      }).join('');
       el.innerHTML = `
         <div class="flex items-center justify-center">
           <div class="flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-white/[0.04]">
@@ -160,10 +178,7 @@ const visible =
           </div>
         </div>
         <h3 class="font-semibold text-zinc-900 dark:text-white">${escapeHtml(w.name)}</h3>
-        <div class="flex items-center gap-2">
-          <img src="/destiny/api/icon?type=perk&hash=${encodeURIComponent(w.perk1.hash)}" alt="${escapeHtml(w.perk1.name)}" title="${escapeHtml(w.perk1.name)}" loading="lazy" class="h-10 w-10 rounded ring-1 ring-zinc-200 dark:ring-white/10" />
-          <img src="/destiny/api/icon?type=perk&hash=${encodeURIComponent(w.perk2.hash)}" alt="${escapeHtml(w.perk2.name)}" title="${escapeHtml(w.perk2.name)}" loading="lazy" class="h-10 w-10 rounded ring-1 ring-zinc-200 dark:ring-white/10" />
-        </div>
+        <div class="flex flex-col gap-1.5">${perksHtml}</div>
         <div class="mt-auto flex items-center justify-between gap-2 pt-1">
           <button type="button" data-toggle-found data-item-hash="${escapeHtml(w.itemHash)}" data-found="false" class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white">Marcar encontrada</button>
           <button type="button" data-remove-weapon data-item-hash="${escapeHtml(w.itemHash)}" title="Quitar de la wishlist" aria-label="Quitar" class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400">×</button>

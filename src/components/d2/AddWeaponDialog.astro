@@ -79,77 +79,86 @@
         <div class="truncate font-medium" data-add-weapon-name></div>
         <div class="text-xs uppercase tracking-wider text-zinc-500" data-add-weapon-meta></div>
       </div>
+      <button
+        type="button"
+        class="grid h-8 w-8 shrink-0 place-items-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
+        data-add-back-inline
+        aria-label="Cambiar arma"
+        title="Cambiar arma"
+      >
+        ←
+      </button>
     </div>
 
-    <div class="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-      <div data-add-perk-slot="0">
-        <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
-          Perk 1
-        </label>
+    <p class="mb-3 text-xs text-zinc-500">
+      Escribí el nombre de cada perk. Al guardar, la página lo busca y agrega el icono.
+    </p>
+
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <label class="block">
+        <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+          Cañón
+        </span>
         <input
           type="text"
-          placeholder="Escribí el nombre (ej. Explosive Payload)"
+          placeholder="ej. Fluted Barrel"
           autocomplete="off"
           spellcheck="false"
           autocapitalize="off"
           autocorrect="off"
-          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
           data-add-perk-input
+          data-add-perk-slot="barrel"
+          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
-        <div
-          class="mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 dark:border-white/10 dark:bg-white/[0.02]"
-          data-add-perk-suggestions
-        ></div>
-        <div
-          class="mt-1 hidden items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-2"
-          data-add-perk-chip
-        >
-          <img alt="" class="h-7 w-7 shrink-0 rounded object-contain" data-add-perk-chip-icon />
-          <span class="flex-1 truncate text-xs font-medium" data-add-perk-chip-name></span>
-          <button
-            type="button"
-            class="text-zinc-400 hover:text-red-500 dark:hover:text-red-400"
-            data-add-perk-chip-clear
-            aria-label="Quitar"
-          >
-            ×
-          </button>
-        </div>
-      </div>
-      <div data-add-perk-slot="1">
-        <label class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
-          Perk 2
-        </label>
+      </label>
+      <label class="block">
+        <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+          Cargador
+        </span>
         <input
           type="text"
-          placeholder="Escribí el nombre (ej. Firefly)"
+          placeholder="ej. Accurized Rounds"
           autocomplete="off"
           spellcheck="false"
           autocapitalize="off"
           autocorrect="off"
-          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
           data-add-perk-input
+          data-add-perk-slot="magazine"
+          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
-        <div
-          class="mt-1 hidden max-h-72 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 dark:border-white/10 dark:bg-white/[0.02]"
-          data-add-perk-suggestions
-        ></div>
-        <div
-          class="mt-1 hidden items-center gap-2 rounded-lg border border-emerald-500/40 bg-emerald-500/5 p-2"
-          data-add-perk-chip
-        >
-          <img alt="" class="h-7 w-7 shrink-0 rounded object-contain" data-add-perk-chip-icon />
-          <span class="flex-1 truncate text-xs font-medium" data-add-perk-chip-name></span>
-          <button
-            type="button"
-            class="text-zinc-400 hover:text-red-500 dark:hover:text-red-400"
-            data-add-perk-chip-clear
-            aria-label="Quitar"
-          >
-            ×
-          </button>
-        </div>
-      </div>
+      </label>
+      <label class="block">
+        <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+          Rasgo 1
+        </span>
+        <input
+          type="text"
+          placeholder="ej. Explosive Payload"
+          autocomplete="off"
+          spellcheck="false"
+          autocapitalize="off"
+          autocorrect="off"
+          data-add-perk-input
+          data-add-perk-slot="perk1"
+          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+        />
+      </label>
+      <label class="block">
+        <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+          Rasgo 2
+        </span>
+        <input
+          type="text"
+          placeholder="ej. Firefly"
+          autocomplete="off"
+          spellcheck="false"
+          autocapitalize="off"
+          autocorrect="off"
+          data-add-perk-input
+          data-add-perk-slot="perk2"
+          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+        />
+      </label>
     </div>
   </div>
 
@@ -178,21 +187,6 @@
   ></p>
 </dialog>
 
-<template data-add-perk-suggestion-template>
-  <button
-    type="button"
-    class="flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-zinc-900 hover:bg-zinc-100 dark:text-white dark:hover:bg-white/10"
-    data-add-perk-suggestion
-  >
-    <img alt="" class="h-7 w-7 shrink-0 rounded object-contain" data-add-perk-suggestion-icon />
-    <span class="flex-1 truncate text-xs" data-add-perk-suggestion-name></span>
-    <span
-      class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-zinc-500"
-      data-add-perk-suggestion-cat
-    ></span>
-  </button>
-</template>
-
 <script is:inline>
   (function () {
     const chip = document.querySelector('[data-add-weapon-chip]');
@@ -202,6 +196,7 @@
     const titleEl = dialog.querySelector('[data-add-title]');
     const subtitleEl = dialog.querySelector('[data-add-subtitle]');
     const backBtn = dialog.querySelector('[data-add-back]');
+    const backInlineBtn = dialog.querySelector('[data-add-back-inline]');
     const closeBtn = dialog.querySelector('[data-add-close]');
     const cancelBtn = dialog.querySelector('[data-add-cancel]');
     const confirmBtn = dialog.querySelector('[data-add-confirm]');
@@ -221,27 +216,14 @@
     const weaponName = dialog.querySelector('[data-add-weapon-name]');
     const weaponMeta = dialog.querySelector('[data-add-weapon-meta]');
 
-    const perkSlots = Array.from(dialog.querySelectorAll('[data-add-perk-slot]'));
-    const perkSlotInputs = perkSlots.map((s) => s.querySelector('[data-add-perk-input]'));
-    const perkSlotSuggestions = perkSlots.map((s) => s.querySelector('[data-add-perk-suggestions]'));
-    const perkSlotChips = perkSlots.map((s) => s.querySelector('[data-add-perk-chip]'));
-    const perkSlotChipIcons = perkSlots.map((s) => s.querySelector('[data-add-perk-chip-icon]'));
-    const perkSlotChipNames = perkSlots.map((s) => s.querySelector('[data-add-perk-chip-name]'));
-    const perkSlotChipClears = perkSlots.map((s) => s.querySelector('[data-add-perk-chip-clear]'));
+    const perkInputs = Array.from(dialog.querySelectorAll('[data-add-perk-input]'));
 
-    const perkSuggestionTpl = document.querySelector(
-      '[data-add-perk-suggestion-template]'
-    );
-
-    const MAX_PICKS = 2;
+    const PERK_SLOT_KEYS = ['barrel', 'magazine', 'perk1', 'perk2'];
 
     const state = {
       viewMode: 'search',
       currentWeaponHash: null,
-      perkPool: [],
-      selectedPerkBySlot: [null, null],
       weaponTimer: null,
-      perkTimers: [null, null],
       lastSearchValue: '',
     };
 
@@ -258,8 +240,8 @@
         searchView.hidden = true;
         perksView.hidden = false;
         backBtn.hidden = false;
-        titleEl.textContent = 'Elegí 2 perks';
-        subtitleEl.textContent = 'Tip: escribí parte del nombre';
+        titleEl.textContent = 'Elegí los perks';
+        subtitleEl.textContent = 'Tip: escribí el nombre exacto del perk';
         statusEl.hidden = true;
       }
     }
@@ -294,8 +276,6 @@
 
     function resetState() {
       state.currentWeaponHash = null;
-      state.perkPool = [];
-      state.selectedPerkBySlot = [null, null];
       state.lastSearchValue = '';
       input.value = '';
       clearWeaponSuggestion();
@@ -303,11 +283,7 @@
       weaponIcon.removeAttribute('src');
       weaponName.textContent = '';
       weaponMeta.textContent = '';
-      perkSlots.forEach((_, i) => {
-        perkSlotInputs[i].value = '';
-        closePerkSuggestions(i);
-        clearPerkChip(i);
-      });
+      perkInputs.forEach((el) => { el.value = ''; });
       statusEl.hidden = true;
       statusEl.textContent = '';
       confirmBtn.disabled = true;
@@ -315,85 +291,9 @@
       showView('search');
     }
 
-    function setConfirmEnabled() {
-      const both = state.selectedPerkBySlot[0] && state.selectedPerkBySlot[1];
-      confirmBtn.disabled = !both;
-    }
-
-    function clearPerkChip(slotIdx) {
-      state.selectedPerkBySlot[slotIdx] = null;
-      perkSlotChips[slotIdx].classList.add('hidden');
-      perkSlotChipIcons[slotIdx].removeAttribute('src');
-      perkSlotChipNames[slotIdx].textContent = '';
-      setConfirmEnabled();
-    }
-
-    function applyPerkSelection(slotIdx, perk) {
-      state.selectedPerkBySlot[slotIdx] = perk.hash;
-      perkSlotChips[slotIdx].classList.remove('hidden');
-      perkSlotChipIcons[slotIdx].src = '/destiny/api/icon?type=perk&hash=' + encodeURIComponent(perk.hash);
-      perkSlotChipIcons[slotIdx].alt = perk.name;
-      perkSlotChipNames[slotIdx].textContent = perk.name;
-      perkSlotInputs[slotIdx].value = perk.name;
-      closePerkSuggestions(slotIdx);
-      setConfirmEnabled();
-    }
-
-    function closePerkSuggestions(slotIdx) {
-      perkSlotSuggestions[slotIdx].innerHTML = '';
-      perkSlotSuggestions[slotIdx].classList.add('hidden');
-    }
-
-    function rankPerks(pool, q) {
-      const matches = [];
-      for (const p of pool) {
-        const name = p.name.toLowerCase();
-        if (name === q) return [p];
-        if (name.startsWith(q)) {
-          matches.push({ perk: p, score: 1 });
-          continue;
-        }
-        const idx = name.indexOf(q);
-        if (idx === -1) continue;
-        matches.push({ perk: p, score: idx + 2 });
-      }
-      matches.sort((a, b) => {
-        if (a.score !== b.score) return a.score - b.score;
-        return a.perk.name.localeCompare(b.perk.name);
-      });
-      return matches.slice(0, 50).map((m) => m.perk);
-    }
-
-    function allPerksSorted(pool) {
-      const CATEGORY_ORDER = { barrel: 0, magazine: 1, trait: 2 };
-      const sorted = pool.slice().sort((a, b) => {
-        const ca = CATEGORY_ORDER[a.categoryKey] ?? 99;
-        const cb = CATEGORY_ORDER[b.categoryKey] ?? 99;
-        if (ca !== cb) return ca - cb;
-        return a.name.localeCompare(b.name);
-      });
-      return sorted.slice(0, 50);
-    }
-
-    function renderPerkSuggestions(slotIdx, perks) {
-      const container = perkSlotSuggestions[slotIdx];
-      container.innerHTML = '';
-      if (!perks.length) {
-        container.classList.add('hidden');
-        return;
-      }
-      for (const p of perks) {
-        const node = perkSuggestionTpl.content.firstElementChild.cloneNode(true);
-        node.dataset.perkHash = p.hash;
-        node.dataset.perkName = p.name;
-        const icon = node.querySelector('[data-add-perk-suggestion-icon]');
-        icon.src = '/destiny/api/icon?type=perk&hash=' + encodeURIComponent(p.hash);
-        icon.alt = p.name;
-        node.querySelector('[data-add-perk-suggestion-name]').textContent = p.name;
-        node.querySelector('[data-add-perk-suggestion-cat]').textContent = p.categoryKey;
-        container.appendChild(node);
-      }
-      container.classList.remove('hidden');
+    function checkPerksComplete() {
+      const filled = perkInputs.every((el) => el.value.trim().length > 0);
+      confirmBtn.disabled = !filled || !state.currentWeaponHash;
     }
 
     async function searchWeapon(q) {
@@ -416,45 +316,18 @@
       }
     }
 
-    async function fetchWeaponPerks(hash) {
-      try {
-        const res = await fetch('/destiny/api/weapon-perks?hash=' + encodeURIComponent(hash));
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          showStatus(err.message || 'No se pudo cargar el arma.', true);
-          return null;
-        }
-        const data = await res.json();
-        if (data.error) {
-          showStatus(data.message || 'No se pudo cargar el arma.', true);
-          return null;
-        }
-        return data;
-      } catch {
-        showStatus('Error de red. Probá de nuevo.', true);
-        return null;
-      }
-    }
-
-    async function pickWeapon(weaponHash) {
+    async function pickWeapon(weaponHash, name) {
       if (!weaponHash) return;
       clearWeaponSuggestion();
+      state.currentWeaponHash = weaponHash;
+      weaponIcon.src = '/destiny/api/icon?type=weapon&hash=' + encodeURIComponent(weaponHash);
+      weaponIcon.alt = name || '';
+      weaponName.textContent = name || '';
+      weaponMeta.textContent = '';
       showView('perks');
-      const data = await fetchWeaponPerks(weaponHash);
-      if (!data) {
-        showView('search');
-        return;
-      }
-      state.currentWeaponHash = data.weapon.hash;
-      weaponIcon.src = '/destiny/api/icon?type=weapon&hash=' + encodeURIComponent(data.weapon.hash);
-      weaponIcon.alt = data.weapon.name;
-      weaponName.textContent = data.weapon.name;
-      const meta = [];
-      if (data.weapon.tier === 'exotic') meta.push('Exotic');
-      if (data.weapon.damage) meta.push(data.weapon.damage);
-      weaponMeta.textContent = meta.join(' · ');
-      state.perkPool = data.perks;
-      setTimeout(() => perkSlotInputs[0].focus(), 50);
+      perkInputs.forEach((el) => { el.value = ''; });
+      checkPerksComplete();
+      setTimeout(() => perkInputs[0].focus(), 50);
     }
 
     input.addEventListener('input', () => {
@@ -476,7 +349,8 @@
       if (e.key === 'Enter') {
         e.preventDefault();
         const hash = suggestionEl.dataset.weaponHash;
-        if (hash) pickWeapon(hash);
+        const name = suggestionName.textContent;
+        if (hash) pickWeapon(hash, name);
       } else if (e.key === 'Escape') {
         clearWeaponSuggestion();
       }
@@ -484,56 +358,34 @@
 
     suggestionEl.addEventListener('click', () => {
       const hash = suggestionEl.dataset.weaponHash;
-      if (hash) pickWeapon(hash);
+      const name = suggestionName.textContent;
+      if (hash) pickWeapon(hash, name);
     });
     suggestionEl.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         const hash = suggestionEl.dataset.weaponHash;
-        if (hash) pickWeapon(hash);
+        const name = suggestionName.textContent;
+        if (hash) pickWeapon(hash, name);
       }
     });
 
-    perkSlots.forEach((_, i) => {
-      perkSlotInputs[i].addEventListener('input', () => {
-        clearTimeout(state.perkTimers[i]);
-        const q = perkSlotInputs[i].value.trim();
-        if (!q) {
-          renderPerkSuggestions(i, allPerksSorted(state.perkPool));
-          return;
+    perkInputs.forEach((el) => {
+      el.addEventListener('input', checkPerksComplete);
+      el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          confirmBtn.click();
         }
-        state.perkTimers[i] = setTimeout(() => {
-          const ranked = rankPerks(state.perkPool, q.toLowerCase());
-          renderPerkSuggestions(i, ranked);
-        }, 120);
-      });
-
-      perkSlotInputs[i].addEventListener('focus', () => {
-        renderPerkSuggestions(i, allPerksSorted(state.perkPool));
-      });
-
-      perkSlotSuggestions[i].addEventListener('click', (e) => {
-        const btn = e.target.closest('[data-add-perk-suggestion]');
-        if (!btn) return;
-        const hash = btn.dataset.perkHash;
-        const name = btn.dataset.perkName;
-        applyPerkSelection(i, {
-          hash,
-          name,
-          categoryKey: state.perkPool.find((p) => p.hash === hash)?.categoryKey ?? '',
-        });
-      });
-
-      perkSlotChipClears[i].addEventListener('click', () => {
-        clearPerkChip(i);
       });
     });
 
-    backBtn.addEventListener('click', () => {
-      if (state.viewMode === 'perks') {
-        showView('search');
-      }
-    });
+    function backToSearch() {
+      if (state.viewMode === 'perks') showView('search');
+    }
+
+    backBtn.addEventListener('click', backToSearch);
+    backInlineBtn.addEventListener('click', backToSearch);
 
     closeBtn.addEventListener('click', closeDialog);
     cancelBtn.addEventListener('click', closeDialog);
@@ -559,8 +411,11 @@
 
     async function confirmAdd() {
       if (!state.currentWeaponHash) return;
-      const perks = state.selectedPerkBySlot.filter(Boolean);
-      if (perks.length !== MAX_PICKS) return;
+      const perks = {};
+      for (const el of perkInputs) {
+        const slot = el.getAttribute('data-add-perk-slot');
+        perks[slot] = { name: el.value.trim() };
+      }
       confirmBtn.disabled = true;
       cancelBtn.disabled = true;
       const originalText = confirmBtn.textContent;
@@ -571,7 +426,10 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             itemHash: state.currentWeaponHash,
-            perkHashes: perks,
+            barrel: perks.barrel,
+            magazine: perks.magazine,
+            perk1: perks.perk1,
+            perk2: perks.perk2,
           }),
         });
         if (!res.ok) {
@@ -579,7 +437,7 @@
           if (res.status === 409) {
             showStatus('Ya está en tu wishlist.', true);
           } else if (res.status === 400) {
-            showStatus(data.message || 'Perks inválidas.', true);
+            showStatus(data.message || 'Faltan perks.', true);
           } else if (res.status === 401) {
             showStatus('Sesión expirada. Recargá la página.', true);
           } else if (res.status === 404) {
@@ -590,7 +448,7 @@
           confirmBtn.disabled = false;
           cancelBtn.disabled = false;
           confirmBtn.textContent = originalText;
-          setConfirmEnabled();
+          checkPerksComplete();
           return;
         }
         const data = await res.json();
@@ -603,7 +461,7 @@
         confirmBtn.disabled = false;
         cancelBtn.disabled = false;
         confirmBtn.textContent = originalText;
-        setConfirmEnabled();
+        checkPerksComplete();
       }
     }
 
@@ -617,4 +475,3 @@
     });
   })();
 </script>
-

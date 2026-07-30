@@ -3,17 +3,53 @@ import { env } from 'cloudflare:workers';
 import { lookupSession, readCookie } from '../../../lib/auth';
 import {
   getWeapon,
-  getEligiblePerk,
-  listEligiblePerksForWeapon,
+  searchPerkByName,
 } from '../../../lib/d2/manifest';
-import { addWishlist } from '../../../lib/d2/wishlist';
+import {
+  addWishlist,
+  PERK_SLOT_LABELS,
+  PERK_SLOTS,
+  type WishlistPerk,
+  type WishlistPerks,
+  type PerkSlot,
+} from '../../../lib/d2/wishlist';
 import { internalError, jsonOk, readJsonBody } from '../../../lib/internal';
 
 export const prerender = false;
 
+interface PerkInput {
+  name?: unknown;
+}
+
 interface AddBody {
-  itemHash: string;
-  perkHashes?: [string, string];
+  itemHash?: unknown;
+  barrel?: PerkInput;
+  magazine?: PerkInput;
+  perk1?: PerkInput;
+  perk2?: PerkInput;
+}
+
+function sanitizeName(input: unknown): string {
+  if (typeof input !== 'string') return '';
+  return input.trim().slice(0, 80);
+}
+
+function resolvePerk(name: string): WishlistPerk {
+  const fromManifest = searchPerkByName(name);
+  if (fromManifest) {
+    return {
+      name: fromManifest.name,
+      hash: fromManifest.hash,
+      icon: fromManifest.icon,
+      category: fromManifest.category,
+    };
+  }
+  return {
+    name,
+    hash: '',
+    icon: '',
+    category: '',
+  };
 }
 
 export const POST: APIRoute = async ({ request }) => {
@@ -22,34 +58,40 @@ export const POST: APIRoute = async ({ request }) => {
   if (!sess) return jsonOk({ error: 'unauthenticated' }, 401);
 
   const body = await readJsonBody<AddBody>(request);
-  if (!body?.itemHash) return internalError('missing itemHash', 400);
+  if (!body?.itemHash || typeof body.itemHash !== 'string') {
+    return internalError('missing itemHash', 400);
+  }
 
   const weapon = getWeapon(body.itemHash);
   if (!weapon) return jsonOk({ error: 'weapon_not_found' }, 404);
 
-  if (!body.perkHashes || !Array.isArray(body.perkHashes) || body.perkHashes.length !== 2) {
-    return jsonOk({ error: 'missing_perks' }, 400);
-  }
-  const [perkHash1, perkHash2] = body.perkHashes;
-  if (!perkHash1 || !perkHash2 || perkHash1 === perkHash2) {
-    return jsonOk({ error: 'invalid_perks' }, 400);
-  }
+  const perks: WishlistPerks = {
+    barrel: null,
+    magazine: null,
+    perk1: null,
+    perk2: null,
+  };
 
-  const eligibility = new Set(listEligiblePerksForWeapon(weapon).map((p) => p.hash));
-  const p1 = getEligiblePerk(perkHash1);
-  const p2 = getEligiblePerk(perkHash2);
-  if (!p1 || !p2 || !eligibility.has(perkHash1) || !eligibility.has(perkHash2)) {
-    return jsonOk(
-      { error: 'perks_not_in_pool', message: 'Las perks elegidas no corresponden al pool del arma.' },
-      400
-    );
+  for (const slot of PERK_SLOTS) {
+    const raw = body[slot]?.name;
+    const sanitized = sanitizeName(raw);
+    if (!sanitized) {
+      return jsonOk(
+        {
+          error: 'missing_perk',
+          message: `Falta completar ${PERK_SLOT_LABELS[slot as PerkSlot]}.`,
+        },
+        400
+      );
+    }
+    perks[slot as PerkSlot] = resolvePerk(sanitized);
   }
 
   const result = await addWishlist(env.AUTH_DB, sess.username, {
     itemHash: weapon.hash,
     weaponName: weapon.name,
     weaponIconPath: weapon.icon,
-    topPerkHashes: [p1.hash, p2.hash],
+    perks,
   });
 
   if (result === 'duplicate') {
@@ -61,8 +103,12 @@ export const POST: APIRoute = async ({ request }) => {
       itemHash: weapon.hash,
       name: weapon.name,
       iconPath: weapon.icon,
-      perk1: { hash: p1.hash, name: p1.name, icon: p1.icon },
-      perk2: { hash: p2.hash, name: p2.name, icon: p2.icon },
+      perks: {
+        barrel: perks.barrel,
+        magazine: perks.magazine,
+        perk1: perks.perk1,
+        perk2: perks.perk2,
+      },
       found: false,
       foundAt: null,
     },

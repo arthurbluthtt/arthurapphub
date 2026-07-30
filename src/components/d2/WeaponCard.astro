@@ -1,25 +1,36 @@
 ---
+import type { PerkSlot } from '../../lib/d2/wishlist';
+
 interface PerkLite {
   hash: string;
   name: string;
   icon: string;
+  category: string;
+  isCustom?: boolean;
 }
 
 interface Props {
   itemHash: string;
   name: string;
   iconPath: string;
-  perk1: PerkLite;
-  perk2: PerkLite;
+  perks: Partial<Record<PerkSlot, PerkLite | null>>;
   found: boolean;
   foundAt: number | null;
 }
 
-const { itemHash, name, iconPath, perk1, perk2, found, foundAt } = Astro.props;
+const SLOT_ORDER: PerkSlot[] = ['barrel', 'magazine', 'perk1', 'perk2'];
+const SLOT_LABELS: Record<PerkSlot, string> = {
+  barrel: 'Cañón',
+  magazine: 'Cargador',
+  perk1: 'Rasgo 1',
+  perk2: 'Rasgo 2',
+};
+
+const { itemHash, name, iconPath, perks, found, foundAt } = Astro.props;
 
 const weaponIconUrl = `/destiny/api/icon?type=weapon&hash=${itemHash}`;
-const perk1IconUrl = `/destiny/api/icon?type=perk&hash=${perk1.hash}`;
-const perk2IconUrl = `/destiny/api/icon?type=perk&hash=${perk2.hash}`;
+const emptyIconUrl =
+  "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23e4e4e7'/><text x='50%' y='58%' font-size='14' text-anchor='middle' fill='%2371717a' font-family='sans-serif'>?</text></svg>";
 
 const foundDateLabel = foundAt
   ? new Date(foundAt).toLocaleDateString('es', {
@@ -74,21 +85,33 @@ const foundDateLabel = foundAt
     {name}
   </h3>
 
-  <div class="flex items-center gap-2">
-    <img
-      src={perk1IconUrl}
-      alt={perk1.name}
-      title={perk1.name}
-      loading="lazy"
-      class="h-10 w-10 rounded ring-1 ring-zinc-200 dark:ring-white/10"
-    />
-    <img
-      src={perk2IconUrl}
-      alt={perk2.name}
-      title={perk2.name}
-      loading="lazy"
-      class="h-10 w-10 rounded ring-1 ring-zinc-200 dark:ring-white/10"
-    />
+  <div class="flex flex-col gap-1.5">
+    {
+      SLOT_ORDER.map((slot) => {
+        const perk = perks[slot];
+        if (!perk || !perk.name) return null;
+        const iconUrl = perk.icon
+          ? `/destiny/api/icon?type=perk&hash=${encodeURIComponent(perk.hash || perk.name)}`
+          : emptyIconUrl;
+        return (
+          <div class="flex items-center gap-2" data-perk-row data-slot={slot}>
+            <img
+              src={iconUrl}
+              alt={perk.name}
+              title={perk.name}
+              loading="lazy"
+              class="h-8 w-8 shrink-0 rounded ring-1 ring-zinc-200 dark:ring-white/10"
+            />
+            <span class="flex-1 truncate text-xs text-zinc-600 dark:text-zinc-300">
+              <span class="font-medium uppercase tracking-wider text-[10px] text-zinc-400 dark:text-zinc-500 mr-1">
+                {SLOT_LABELS[slot]}
+              </span>
+              {perk.name}
+            </span>
+          </div>
+        );
+      })
+    }
   </div>
 
   <div class="mt-auto flex items-center justify-between gap-2 pt-1">

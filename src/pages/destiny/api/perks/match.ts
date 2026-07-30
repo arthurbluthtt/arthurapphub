@@ -68,10 +68,11 @@ function collectUserPerks(rows: WishlistRow[]): Map<string, StoredPerk> {
 
 // Score: 0 = exact, 1 = prefix, 2 = word-prefix, -1 = no match.
 // Substring en medio del nombre NO cuenta (asi "K" no matchea "Target Lock").
+// Si q esta vacio, matchea todo (rank 1) — util para "abrir dropdown al focus".
 function rankMatch(name: string, q: string): number {
   const nl = name.toLowerCase();
   const ql = q.toLowerCase();
-  if (!ql) return -1;
+  if (!ql) return 1;
   if (nl === ql) return 0;
   if (nl.startsWith(ql)) return 1;
   const words = nl.split(/[\s\-_/]+/).filter(Boolean);
@@ -92,7 +93,8 @@ export const GET: APIRoute = async ({ request, url }) => {
     ? (slotParam as PerkSlot)
     : null;
   const limit = Math.min(30, Math.max(1, Number(url.searchParams.get('limit') ?? 12)));
-  if (!q) return jsonOk({ results: [] });
+  // Si no hay query ni slot, devolvemos vacio (no listar todo sin contexto).
+  if (!q && !slot) return jsonOk({ results: [] });
 
   const qLower = q.toLowerCase();
   const seen = new Set<string>();
@@ -109,29 +111,41 @@ export const GET: APIRoute = async ({ request, url }) => {
   for (const [, perk] of userPool) {
     const score = rankMatch(perk.name, q);
     if (score < 0) continue;
-    if (slot && slotCategory && perk.category && perk.category !== slotCategory) continue;
-    const key = 'w:' + perk.name.toLowerCase() + '|' + (perk.category || 'unknown');
-    if (seen.has(key)) continue;
-    seen.add(key);
 
     let icon = '';
     let isCustom = false;
+    let effectiveCategory = perk.category;
     if (perk.hash) {
       icon = `/destiny/api/icon?type=perk&hash=${encodeURIComponent(perk.hash)}`;
     } else {
+      // Custom perk (saved via add.ts cuando no estaba en el manifest).
+      // Si tiene icono custom guardado en d2_perk_icons, usamos su categoria.
+      // Si no, lo ocultamos del typeahead (se mantiene tipeable manualmente).
       const custom = await findCustomPerkIcon(env.AUTH_DB, sess.username, perk.name);
-      if (custom?.iconPath) {
-        icon = custom.iconPath;
-        isCustom = true;
-      }
+      if (!custom) continue;
+      icon = custom.iconPath;
+      isCustom = true;
+      effectiveCategory = custom.category;
     }
+
+    if (
+      slot &&
+      slotCategory &&
+      effectiveCategory &&
+      effectiveCategory !== slotCategory
+    ) {
+      continue;
+    }
+    const key = 'w:' + perk.name.toLowerCase() + '|' + (effectiveCategory || 'unknown');
+    if (seen.has(key)) continue;
+    seen.add(key);
 
     results.push({
       name: perk.name,
       hash: perk.hash,
       icon,
       isCustom,
-      category: perk.category,
+      category: effectiveCategory,
       source: 'wishlist',
       _score: score,
     });

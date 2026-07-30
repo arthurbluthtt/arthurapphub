@@ -536,10 +536,8 @@
         }, 140);
       });
       el.addEventListener('focus', () => {
-        if (el.value.trim().length >= 1) {
-          const event = new Event('input');
-          el.dispatchEvent(event);
-        }
+        const event = new Event('input');
+        el.dispatchEvent(event);
       });
       el.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {

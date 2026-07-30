@@ -10,12 +10,62 @@ export const prerender = false;
 const PERK_SLOTS = ['barrel', 'magazine', 'perk1', 'perk2'] as const;
 type PerkSlot = (typeof PERK_SLOTS)[number];
 
-const SLOT_TO_CATEGORY: Record<PerkSlot, string> = {
-  barrel: 'Barrel',
-  magazine: 'Magazine',
-  perk1: 'Trait',
-  perk2: 'Trait',
+// Categorias del manifest que NUNCA son perks trackeables (cosmetic,
+// intrinsic, weapon mods, mementos, shaders). Se filtran en todos los
+// slots para que no aparezcan en el dropdown.
+const BLACKLIST_CATEGORIES = new Set<string>([
+  'Intrinsic',
+  'Weapon Ornament',
+  'Origin Trait',
+  'Enhanced Origin Trait',
+  'Weapon Mod',
+  'Enhanced Weapon Mod',
+  'Memento',
+  'Shader',
+  'Combat Flair',
+  'Resonant Material',
+  'Restore Defaults',
+]);
+
+// Categorias del manifest validas por slot. Bungie tiene muchas
+// subcategorias para armas especiales (arcos, espadas, granadas) que
+// funcionalmente son equivalentes a Barrel o Magazine pero el manifest
+// las etiqueta distinto. Aqui las mapeamos a su slot canonico:
+//   barrel: Barrel, Bowstring (arcos), Scope/Sight (snipers/scouts),
+//           Launcher Barrel (granadas), Guard (espadas), Stock/Grip/Handle
+//           (varias), Rail (linear fusions), Praxic Blade Form (swords)
+//   magazine: Magazine, Battery (fusion rifles), Arrow (arcos)
+//   perk1/perk2: Trait, Enhanced Trait
+const SLOT_CATEGORIES: Record<PerkSlot, ReadonlySet<string>> = {
+  barrel: new Set([
+    'Barrel',
+    'Bowstring',
+    'Scope',
+    'Sight',
+    'Launcher Barrel',
+    'Guard',
+    'Enhanced Guard',
+    'Stock',
+    'Grip',
+    'Grips',
+    'Handle',
+    'Tang',
+    'Rail',
+    'Praxic Blade Form',
+  ]),
+  magazine: new Set(['Magazine', 'Battery', 'Arrow']),
+  perk1: new Set(['Trait', 'Enhanced Trait']),
+  perk2: new Set(['Trait', 'Enhanced Trait']),
 };
+
+function isBlacklisted(category: string): boolean {
+  return !!category && BLACKLIST_CATEGORIES.has(category);
+}
+
+function categoryMatchesSlot(category: string, slot: PerkSlot): boolean {
+  if (!category) return false;
+  return SLOT_CATEGORIES[slot].has(category);
+}
 
 interface PerkMatch {
   name: string;
@@ -119,7 +169,6 @@ export const GET: APIRoute = async ({ request, url }) => {
 
   const seen = new Set<string>();
   const results: (PerkMatch & { _score: number })[] = [];
-  const slotCategory = slot ? SLOT_TO_CATEGORY[slot] : null;
 
   // Single source of truth: perks ya tipeadas por el usuario (su wishlist).
   // Para cada perk, resolvemos icono + categoria efectiva:
@@ -180,21 +229,17 @@ export const GET: APIRoute = async ({ request, url }) => {
       effectiveCategory = custom.category;
     }
 
-    // Filtro por categoria del slot. Las perks del wishlist tienen
-    // category normalizada al slot en que fueron guardadas (ver
-    // add.ts/update.ts), asi que perks que el usuario ya uso en
-    // un slot aparecen en ese slot. Perks cross-categoria como
-    // 'Agile Bowstring' (que Bungie categoriza como 'Trait' pero
-    // va en columna magazine de los arcos) se tipean una vez y
-    // quedan guardadas correctamente.
+    // Filtro de categoria: rechazar blacklists (Intrinsic, Weapon Ornament,
+    // Origin Trait, etc.) y aceptar solo las categorias validas para este
+    // slot. Si el usuario guardo perks en su wishlist con category
+    // normalizada al slot (ver add.ts/update.ts), esas perks pasan el
+    // filtro. Perks cross-categoria (Bowstring/Scope/Sight/Battery/Arrow
+    // etc.) se tipean una vez y quedan guardadas con categoria canonica
+    // del slot donde se pusieron.
 
-    if (
-      slot &&
-      slotCategory &&
-      effectiveCategory &&
-      effectiveCategory !== slotCategory
-    ) {
-      continue;
+    if (slot) {
+      if (effectiveCategory && isBlacklisted(effectiveCategory)) continue;
+      if (effectiveCategory && !categoryMatchesSlot(effectiveCategory, slot)) continue;
     }
 
     // Dedup por nombre (no por nombre+slot) para evitar duplicados
@@ -222,7 +267,10 @@ export const GET: APIRoute = async ({ request, url }) => {
       if (results.length >= limit) break;
       if (seen.has(ic.display.toLowerCase())) continue;
       if (!ic.iconPath || !ic.category) continue;
-      if (slot && slotCategory && ic.category !== slotCategory) continue;
+      if (slot) {
+        if (isBlacklisted(ic.category)) continue;
+        if (!categoryMatchesSlot(ic.category, slot)) continue;
+      }
       const score = rankMatch(ic.display, q);
       if (score < 0) continue;
       seen.add(ic.display.toLowerCase());
@@ -251,6 +299,13 @@ export const GET: APIRoute = async ({ request, url }) => {
       if (results.length >= limit) break;
       const lowerName = mp.name.toLowerCase();
       if (seen.has(lowerName)) continue;
+      // Mismo filtro blacklistero + slot-categoria que el userPool.
+      // Asi tipear 'incandescent' en slot barrel no trae Origin Traits
+      // del manifest, solo perks validas para barrel.
+      if (slot) {
+        if (isBlacklisted(mp.category)) continue;
+        if (!categoryMatchesSlot(mp.category, slot)) continue;
+      }
       const score = rankMatch(mp.name, q);
       if (score < 0) continue;
       const custom = customIconByName.get(lowerName);

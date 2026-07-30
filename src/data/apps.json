@@ -13,17 +13,6 @@
   ],
   "apps": [
     {
-      "id": "notes-app",
-      "name": "Notas",
-      "description": "Bloc de notas rápido y minimalista",
-      "url": "https://notes-app.arthurbluthtt.workers.dev",
-      "redir": "/api/redir?app=notes-app",
-      "icon": "📝",
-      "category": "productividad",
-      "tags": ["texto", "markdown"],
-      "featured": true
-    },
-    {
       "id": "destiny-wishlist",
       "name": "D2 Wishlist",
       "description": "Mis armas de Destiny 2 con las perks más usadas",

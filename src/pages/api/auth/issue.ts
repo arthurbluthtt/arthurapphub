@@ -9,7 +9,7 @@ interface IssueBody {
   app: string;
 }
 
-const ALLOWED_APPS = new Set(['notes-app']);
+const ALLOWED_APPS = new Set<string>([]);
 
 export const POST: APIRoute = async ({ request }) => {
   const sessionId = readCookie(request);

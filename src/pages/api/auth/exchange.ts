@@ -19,7 +19,7 @@ interface ExchangeBody {
   app: string;
 }
 
-const KNOWN_APPS = new Set(['notes-app']);
+const KNOWN_APPS = new Set<string>([]);
 
 export const POST: APIRoute = async ({ request }) => {
   if (!verifyInternal(request, env.INTERNAL_API_SECRET)) {

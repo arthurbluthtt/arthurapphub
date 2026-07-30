@@ -11,19 +11,19 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - ✅ Status dots online/offline (HEAD a cada `app.url`, cache 5 min).
 - ✅ Click en cards abre en la misma pestaña.
 - ✅ Container ancho del destiny escalado: `max-w-6xl` (default) → `max-w-[1760px]` en xl → `max-w-[2240px]` en 2xl. Header escalado progresivamente.
-- ✅ `apps.json` apunta a `https://notes-app.arthurbluthtt.workers.dev` para Notas (única app vinculada al SSO hoy).
+- ✅ `apps.json` solo incluye D2 Wishlist (única sub-app interna; las apps externas con SSO se registran cuando se necesiten).
 
 ### Identity Provider (SSO multi-app)
 
 - **D1 `arthurapphub-auth-db`** con tablas `pin_credentials` (PK `username`), `sessions`, `auth_codes`.
 - **Migraciones aplicadas**: `0001_auth_init.sql`, `0002_username.sql`.
-- **Secrets**: `AUTH_PEPPER` y `INTERNAL_API_SECRET` en `arthurapphub` y en `notes-app`. También en GH Secrets de ambos repos.
+- **Secrets**: `AUTH_PEPPER` y `INTERNAL_API_SECRET` configurados en el worker de `arthurapphub`. También en GH Secrets del repo.
 - **Páginas**:
   - `/` (`index.astro`): si no hay sesión → form de login (username + PIN). Si hay sesión → grid de apps. Title cambia según contexto.
   - `/signup`: crear usuario (username + PIN, sin confirmación).
   - `/login`: shim que redirige a `/` (preserva `?next=`).
 - **API**:
-  - `POST /api/auth/issue` — cookie → code (60 s TTL, app=`notes-app`).
+  - `POST /api/auth/issue` — cookie → code (60 s TTL, app_id a registrar cuando se sume la próxima app externa).
   - `POST /api/auth/exchange` — Bearer `INTERNAL_API_SECRET` + `{code, app}` → `{session_token, pin_hash, expires_at}`.
   - `POST/GET /api/auth/logout` — destruye sesión hub + limpia cookies (`hub_sess` y `hub_user`).
   - `POST /api/auth/logout-all` — stub simétrico (no-op; el hub no trackea sesiones por app).
@@ -100,7 +100,7 @@ Pendiente en orden de prioridad:
 1. Smoke test end-to-end final en el browser (login → /destiny → search → modal → escribir 4 perks con typeahead cross-categoría → agregar → editar perks → toggle found → filter por tipo → reload).
 2. Agregar una segunda app al SSO (5-10 líneas en la nueva app + 2 entradas en el hub).
 3. Si se quiere extender más allá del círculo personal, mejorar el handler de errores en `/api/redir` cuando el hub está caído.
-4. El `AUTH_PEPPER` de notes-app (legacy) ya no se usa — puede limpiarse del worker + GH secret.
+4. **Eliminado**: la entrada de notes-app en `apps.json` y los `app_id` en `ALLOWED_APPS` / `KNOWN_APPS` (de momento vacíos). El worker `notes-app` en Cloudflare sigue corriendo con sus datos hasta que se borre manualmente.
 
 ## Decisiones tomadas
 
@@ -122,12 +122,11 @@ Pendiente en orden de prioridad:
 
 ## Riesgos remanentes
 
-- **Hub caído**: notes-app muestra pantalla con "Ir al hub". Aceptable para uso personal.
-- **CF Bot Fight Mode** en fetch server-to-server: notes-app usa `User-Agent: arthurappnotes-internal/1.0` (no molesta).
+- **Hub caído**: cualquier app externa vinculada mostraría pantalla con "Ir al hub". Actualmente no hay apps externas registradas.
 - **Apps futuras** deben implementar `/api/auth/exchange?code=...` (5-10 líneas cada una) + registrar el `app_id` en `ALLOWED_APPS` y `KNOWN_APPS`.
 - **CSRF**: Astro v7 bloquea POST sin Origin. Login/signup/logout en el hub son formularios del mismo sitio → OK con Origin implícito del browser. Endpoints JSON (`/api/auth/issue`, `/api/auth/exchange`, `/api/auth/logout-all`) no disparan CSRF porque no son form-like.
 - **Logout no revoca sesiones de apps**: el botón "Salir" del hub solo limpia la cookie del hub; las cookies de las apps siguen vivas hasta expirar (90 días). Mejora futura: tracking de sesiones por app con `/api/auth/logout-all` real.
-- **`AUTH_PEPPER` legacy en notes-app**: ya no se usa para auth (todo viene del hub). Puede borrarse del worker + GH secret.
+- **`AUTH_PEPPER` legacy en cualquier app externa**: ya no se usa para auth (todo viene del hub). Puede borrarse del worker correspondiente + GH secret si se confirma que la app está desvinculada.
 - **`<select>` nativos**: en algunos navegadores OS es coherciano (los options nativos pueden tener contraste bajo si el SO tiene tema claro del sistema). `color-scheme: dark` en `<html>` mitiga esto en navegadores modernos (Chrome/Edge/Safari/Firefox). Fallback adicional: si un día hace falta, `appearance: none` + dropdown custom.
 
 ## Recap de credenciales actuales
@@ -148,7 +147,7 @@ Pendiente en orden de prioridad:
 
 ## Notas para retomar
 
-- Si se agrega una segunda app al SSO, basta duplicar el patrón de `src/pages/api/auth/exchange.ts` de notes-app (~30 líneas) y registrar el `app_id` en `ALLOWED_APPS` y `KNOWN_APPS` del hub.
+- Si se agrega una app externa al SSO, basta duplicar el patrón de `src/pages/api/auth/exchange.ts` (~30 líneas) y registrar el `app_id` en `ALLOWED_APPS` y `KNOWN_APPS` del hub.
 - Si el hub se rompe, `wrangler dev` localmente con `--remote` puede ayudar a debug.
 - El `session_token` que el hub emite ya viene en el formato que la app destino espera (base64Url de 32 bytes random).
 - El `pin_hash` per-app se calcula en el hub; las apps lo usan directamente como partition key.
@@ -156,4 +155,4 @@ Pendiente en orden de prioridad:
 - **D2 perks manuales**: el usuario tipéa el nombre en cada uno de los 4 inputs (Cañón/Cargador/Rasgo 1/Rasgo 2). El server normaliza la `category` al slot (no usa la del manifest), busca por nombre en el manifest y, si no existe, guarda como "custom" con placeholder SVG inline (sigue funcionando, sin error).
 - **D2 dropdown position**: el dropdown usa `position:fixed` con coordenadas del viewport (calculadas vía `getBoundingClientRect()` del input) para escapar el clipping del `<dialog>` nativo. **Atomic reveal**: `position:fixed` + coords se aplican antes de remover `hidden` para evitar que el navegador vea el dropdown con `position:static` (causaba bug "a la mitad"). Re-posicionamiento en scroll/resize del window, con filtro para no reposicionar cuando el scroll ocurre dentro del propio dropdown.
 - **D2 scroll lock**: los dialogs lockean `body.overflow:hidden` al abrir y restauran al cerrar, con compensación de scrollbar (`padding-right = scrollbarWidth`) para evitar layout shift.
-- **`AUTH_PEPPER` de notes-app es legacy**: el hub ahora deriva todo. Se puede limpiar para reducir superficie.
+- **`AUTH_PEPPER` legacy**: el hub ahora deriva todo. Se puede limpiar para reducir superficie en cualquier worker que ya no lo necesite.

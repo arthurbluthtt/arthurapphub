@@ -14,7 +14,7 @@ interface LogoutBody {
   app: string;
 }
 
-const KNOWN_APPS = new Set(['notes-app']);
+const KNOWN_APPS = new Set<string>([]);
 
 // Stub: relies on the app's own cleanup logic. The hub has no per-app session
 // store; revoking a single relying-party session is the app's responsibility.

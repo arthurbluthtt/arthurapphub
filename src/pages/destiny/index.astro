@@ -53,16 +53,16 @@ const visible =
 ---
 
 <BaseLayout title="D2 Wishlist — AppHub" contentMaxWidth="max-w-[1760px] 2xl:max-w-[2240px]">
-  <div class="mb-6 flex items-baseline justify-between">
+  <div class="mb-6 flex items-baseline justify-between gap-6">
     <div>
-      <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">
+      <h1 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl xl:text-5xl dark:text-white">
         D2 Wishlist
       </h1>
-    <p class="mt-1 text-sm text-zinc-500">
-      Tus armas con cañón, cargador y rasgos. Vos escribís los perks, la página busca el icono.
-    </p>
+      <p class="mt-2 text-sm text-zinc-500 xl:text-base">
+        Tus armas con cañón, cargador y rasgos. Vos escribís los perks, la página busca el icono.
+      </p>
     </div>
-    <span class="text-xs uppercase tracking-wider text-zinc-500">
+    <span class="text-xs uppercase tracking-wider text-zinc-500 xl:text-sm">
       {totalCount} {totalCount === 1 ? 'arma' : 'armas'}
     </span>
   </div>

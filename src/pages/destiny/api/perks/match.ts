@@ -92,10 +92,8 @@ export const GET: APIRoute = async ({ request, url }) => {
 
   for (const [, perk] of userPool) {
     if (!perk.name.toLowerCase().includes(qLower)) continue;
-    // Si se especifica slot, filtrar por la categoria del slot.
     if (slot && slotCategory && perk.category && perk.category !== slotCategory) continue;
-    // Si no hay category en el perk (custom sin icono), incluirlo igual.
-    const key = perk.name.toLowerCase() + '|' + (perk.category || 'unknown');
+    const key = 'w:' + perk.name.toLowerCase() + '|' + (perk.category || 'unknown');
     if (seen.has(key)) continue;
     seen.add(key);
 
@@ -122,13 +120,14 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (results.length >= limit) break;
   }
 
-  // 2. Iconos custom (d2_perk_icons) del usuario sin uso en armas.
+  // 2. Iconos custom (d2_perk_icons) del usuario, filtrados por categoria.
   if (results.length < limit) {
     try {
       const customs = await listCustomPerkIcons(env.AUTH_DB, sess.username);
       for (const ic of customs) {
         if (results.length >= limit) break;
         if (!ic.perkNameLower.includes(qLower)) continue;
+        if (slot && slotCategory && ic.category && ic.category !== slotCategory) continue;
         const key = 'ic:' + ic.perkNameLower;
         if (seen.has(key)) continue;
         seen.add(key);
@@ -137,7 +136,7 @@ export const GET: APIRoute = async ({ request, url }) => {
           hash: '',
           icon: ic.iconPath,
           isCustom: true,
-          category: '',
+          category: ic.category,
           source: 'custom',
         });
       }

@@ -1,14 +1,14 @@
 ---
 ---
 <dialog
-  class="backdrop:bg-zinc-900/95 dark:bg-zinc-950/95 m-auto max-h-[90vh] w-[min(640px,calc(100vw-2rem))] rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+  class="backdrop:bg-zinc-900/95 dark:bg-zinc-950/95 m-auto max-h-[90vh] w-[min(720px,calc(100vw-2rem))] rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
   data-perk-icon-dialog
 >
   <header class="flex items-center gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
     <div class="flex-1 min-w-0">
       <h2 class="font-semibold truncate">Iconos de perks custom</h2>
       <p class="text-xs uppercase tracking-wider text-zinc-500">
-        Para perks que no se encuentran en el manifest
+        Asigná tipo (Cañón / Cargador / Rasgo / ninguno) o dejá libre
       </p>
     </div>
     <button
@@ -57,6 +57,20 @@
           data-perk-icon-path
         />
       </label>
+      <label class="block">
+        <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+          Tipo del perk
+        </span>
+        <select
+          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+          data-perk-icon-category
+        >
+          <option value="">Sin tipo (aparece en Custom)</option>
+          <option value="Barrel">Cañón</option>
+          <option value="Magazine">Cargador</option>
+          <option value="Trait">Rasgo</option>
+        </select>
+      </label>
       <div class="flex items-center gap-2">
         <img alt="" class="h-10 w-10 rounded bg-zinc-100 object-contain dark:bg-white/[0.04]" data-perk-icon-preview />
         <button
@@ -100,6 +114,7 @@
     const form = dialog.querySelector('[data-perk-icon-form]');
     const nameInput = dialog.querySelector('[data-perk-icon-name]');
     const pathInput = dialog.querySelector('[data-perk-icon-path]');
+    const categoryInput = dialog.querySelector('[data-perk-icon-category]');
     const preview = dialog.querySelector('[data-perk-icon-preview]');
     const listEl = dialog.querySelector('[data-perk-icon-list]');
     const emptyEl = dialog.querySelector('[data-perk-icon-empty]');
@@ -116,6 +131,13 @@
       return String(s).replace(/[&<>"']/g, (c) => ({
         '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
       })[c]);
+    }
+
+    function categoryLabel(value) {
+      if (value === 'Barrel') return 'Cañón';
+      if (value === 'Magazine') return 'Cargador';
+      if (value === 'Trait') return 'Rasgo';
+      return 'Sin tipo';
     }
 
     function updatePreview() {
@@ -142,18 +164,52 @@
       for (const ic of icons) {
         const li = document.createElement('li');
         li.className =
-          'flex items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 text-sm dark:border-white/10 dark:bg-white/[0.02]';
+          'flex flex-wrap items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 text-sm dark:border-white/10 dark:bg-white/[0.02]';
+        const options = ['', 'Barrel', 'Magazine', 'Trait']
+          .map((v) => {
+            const label = v === '' ? 'Sin tipo' : categoryLabel(v);
+            const sel = (ic.category || '') === v ? ' selected' : '';
+            return `<option value="${escapeHtml(v)}"${sel}>${escapeHtml(label)}</option>`;
+          })
+          .join('');
         li.innerHTML = `
           <img alt="" class="h-8 w-8 shrink-0 rounded object-contain" src="${escapeHtml(ic.iconPath)}" />
-          <span class="flex-1 truncate text-xs">${escapeHtml(ic.perkName)}</span>
-          <button type="button" data-perk-icon-delete data-perk-name="${escapeHtml(ic.perkName)}" class="rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400">Quitar</button>
+          <span class="flex-1 min-w-0 truncate text-xs">${escapeHtml(ic.perkName)}</span>
+          <select class="rounded border border-zinc-200 bg-white px-1 py-0.5 text-[10px] uppercase tracking-wider dark:border-white/10 dark:bg-white/[0.04]" data-perk-icon-edit-cat data-perk-icon-edit-name="${escapeHtml(ic.perkName)}">${options}</select>
+          <button type="button" data-perk-icon-delete data-perk-icon-delete-name="${escapeHtml(ic.perkName)}" class="shrink-0 rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400">Quitar</button>
         `;
         listEl.appendChild(li);
       }
+      listEl.querySelectorAll('[data-perk-icon-edit-cat]').forEach((sel) => {
+        sel.addEventListener('change', async (e) => {
+          const target = e.target;
+          const name = target.getAttribute('data-perk-icon-edit-name');
+          const newCat = target.value;
+          if (!name) return;
+          try {
+            const res = await fetch('/destiny/api/perk-icon', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ perkName: name, setCategory: true, category: newCat }),
+            });
+            if (!res.ok) {
+              const data = await res.json().catch(() => ({}));
+              showStatus(data.message || 'No se pudo actualizar.', true);
+              await refresh();
+              return;
+            }
+            await refresh();
+            window.dispatchEvent(new CustomEvent('destiny:perk-icons-changed'));
+          } catch {
+            showStatus('Error de red.', true);
+          }
+        });
+      });
       listEl.querySelectorAll('[data-perk-icon-delete]').forEach((btn) => {
         btn.addEventListener('click', async () => {
-          const name = btn.getAttribute('data-perk-name');
+          const name = btn.getAttribute('data-perk-icon-delete-name');
           if (!name) return;
+          if (!confirm(`Quitar "${name}" del pool de iconos custom?`)) return;
           try {
             const res = await fetch('/destiny/api/perk-icon', {
               method: 'POST',
@@ -189,15 +245,16 @@
       e.preventDefault();
       const perkName = nameInput.value.trim();
       const iconPath = pathInput.value.trim();
+      const category = categoryInput.value;
       if (!perkName || !iconPath) {
-        showStatus('Completá ambos campos.', true);
+        showStatus('Completá nombre y URL del icono.', true);
         return;
       }
       try {
         const res = await fetch('/destiny/api/perk-icon', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ perkName, iconPath }),
+          body: JSON.stringify({ perkName, iconPath, category }),
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -205,6 +262,7 @@
           return;
         }
         form.reset();
+        categoryInput.value = '';
         preview.removeAttribute('src');
         await refresh();
         window.dispatchEvent(new CustomEvent('destiny:perk-icons-changed'));

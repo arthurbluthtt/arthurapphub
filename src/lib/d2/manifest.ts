@@ -81,44 +81,6 @@ export function searchPerkByName(name: string): PerkLookupResult | null {
   };
 }
 
-export function searchPerksByPartialName(
-  query: string,
-  limit = 12
-): PerkLookupResult[] {
-  const q = query.trim().toLowerCase();
-  if (!q) return [];
-  const matches: { perk: PerkLookupResult; score: number }[] = [];
-  for (const [hash, perk] of Object.entries(perks)) {
-    const name = perk?.name?.toLowerCase();
-    if (!name) continue;
-    if (name === q) {
-      matches.push({
-        perk: { hash, name: perk.name, icon: perk.icon, description: perk.description, category: perk.category },
-        score: 0,
-      });
-      continue;
-    }
-    if (name.startsWith(q)) {
-      matches.push({
-        perk: { hash, name: perk.name, icon: perk.icon, description: perk.description, category: perk.category },
-        score: 1,
-      });
-      continue;
-    }
-    const idx = name.indexOf(q);
-    if (idx === -1) continue;
-    matches.push({
-      perk: { hash, name: perk.name, icon: perk.icon, description: perk.description, category: perk.category },
-      score: idx + 2,
-    });
-  }
-  matches.sort((a, b) => {
-    if (a.score !== b.score) return a.score - b.score;
-    return a.perk.name.localeCompare(b.perk.name);
-  });
-  return matches.slice(0, limit).map((m) => m.perk);
-}
-
 export function bungieCdnUrl(iconPath: string | undefined | null): string | null {
   if (!iconPath) return null;
   return `https://www.bungie.net${iconPath}`;

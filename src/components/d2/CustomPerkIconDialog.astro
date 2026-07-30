@@ -275,6 +275,7 @@
     function openDialog() {
       refresh();
       statusEl.hidden = true;
+      lockBodyScroll();
       if (typeof dialog.showModal === 'function') dialog.showModal();
       else dialog.setAttribute('open', '');
       setTimeout(() => nameInput.focus(), 50);
@@ -283,6 +284,22 @@
     function closeDialog() {
       if (typeof dialog.close === 'function') dialog.close();
       else dialog.removeAttribute('open');
+      unlockBodyScroll();
+    }
+
+    let bodyLocked = false;
+    function lockBodyScroll() {
+      if (bodyLocked) return;
+      bodyLocked = true;
+      const sbw = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
+    }
+    function unlockBodyScroll() {
+      if (!bodyLocked) return;
+      bodyLocked = false;
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
     }
 
     chip.addEventListener('click', openDialog);

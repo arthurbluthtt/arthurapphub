@@ -356,6 +356,7 @@ function openForEdit(row) {
       weaponIcon.alt = row.name || '';
       weaponName.textContent = row.name || '';
       weaponMeta.textContent = '';
+      lockBodyScroll();
       perkInputs.forEach((el) => {
         const slot = el.getAttribute('data-add-perk-slot');
         const v = row.perks && row.perks[slot];
@@ -632,16 +633,38 @@ async function pickWeapon(weaponHash, name) {
 
     closeBtn.addEventListener('click', closeDialog);
     cancelBtn.addEventListener('click', closeDialog);
-    chip.addEventListener('click', () => {
+chip.addEventListener('click', () => {
       resetState();
+      lockBodyScroll();
       if (typeof dialog.showModal === 'function') dialog.showModal();
       else dialog.setAttribute('open', '');
       setTimeout(() => input.focus(), 50);
     });
 
-    function closeDialog() {
+function closeDialog() {
       if (typeof dialog.close === 'function') dialog.close();
       else dialog.removeAttribute('open');
+      unlockBodyScroll();
+    }
+
+    // Bloquea el scroll de la pagina principal mientras el dialog esta
+    // abierto. dialog.showModal() no bloquea el scroll del body de forma
+    // confiable en todos los navegadores cuando hay un backdrop translucido,
+    // asi que lockeamos via CSS y compensamos el ancho de la scrollbar
+    // para que el contenido no salte al abrir/cerrar.
+    let bodyLocked = false;
+    function lockBodyScroll() {
+      if (bodyLocked) return;
+      bodyLocked = true;
+      const sbw = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
+    }
+    function unlockBodyScroll() {
+      if (!bodyLocked) return;
+      bodyLocked = false;
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
     }
 
     dialog.addEventListener('click', (e) => {
@@ -715,8 +738,9 @@ async function pickWeapon(weaponHash, name) {
 
     confirmBtn.addEventListener('click', confirmAdd);
 
-    window.addEventListener('destiny:open-add-weapon', () => {
+window.addEventListener('destiny:open-add-weapon', () => {
       resetState();
+      lockBodyScroll();
       if (typeof dialog.showModal === 'function') dialog.showModal();
       else dialog.setAttribute('open', '');
       setTimeout(() => input.focus(), 50);

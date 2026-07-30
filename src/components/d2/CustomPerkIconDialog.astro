@@ -1,0 +1,240 @@
+---
+---
+<dialog
+  class="backdrop:bg-zinc-900/95 dark:bg-zinc-950/95 m-auto max-h-[90vh] w-[min(640px,calc(100vw-2rem))] rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+  data-perk-icon-dialog
+>
+  <header class="flex items-center gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
+    <div class="flex-1 min-w-0">
+      <h2 class="font-semibold truncate">Iconos de perks custom</h2>
+      <p class="text-xs uppercase tracking-wider text-zinc-500">
+        Para perks que no se encuentran en el manifest
+      </p>
+    </div>
+    <button
+      type="button"
+      class="grid h-8 w-8 place-items-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
+      data-perk-icon-close
+      aria-label="Cerrar"
+    >
+      ×
+    </button>
+  </header>
+
+  <div class="max-h-[60vh] space-y-4 overflow-y-auto p-4">
+    <form class="space-y-3" data-perk-icon-form>
+      <label class="block">
+        <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+          Nombre del perk
+        </span>
+        <input
+          type="text"
+          required
+          maxlength="80"
+          autocomplete="off"
+          spellcheck="false"
+          autocapitalize="off"
+          autocorrect="off"
+          placeholder="ej. Custom Mod XYZ"
+          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+          data-perk-icon-name
+        />
+      </label>
+      <label class="block">
+        <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
+          URL del icono
+        </span>
+        <input
+          type="url"
+          required
+          maxlength="500"
+          autocomplete="off"
+          spellcheck="false"
+          autocapitalize="off"
+          autocorrect="off"
+          placeholder="https://... o /destiny/api/..."
+          class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+          data-perk-icon-path
+        />
+      </label>
+      <div class="flex items-center gap-2">
+        <img alt="" class="h-10 w-10 rounded bg-zinc-100 object-contain dark:bg-white/[0.04]" data-perk-icon-preview />
+        <button
+          type="submit"
+          class="rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+        >
+          Guardar icono
+        </button>
+      </div>
+    </form>
+
+    <div class="border-t border-zinc-200 pt-4 dark:border-white/10">
+      <h3 class="mb-2 text-xs font-medium uppercase tracking-wider text-zinc-500">
+        Iconos guardados
+      </h3>
+      <ul class="space-y-1.5" data-perk-icon-list></ul>
+      <p
+        class="rounded-lg border border-dashed border-zinc-300 p-3 text-center text-sm text-zinc-500 dark:border-white/10"
+        data-perk-icon-empty
+        hidden
+      >
+        Sin iconos custom todavía.
+      </p>
+    </div>
+  </div>
+
+  <p
+    class="m-0 border-t border-zinc-200 px-4 py-2 text-center text-xs text-zinc-500 dark:border-white/10"
+    data-perk-icon-status
+    hidden
+  ></p>
+</dialog>
+
+<script is:inline>
+  (function () {
+    const chip = document.querySelector('[data-custom-perk-icon-chip]');
+    const dialog = document.querySelector('[data-perk-icon-dialog]');
+    if (!chip || !dialog) return;
+
+    const closeBtn = dialog.querySelector('[data-perk-icon-close]');
+    const form = dialog.querySelector('[data-perk-icon-form]');
+    const nameInput = dialog.querySelector('[data-perk-icon-name]');
+    const pathInput = dialog.querySelector('[data-perk-icon-path]');
+    const preview = dialog.querySelector('[data-perk-icon-preview]');
+    const listEl = dialog.querySelector('[data-perk-icon-list]');
+    const emptyEl = dialog.querySelector('[data-perk-icon-empty]');
+    const statusEl = dialog.querySelector('[data-perk-icon-status]');
+
+    function showStatus(msg, isError) {
+      statusEl.textContent = msg;
+      statusEl.hidden = false;
+      statusEl.classList.toggle('text-red-500', isError);
+      statusEl.classList.toggle('dark:text-red-400', isError);
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      })[c]);
+    }
+
+    function updatePreview() {
+      const path = pathInput.value.trim();
+      if (!path) {
+        preview.removeAttribute('src');
+        return;
+      }
+      preview.src = path;
+      preview.onerror = () => {
+        preview.removeAttribute('src');
+      };
+    }
+
+    pathInput.addEventListener('input', updatePreview);
+
+    function renderList(icons) {
+      listEl.innerHTML = '';
+      if (!icons.length) {
+        emptyEl.hidden = false;
+        return;
+      }
+      emptyEl.hidden = true;
+      for (const ic of icons) {
+        const li = document.createElement('li');
+        li.className =
+          'flex items-center gap-2 rounded-lg border border-zinc-200 bg-white p-2 text-sm dark:border-white/10 dark:bg-white/[0.02]';
+        li.innerHTML = `
+          <img alt="" class="h-8 w-8 shrink-0 rounded object-contain" src="${escapeHtml(ic.iconPath)}" />
+          <span class="flex-1 truncate text-xs">${escapeHtml(ic.perkName)}</span>
+          <button type="button" data-perk-icon-delete data-perk-name="${escapeHtml(ic.perkName)}" class="rounded-md px-2 py-1 text-xs text-zinc-500 hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400">Quitar</button>
+        `;
+        listEl.appendChild(li);
+      }
+      listEl.querySelectorAll('[data-perk-icon-delete]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          const name = btn.getAttribute('data-perk-name');
+          if (!name) return;
+          try {
+            const res = await fetch('/destiny/api/perk-icon', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ perkName: name, delete: true }),
+            });
+            if (!res.ok) {
+              const data = await res.json().catch(() => ({}));
+              showStatus(data.message || 'No se pudo borrar.', true);
+              return;
+            }
+            await refresh();
+            window.dispatchEvent(new CustomEvent('destiny:perk-icons-changed'));
+          } catch {
+            showStatus('Error de red.', true);
+          }
+        });
+      });
+    }
+
+    async function refresh() {
+      try {
+        const res = await fetch('/destiny/api/perk-icon');
+        if (!res.ok) return;
+        const data = await res.json();
+        renderList(data.icons || []);
+      } catch {
+        // ignore
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const perkName = nameInput.value.trim();
+      const iconPath = pathInput.value.trim();
+      if (!perkName || !iconPath) {
+        showStatus('Completá ambos campos.', true);
+        return;
+      }
+      try {
+        const res = await fetch('/destiny/api/perk-icon', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ perkName, iconPath }),
+        });
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          showStatus(data.message || 'No se pudo guardar.', true);
+          return;
+        }
+        form.reset();
+        preview.removeAttribute('src');
+        await refresh();
+        window.dispatchEvent(new CustomEvent('destiny:perk-icons-changed'));
+        showStatus('Icono guardado.', false);
+      } catch {
+        showStatus('Error de red.', true);
+      }
+    });
+
+    function openDialog() {
+      refresh();
+      statusEl.hidden = true;
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+      setTimeout(() => nameInput.focus(), 50);
+    }
+
+    function closeDialog() {
+      if (typeof dialog.close === 'function') dialog.close();
+      else dialog.removeAttribute('open');
+    }
+
+    chip.addEventListener('click', openDialog);
+    closeBtn.addEventListener('click', closeDialog);
+    dialog.addEventListener('click', (e) => {
+      if (e.target === dialog) closeDialog();
+    });
+    dialog.addEventListener('cancel', closeDialog);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dialog.open) closeDialog();
+    });
+  })();
+</script>

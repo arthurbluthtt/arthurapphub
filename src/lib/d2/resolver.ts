@@ -1,4 +1,5 @@
 import { getPerk, getWeapon } from './manifest';
+import { findCustomPerkIcon } from './perkIcons';
 import type { WishlistRow, WishlistPerk, PerkSlot } from './wishlist';
 
 export interface ResolvedPerk {
@@ -19,7 +20,11 @@ export interface ResolvedWishlistRow {
   addedAt: number;
 }
 
-function lookupPerk(p: WishlistPerk | null): ResolvedPerk | null {
+async function lookupPerk(
+  db: D1Database | null,
+  username: string | null,
+  p: WishlistPerk | null
+): Promise<ResolvedPerk | null> {
   if (!p) return null;
   if (p.hash) {
     const def = getPerk(p.hash);
@@ -33,6 +38,18 @@ function lookupPerk(p: WishlistPerk | null): ResolvedPerk | null {
       };
     }
   }
+  if (db && username) {
+    const custom = await findCustomPerkIcon(db, username, p.name);
+    if (custom?.iconPath) {
+      return {
+        hash: '',
+        name: p.name,
+        icon: custom.iconPath,
+        category: p.category || '',
+        isCustom: true,
+      };
+    }
+  }
   return {
     hash: '',
     name: p.name || '',
@@ -42,19 +59,24 @@ function lookupPerk(p: WishlistPerk | null): ResolvedPerk | null {
   };
 }
 
-export function resolveWishlistRow(row: WishlistRow): ResolvedWishlistRow | null {
+export async function resolveWishlistRow(
+  db: D1Database,
+  username: string,
+  row: WishlistRow
+): Promise<ResolvedWishlistRow | null> {
   const weapon = getWeapon(row.itemHash);
   if (!weapon) return null;
+  const perks = {
+    barrel: await lookupPerk(db, username, row.perks.barrel),
+    magazine: await lookupPerk(db, username, row.perks.magazine),
+    perk1: await lookupPerk(db, username, row.perks.perk1),
+    perk2: await lookupPerk(db, username, row.perks.perk2),
+  };
   return {
     itemHash: row.itemHash,
     name: row.weaponName || weapon.name,
     iconPath: row.weaponIconPath || weapon.icon,
-    perks: {
-      barrel: lookupPerk(row.perks.barrel),
-      magazine: lookupPerk(row.perks.magazine),
-      perk1: lookupPerk(row.perks.perk1),
-      perk2: lookupPerk(row.perks.perk2),
-    },
+    perks,
     found: row.found,
     foundAt: row.foundAt,
     addedAt: row.addedAt,

@@ -152,6 +152,40 @@ export async function removeWishlist(
   return (res.meta?.changes ?? 0) > 0;
 }
 
+export async function getWishlistRow(
+  db: D1Database,
+  username: string,
+  itemHash: string
+): Promise<WishlistRow | null> {
+  const row = await db
+    .prepare(
+      `SELECT item_hash, weapon_name, weapon_icon_path, perks_json,
+              found, found_at, added_at
+       FROM d2_wishlist
+       WHERE username = ? AND item_hash = ?
+       LIMIT 1`
+    )
+    .bind(username, itemHash)
+    .first<D1Row>();
+  if (!row) return null;
+  return toRow(row);
+}
+
+export async function updateWishlist(
+  db: D1Database,
+  username: string,
+  itemHash: string,
+  data: { perks: WishlistPerks }
+): Promise<boolean> {
+  const res = await db
+    .prepare(
+      `UPDATE d2_wishlist SET perks_json = ? WHERE username = ? AND item_hash = ?`
+    )
+    .bind(JSON.stringify(data.perks), username, itemHash)
+    .run();
+  return (res.meta?.changes ?? 0) > 0;
+}
+
 export async function toggleFound(
   db: D1Database,
   username: string,

@@ -2,6 +2,17 @@
 ---
 <button
   type="button"
+  class="fixed bottom-20 right-6 z-30 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-zinc-800 dark:text-white"
+  data-custom-perk-icon-chip
+  aria-label="Icono de perk custom"
+  title="Para perks que no se encuentran en el manifest"
+>
+  <span class="text-base leading-none">✦</span>
+  <span>Icono perk</span>
+</button>
+
+<button
+  type="button"
   class="fixed bottom-6 right-6 z-30 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl dark:border-white/10 dark:bg-zinc-800 dark:text-white"
   data-add-weapon-chip
   aria-label="Agregar arma"
@@ -11,7 +22,7 @@
 </button>
 
 <dialog
-  class="backdrop:bg-zinc-900/60 dark:bg-zinc-950/70 m-auto max-h-[90vh] w-[min(900px,calc(100vw-2rem))] rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+  class="backdrop:bg-zinc-900/95 dark:bg-zinc-950/95 m-auto max-h-[90vh] w-[min(900px,calc(100vw-2rem))] rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
   data-add-dialog
 >
   <header class="flex items-center gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
@@ -110,6 +121,11 @@
           data-add-perk-slot="barrel"
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
+        <div
+          class="mt-1 hidden max-h-44 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 dark:border-white/10 dark:bg-white/[0.02]"
+          data-add-perk-suggestions
+          data-add-perk-suggestions-for="barrel"
+        ></div>
       </label>
       <label class="block">
         <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -126,6 +142,11 @@
           data-add-perk-slot="magazine"
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
+        <div
+          class="mt-1 hidden max-h-44 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 dark:border-white/10 dark:bg-white/[0.02]"
+          data-add-perk-suggestions
+          data-add-perk-suggestions-for="magazine"
+        ></div>
       </label>
       <label class="block">
         <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -142,6 +163,11 @@
           data-add-perk-slot="perk1"
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
+        <div
+          class="mt-1 hidden max-h-44 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 dark:border-white/10 dark:bg-white/[0.02]"
+          data-add-perk-suggestions
+          data-add-perk-suggestions-for="perk1"
+        ></div>
       </label>
       <label class="block">
         <span class="mb-1 block text-xs font-medium uppercase tracking-wider text-zinc-500">
@@ -158,6 +184,11 @@
           data-add-perk-slot="perk2"
           class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
         />
+        <div
+          class="mt-1 hidden max-h-44 overflow-y-auto rounded-lg border border-zinc-200 bg-white p-1 dark:border-white/10 dark:bg-white/[0.02]"
+          data-add-perk-suggestions
+          data-add-perk-suggestions-for="perk2"
+        ></div>
       </label>
     </div>
   </div>
@@ -217,18 +248,37 @@
     const weaponMeta = dialog.querySelector('[data-add-weapon-meta]');
 
     const perkInputs = Array.from(dialog.querySelectorAll('[data-add-perk-input]'));
+    const perkSuggestionContainers = {};
+    perkInputs.forEach((el) => {
+      const slot = el.getAttribute('data-add-perk-slot');
+      perkSuggestionContainers[slot] = dialog.querySelector(
+        `[data-add-perk-suggestions-for="${slot}"]`
+      );
+    });
 
     const PERK_SLOT_KEYS = ['barrel', 'magazine', 'perk1', 'perk2'];
+    const perkMatchTimers = {};
 
     const state = {
       viewMode: 'search',
+      mode: 'add',
       currentWeaponHash: null,
+      currentWeaponName: '',
       weaponTimer: null,
       lastSearchValue: '',
     };
 
     function showView(mode) {
       state.viewMode = mode;
+      if (state.mode === 'edit') {
+        searchView.hidden = true;
+        perksView.hidden = false;
+        backBtn.hidden = true;
+        titleEl.textContent = 'Editar perks';
+        subtitleEl.textContent = 'Modificá los nombres y guardá';
+        statusEl.hidden = true;
+        return;
+      }
       if (mode === 'search') {
         searchView.hidden = false;
         perksView.hidden = true;
@@ -276,6 +326,8 @@
 
     function resetState() {
       state.currentWeaponHash = null;
+      state.currentWeaponName = '';
+      state.mode = 'add';
       state.lastSearchValue = '';
       input.value = '';
       clearWeaponSuggestion();
@@ -289,6 +341,28 @@
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Agregar';
       showView('search');
+    }
+
+    function openForEdit(row) {
+      resetState();
+      state.mode = 'edit';
+      state.currentWeaponHash = row.itemHash;
+      state.currentWeaponName = row.name || '';
+      weaponIcon.src = '/destiny/api/icon?type=weapon&hash=' + encodeURIComponent(row.itemHash);
+      weaponIcon.alt = row.name || '';
+      weaponName.textContent = row.name || '';
+      weaponMeta.textContent = '';
+      perkInputs.forEach((el) => {
+        const slot = el.getAttribute('data-add-perk-slot');
+        const v = row.perks && row.perks[slot];
+        el.value = typeof v === 'string' ? v : '';
+      });
+      confirmBtn.textContent = 'Guardar';
+      checkPerksComplete();
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else dialog.setAttribute('open', '');
+      showView('perks');
+      setTimeout(() => perkInputs[0].focus(), 50);
     }
 
     function checkPerksComplete() {
@@ -370,12 +444,89 @@
       }
     });
 
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      })[c]);
+    }
+
+    function closePerkSuggestions(slot) {
+      const c = perkSuggestionContainers[slot];
+      if (c) {
+        c.innerHTML = '';
+        c.classList.add('hidden');
+      }
+    }
+
+    function renderPerkSuggestions(slot, items) {
+      const c = perkSuggestionContainers[slot];
+      if (!c) return;
+      c.innerHTML = '';
+      if (!items.length) {
+        c.classList.add('hidden');
+        return;
+      }
+      for (const it of items) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className =
+          'flex w-full cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-zinc-900 hover:bg-zinc-100 dark:text-white dark:hover:bg-white/10';
+        btn.dataset.name = it.name;
+        const iconUrl = it.icon || "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%23e4e4e7'/></svg>";
+        const catLabel = it.isCustom ? 'custom' : (it.category || '');
+        btn.innerHTML = `
+          <img alt="" class="h-7 w-7 shrink-0 rounded object-contain" src="${escapeHtml(iconUrl)}" />
+          <span class="flex-1 truncate text-xs">${escapeHtml(it.name)}</span>
+          ${catLabel ? `<span class="shrink-0 text-[10px] font-medium uppercase tracking-wider text-zinc-500">${escapeHtml(catLabel)}</span>` : ''}
+        `;
+        btn.addEventListener('click', () => {
+          el.value = it.name;
+          closePerkSuggestions(slot);
+          checkPerksComplete();
+        });
+        c.appendChild(btn);
+      }
+      c.classList.remove('hidden');
+    }
+
     perkInputs.forEach((el) => {
-      el.addEventListener('input', checkPerksComplete);
+      const slot = el.getAttribute('data-add-perk-slot');
+      el.addEventListener('input', () => {
+        checkPerksComplete();
+        clearTimeout(perkMatchTimers[slot]);
+        const q = el.value.trim();
+        if (!q) {
+          closePerkSuggestions(slot);
+          return;
+        }
+        perkMatchTimers[slot] = setTimeout(async () => {
+          try {
+            const res = await fetch(
+              '/destiny/api/perks/match?q=' + encodeURIComponent(q) + '&limit=8'
+            );
+            if (!res.ok) {
+              closePerkSuggestions(slot);
+              return;
+            }
+            const data = await res.json();
+            renderPerkSuggestions(slot, data.results || []);
+          } catch {
+            closePerkSuggestions(slot);
+          }
+        }, 140);
+      });
+      el.addEventListener('focus', () => {
+        if (el.value.trim().length >= 1) {
+          const event = new Event('input');
+          el.dispatchEvent(event);
+        }
+      });
       el.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
           confirmBtn.click();
+        } else if (e.key === 'Escape') {
+          closePerkSuggestions(slot);
         }
       });
     });
@@ -419,9 +570,11 @@
       confirmBtn.disabled = true;
       cancelBtn.disabled = true;
       const originalText = confirmBtn.textContent;
-      confirmBtn.textContent = 'Agregando…';
+      const isEdit = state.mode === 'edit';
+      confirmBtn.textContent = isEdit ? 'Guardando…' : 'Agregando…';
+      const endpoint = isEdit ? '/destiny/api/update' : '/destiny/api/add';
       try {
-        const res = await fetch('/destiny/api/add', {
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -443,7 +596,7 @@
           } else if (res.status === 404) {
             showStatus('Arma no encontrada.', true);
           } else {
-            showStatus(data.message || 'Error al agregar.', true);
+            showStatus(data.message || (isEdit ? 'Error al guardar.' : 'Error al agregar.'), true);
           }
           confirmBtn.disabled = false;
           cancelBtn.disabled = false;
@@ -454,7 +607,10 @@
         const data = await res.json();
         closeDialog();
         window.dispatchEvent(
-          new CustomEvent('destiny:weapon-added', { detail: data.weapon })
+          new CustomEvent(
+            isEdit ? 'destiny:weapon-updated' : 'destiny:weapon-added',
+            { detail: data.weapon }
+          )
         );
       } catch {
         showStatus('Error de red. Probá de nuevo.', true);
@@ -472,6 +628,12 @@
       if (typeof dialog.showModal === 'function') dialog.showModal();
       else dialog.setAttribute('open', '');
       setTimeout(() => input.focus(), 50);
+    });
+
+    window.addEventListener('destiny:edit-weapon', (e) => {
+      const row = e && e.detail;
+      if (!row || !row.itemHash) return;
+      openForEdit(row);
     });
   })();
 </script>

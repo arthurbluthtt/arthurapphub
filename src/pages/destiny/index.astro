@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import WeaponCard from '../../components/d2/WeaponCard.astro';
 import AddWeaponDialog from '../../components/d2/AddWeaponDialog.astro';
+import CustomPerkIconDialog from '../../components/d2/CustomPerkIconDialog.astro';
 import { lookupSession, readCookie } from '../../lib/auth';
 import { listWishlist } from '../../lib/d2/wishlist';
 import { resolveWishlistRow } from '../../lib/d2/resolver';
@@ -24,19 +25,20 @@ const currentFilter: Filter =
 
 const rows = await listWishlist(env.AUTH_DB, sess.username);
 
-const resolved = rows
-  .map((row) => {
-    const r = resolveWishlistRow(row);
+const resolvedRaw = await Promise.all(
+  rows.map(async (row) => {
+    const r = await resolveWishlistRow(env.AUTH_DB, sess.username, row);
     return r ? { row, resolved: r } : null;
   })
-  .filter(
-    (
-      x
-    ): x is {
-      row: typeof rows[number];
-      resolved: NonNullable<ReturnType<typeof resolveWishlistRow>>;
-    } => x !== null
-  );
+);
+const resolved = resolvedRaw.filter(
+  (
+    x
+  ): x is {
+    row: typeof rows[number];
+    resolved: NonNullable<Awaited<ReturnType<typeof resolveWishlistRow>>>;
+  } => x !== null
+);
 
 const pendingCount = resolved.filter((r) => !r.resolved.found).length;
 const foundCount = resolved.filter((r) => r.resolved.found).length;
@@ -121,6 +123,22 @@ const visible =
               foundAt={resolved.foundAt}
             />
           ))}
+          <script
+            type="application/json"
+            id="d2-rows"
+            set:html={JSON.stringify(
+              visible.map((v) => ({
+                itemHash: v.resolved.itemHash,
+                name: v.resolved.name,
+                perks: {
+                  barrel: v.resolved.perks.barrel?.name ?? '',
+                  magazine: v.resolved.perks.magazine?.name ?? '',
+                  perk1: v.resolved.perks.perk1?.name ?? '',
+                  perk2: v.resolved.perks.perk2?.name ?? '',
+                },
+              }))
+            )}
+          />
         </div>
 
         <p
@@ -161,9 +179,12 @@ const visible =
       const perksHtml = SLOT_ORDER.map((slot) => {
         const perk = w.perks && w.perks[slot];
         if (!perk || !perk.name) return '';
-        const iconUrl = perk.hash
-          ? '/destiny/api/icon?type=perk&hash=' + encodeURIComponent(perk.hash)
-          : EMPTY_ICON_DATA_URL;
+        let iconUrl = EMPTY_ICON_DATA_URL;
+        if (perk.icon) {
+          iconUrl = (perk.hash && perk.icon.startsWith('/'))
+            ? '/destiny/api/icon?type=perk&hash=' + encodeURIComponent(perk.hash)
+            : perk.icon;
+        }
         return `
           <div class="flex items-center gap-2">
             <img src="${iconUrl}" alt="${escapeHtml(perk.name)}" title="${escapeHtml(perk.name)}" loading="lazy" class="h-8 w-8 shrink-0 rounded ring-1 ring-zinc-200 dark:ring-white/10" />
@@ -200,6 +221,24 @@ const visible =
       if (allEmpty) allEmpty.classList.add('hidden');
       if (typeof window.updateFilterCounts === 'function') window.updateFilterCounts();
       if (typeof window.applyFilter === 'function') window.applyFilter(window.currentFilter || 'pending');
+    });
+
+    window.addEventListener('destiny:weapon-updated', (e) => {
+      const updated = e && e.detail;
+      if (!updated) return;
+      const card = document.querySelector('[data-weapon-card][data-item-hash="' + CSS.escape(updated.itemHash) + '"]');
+      if (card) {
+        const newNode = buildCard(updated);
+        card.replaceWith(newNode);
+      }
+      if (typeof window.updateFilterCounts === 'function') window.updateFilterCounts();
+      if (typeof window.applyFilter === 'function') window.applyFilter(window.currentFilter || 'pending');
+    });
+
+    window.addEventListener('destiny:perk-icons-changed', () => {
+      // Recargar la página para que las cards vuelvan a resolver sus perks
+      // (los nuevos iconos custom se aplican en el render server-side).
+      window.location.reload();
     });
 
     function setActiveTab(filter) {
@@ -268,6 +307,26 @@ const visible =
     });
 
     document.querySelector('[data-weapons-grid]')?.addEventListener('click', async (e) => {
+      const editBtn = e.target.closest('[data-edit-weapon]');
+      if (editBtn) {
+        e.preventDefault();
+        const itemHash = editBtn.dataset.itemHash;
+        const rowsScript = document.getElementById('d2-rows');
+        if (!rowsScript) return;
+        let rows = [];
+        try {
+          rows = JSON.parse(rowsScript.textContent || '[]');
+        } catch {
+          rows = [];
+        }
+        const row = rows.find((r) => r.itemHash === itemHash);
+        if (row) {
+          window.dispatchEvent(
+            new CustomEvent('destiny:edit-weapon', { detail: row })
+          );
+        }
+        return;
+      }
       const toggleBtn = e.target.closest('[data-toggle-found]');
       const removeBtn = e.target.closest('[data-remove-weapon]');
       if (toggleBtn) {
@@ -372,4 +431,5 @@ const visible =
   </script>
 
   <AddWeaponDialog />
+  <CustomPerkIconDialog />
 </BaseLayout>

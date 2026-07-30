@@ -87,13 +87,19 @@ const foundDateLabel = foundAt
 
   <div class="flex flex-col gap-1.5">
     {
-      SLOT_ORDER.map((slot) => {
-        const perk = perks[slot];
-        if (!perk || !perk.name) return null;
-        const iconUrl = perk.icon
-          ? `/destiny/api/icon?type=perk&hash=${encodeURIComponent(perk.hash || perk.name)}`
-          : emptyIconUrl;
-        return (
+    SLOT_ORDER.map((slot) => {
+      const perk = perks[slot];
+      if (!perk || !perk.name) return null;
+      let iconUrl = emptyIconUrl;
+      if (perk.icon) {
+        // Custom icons may be external URLs (R2/Bungie/external).
+        // Built-in perks use the icon proxy endpoint that caches in R2.
+        iconUrl =
+          perk.hash && perk.icon.startsWith('/')
+            ? `/destiny/api/icon?type=perk&hash=${encodeURIComponent(perk.hash)}`
+            : perk.icon;
+      }
+      return (
           <div class="flex items-center gap-2" data-perk-row data-slot={slot}>
             <img
               src={iconUrl}
@@ -124,15 +130,27 @@ const foundDateLabel = foundAt
     >
       {found ? 'Marcar pendiente' : 'Marcar encontrada'}
     </button>
-    <button
-      type="button"
-      class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400"
-      data-remove-weapon
-      data-item-hash={itemHash}
-      title="Quitar de la wishlist"
-      aria-label="Quitar"
-    >
-      ×
-    </button>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white"
+        data-edit-weapon
+        data-item-hash={itemHash}
+        title="Editar perks"
+        aria-label="Editar perks"
+      >
+        editar
+      </button>
+      <button
+        type="button"
+        class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400"
+        data-remove-weapon
+        data-item-hash={itemHash}
+        title="Quitar de la wishlist"
+        aria-label="Quitar"
+      >
+        ×
+      </button>
+    </div>
   </div>
 </article>

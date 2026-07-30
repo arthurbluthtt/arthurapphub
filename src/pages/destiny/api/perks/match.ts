@@ -23,6 +23,7 @@ interface PerkMatch {
   isCustom: boolean;
   category: string;
   source: 'wishlist' | 'custom';
+  _score: number;
 }
 
 interface WishlistRow {
@@ -65,6 +66,21 @@ function collectUserPerks(rows: WishlistRow[]): Map<string, StoredPerk> {
   return map;
 }
 
+// Score: 0 = exact, 1 = prefix, 2 = word-prefix, -1 = no match.
+// Substring en medio del nombre NO cuenta (asi "K" no matchea "Target Lock").
+function rankMatch(name: string, q: string): number {
+  const nl = name.toLowerCase();
+  const ql = q.toLowerCase();
+  if (!ql) return -1;
+  if (nl === ql) return 0;
+  if (nl.startsWith(ql)) return 1;
+  const words = nl.split(/[\s\-_/]+/).filter(Boolean);
+  for (const w of words) {
+    if (w.startsWith(ql)) return 2;
+  }
+  return -1;
+}
+
 export const GET: APIRoute = async ({ request, url }) => {
   const sessionId = readCookie(request);
   const sess = sessionId ? await lookupSession(env.AUTH_DB, sessionId) : null;
@@ -91,7 +107,8 @@ export const GET: APIRoute = async ({ request, url }) => {
   const userPool = collectUserPerks(ownRows.results ?? []);
 
   for (const [, perk] of userPool) {
-    if (!perk.name.toLowerCase().includes(qLower)) continue;
+    const score = rankMatch(perk.name, q);
+    if (score < 0) continue;
     if (slot && slotCategory && perk.category && perk.category !== slotCategory) continue;
     const key = 'w:' + perk.name.toLowerCase() + '|' + (perk.category || 'unknown');
     if (seen.has(key)) continue;
@@ -116,6 +133,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       isCustom,
       category: perk.category,
       source: 'wishlist',
+      _score: score,
     });
     if (results.length >= limit) break;
   }
@@ -126,7 +144,8 @@ export const GET: APIRoute = async ({ request, url }) => {
       const customs = await listCustomPerkIcons(env.AUTH_DB, sess.username);
       for (const ic of customs) {
         if (results.length >= limit) break;
-        if (!ic.perkNameLower.includes(qLower)) continue;
+        const score = rankMatch(ic.perkNameDisplay, q);
+        if (score < 0) continue;
         if (slot && slotCategory && ic.category && ic.category !== slotCategory) continue;
         const key = 'ic:' + ic.perkNameLower;
         if (seen.has(key)) continue;
@@ -138,6 +157,7 @@ export const GET: APIRoute = async ({ request, url }) => {
           isCustom: true,
           category: ic.category,
           source: 'custom',
+          _score: score,
         });
       }
     } catch {
@@ -145,7 +165,11 @@ export const GET: APIRoute = async ({ request, url }) => {
     }
   }
 
-  results.sort((a, b) => a.name.localeCompare(b.name));
+  results.sort((a, b) => {
+    if (a._score !== b._score) return a._score - b._score;
+    return a.name.localeCompare(b.name);
+  });
+  for (const r of results) delete r._score;
 
   // Agrupar para que el cliente renderice secciones (Cañón / Cargador / Rasgo / Custom).
   const groups: Record<string, { key: string; label: string; perks: PerkMatch[] }> = {

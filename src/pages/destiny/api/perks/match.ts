@@ -23,7 +23,6 @@ interface PerkMatch {
   isCustom: boolean;
   category: string;
   source: 'wishlist' | 'custom';
-  _score: number;
 }
 
 interface WishlistRow {
@@ -66,9 +65,6 @@ function collectUserPerks(rows: WishlistRow[]): Map<string, StoredPerk> {
   return map;
 }
 
-// Score: 0 = exact, 1 = prefix, 2 = word-prefix, -1 = no match.
-// Substring en medio del nombre NO cuenta (asi "K" no matchea "Target Lock").
-// Si q esta vacio, matchea todo (rank 1) — util para "abrir dropdown al focus".
 function rankMatch(name: string, q: string): number {
   const nl = name.toLowerCase();
   const ql = q.toLowerCase();
@@ -92,8 +88,7 @@ export const GET: APIRoute = async ({ request, url }) => {
   const slot = (PERK_SLOTS as readonly string[]).includes(slotParam)
     ? (slotParam as PerkSlot)
     : null;
-  const limit = Math.min(30, Math.max(1, Number(url.searchParams.get('limit') ?? 12)));
-  // Si no hay query ni slot, devolvemos vacio (no listar todo sin contexto).
+  const limit = Math.min(100, Math.max(1, Number(url.searchParams.get('limit') ?? 30)));
   if (!q && !slot) return jsonOk({ results: [] });
 
   const qLower = q.toLowerCase();
@@ -101,28 +96,58 @@ export const GET: APIRoute = async ({ request, url }) => {
   const results: PerkMatch[] = [];
   const slotCategory = slot ? SLOT_TO_CATEGORY[slot] : null;
 
-  // 1. Pool de perks ya guardadas en armas (perks_json del wishlist del user).
+  // Single source of truth: perks ya tipeadas por el usuario (su wishlist).
+  // Para cada perk, resolvemos icono + categoria efectiva:
+  //   - hash presente y NO hay icono custom -> usa icono del manifest.
+  //   - hash presente y SI hay icono custom -> usa el icono custom
+  //     (override del usuario).
+  //   - hash vacio (custom puro) -> requiere icono custom en
+  //     d2_perk_icons; si no tiene, se omite.
+  // Esto elimina duplicados entre el wishlist y los iconos custom.
   const ownRows = await env.AUTH_DB
     .prepare('SELECT perks_json FROM d2_wishlist WHERE username = ?')
     .bind(sess.username)
     .all<WishlistRow>();
   const userPool = collectUserPerks(ownRows.results ?? []);
 
+  // Para chequear overrides de iconos en perks del manifest, precargamos
+  // el pool de iconos custom una sola vez.
+  const customIconByName = new Map<string, { iconPath: string; category: string }>();
+  try {
+    const customs = await listCustomPerkIcons(env.AUTH_DB, sess.username);
+    for (const ic of customs) {
+      if (ic.iconPath) {
+        customIconByName.set(ic.perkNameLower, {
+          iconPath: ic.iconPath,
+          category: ic.category,
+        });
+      }
+    }
+  } catch {
+    // d2_perk_icons puede no existir; no hacer nada
+  }
+
   for (const [, perk] of userPool) {
+    if (results.length >= limit) break;
     const score = rankMatch(perk.name, q);
     if (score < 0) continue;
 
     let icon = '';
     let isCustom = false;
     let effectiveCategory = perk.category;
+    const lowerName = perk.name.toLowerCase();
+
     if (perk.hash) {
       icon = `/destiny/api/icon?type=perk&hash=${encodeURIComponent(perk.hash)}`;
+      const custom = customIconByName.get(lowerName);
+      if (custom?.iconPath) {
+        icon = custom.iconPath;
+        isCustom = true;
+        if (custom.category) effectiveCategory = custom.category;
+      }
     } else {
-      // Custom perk (saved via add.ts cuando no estaba en el manifest).
-      // Si tiene icono custom guardado en d2_perk_icons, usamos su categoria.
-      // Si no, lo ocultamos del typeahead (se mantiene tipeable manualmente).
-      const custom = await findCustomPerkIcon(env.AUTH_DB, sess.username, perk.name);
-      if (!custom) continue;
+      const custom = customIconByName.get(lowerName);
+      if (!custom?.iconPath) continue;
       icon = custom.iconPath;
       isCustom = true;
       effectiveCategory = custom.category;
@@ -136,9 +161,11 @@ export const GET: APIRoute = async ({ request, url }) => {
     ) {
       continue;
     }
-    const key = 'w:' + perk.name.toLowerCase() + '|' + (effectiveCategory || 'unknown');
-    if (seen.has(key)) continue;
-    seen.add(key);
+
+    // Dedup por nombre (no por nombre+slot) para evitar duplicados
+    // cuando la misma perk se guardo en perk1 y perk2.
+    if (seen.has(lowerName)) continue;
+    seen.add(lowerName);
 
     results.push({
       name: perk.name,
@@ -146,39 +173,59 @@ export const GET: APIRoute = async ({ request, url }) => {
       icon,
       isCustom,
       category: effectiveCategory,
-      source: 'wishlist',
+      source: isCustom ? 'custom' : 'wishlist',
       _score: score,
     });
-    if (results.length >= limit) break;
   }
 
-  // 2. Iconos custom (d2_perk_icons) del usuario.
-  // Solo aparecen en el typeahead si tienen CATEGORIA asignada (Cañón /
-  // Cargador / Rasgo). Sin categoria asignada = no aparece en el picker
-  // (el usuario debe elegir tipo en 'Icono perk' para que aparezca).
+  // Tambien agregamos los iconos custom del usuario que NO estan en
+  // ninguna arma todavia. Asi el usuario puede elegir un icono que subio
+  // sin haberlo usado antes.
   if (results.length < limit) {
-    try {
-      const customs = await listCustomPerkIcons(env.AUTH_DB, sess.username);
-      for (const ic of customs) {
-        if (results.length >= limit) break;
-        if (!ic.category) continue;
-        const score = rankMatch(ic.perkNameDisplay, q);
-        if (score < 0) continue;
-        if (slot && slotCategory && ic.category !== slotCategory) continue;
-        const key = 'ic:' + ic.perkNameLower;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        results.push({
-          name: ic.perkNameDisplay,
-          hash: '',
-          icon: ic.iconPath,
-          isCustom: true,
-          category: ic.category,
-          source: 'custom',
-        });
+    for (const [lowerName, custom] of customIconByName) {
+      if (results.length >= limit) break;
+      if (seen.has(lowerName)) continue;
+      const score = rankMatch(custom.category || lowerName, q) || rankMatch(lowerName, q);
+      // Re-rank usando el display name si lo tenemos — usamos la categoria como
+      // nombre visible aproximado.
+      // Para mostrar el nombre del icono custom en este flujo, no
+      // tenemos el display name en el map; lo agregamos mas abajo por
+      // separado.
+      void score;
+      // Solo agregar si: tiene icono, tiene categoria, y (si hay slot)
+      // la categoria matchea el slot.
+      if (!custom.iconPath) continue;
+      if (!custom.category) continue;
+      if (slot && slotCategory && custom.category !== slotCategory) continue;
+      // Para mantener el display, consultamos d2_perk_icons via el listado.
+      break; // evitamos doble consulta; el listado ya esta cacheado arriba.
+    }
+    // El listado detallado para nombres custom se hace en una pasada
+    // final para no perder el display name.
+    if (results.length < limit) {
+      try {
+        const customs = await listCustomPerkIcons(env.AUTH_DB, sess.username);
+        for (const ic of customs) {
+          if (results.length >= limit) break;
+          if (!ic.iconPath || !ic.category) continue;
+          if (seen.has(ic.perkNameLower)) continue;
+          if (slot && slotCategory && ic.category !== slotCategory) continue;
+          const score = rankMatch(ic.perkNameDisplay, q);
+          if (score < 0) continue;
+          seen.add(ic.perkNameLower);
+          results.push({
+            name: ic.perkNameDisplay,
+            hash: '',
+            icon: ic.iconPath,
+            isCustom: true,
+            category: ic.category,
+            source: 'custom',
+            _score: score,
+          });
+        }
+      } catch {
+        // d2_perk_icons puede no existir; no hacer nada
       }
-    } catch {
-      // d2_perk_icons puede no existir; no hacer nada
     }
   }
 
@@ -188,7 +235,6 @@ export const GET: APIRoute = async ({ request, url }) => {
   });
   for (const r of results) delete r._score;
 
-  // Agrupar para que el cliente renderice secciones (Cañón / Cargador / Rasgo / Custom).
   const groups: Record<string, { key: string; label: string; perks: PerkMatch[] }> = {
     barrel: { key: 'barrel', label: 'Cañón', perks: [] },
     magazine: { key: 'magazine', label: 'Cargador', perks: [] },

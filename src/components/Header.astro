@@ -4,17 +4,17 @@ import ThemeToggle from './ThemeToggle.astro';
 ---
 
 <header class="border-b border-zinc-200 transition-colors dark:border-white/10">
-  <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-    <a href="/" class="flex items-center gap-2 text-lg font-semibold text-zinc-900 dark:text-white">
-      <span class="text-xl leading-none">⚡</span>
+  <div class="mx-auto flex max-w-6xl xl:max-w-[1760px] 2xl:max-w-[2240px] items-center justify-between px-4 xl:px-6 py-4 xl:py-5">
+    <a href="/" class="flex items-center gap-2 text-lg xl:text-xl 2xl:text-2xl font-semibold text-zinc-900 dark:text-white">
+      <span class="text-xl xl:text-2xl 2xl:text-3xl leading-none">⚡</span>
       <span class="tracking-tight">AppHub</span>
     </a>
-    <div class="flex items-center gap-4">
-      <span class="text-xs uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
+    <div class="flex items-center gap-4 xl:gap-6">
+      <span class="text-xs xl:text-sm uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
         {apps.length} {apps.length === 1 ? 'app' : 'apps'}
       </span>
       <span
-        class="hidden text-sm text-zinc-500 dark:text-zinc-500"
+        class="hidden text-sm xl:text-base text-zinc-500 dark:text-zinc-500"
         data-auth-only
         data-user-display
       ></span>
@@ -26,7 +26,7 @@ import ThemeToggle from './ThemeToggle.astro';
       >
         <button
           type="submit"
-          class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white"
+          class="text-xs xl:text-sm uppercase tracking-wider text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white"
           title="Cerrar sesión"
         >
           Salir

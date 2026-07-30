@@ -6,26 +6,35 @@ import { jsonOk } from '../../../../lib/internal';
 
 export const prerender = false;
 
+const PERK_SLOTS = ['barrel', 'magazine', 'perk1', 'perk2'] as const;
+type PerkSlot = (typeof PERK_SLOTS)[number];
+
+const SLOT_TO_CATEGORY: Record<PerkSlot, string> = {
+  barrel: 'Barrel',
+  magazine: 'Magazine',
+  perk1: 'Trait',
+  perk2: 'Trait',
+};
+
 interface PerkMatch {
   name: string;
   hash: string;
   icon: string;
   isCustom: boolean;
   category: string;
+  source: 'wishlist' | 'custom';
 }
 
 interface WishlistRow {
   perks_json: string;
 }
 
-const PERK_SLOTS = ['barrel', 'magazine', 'perk1', 'perk2'] as const;
-type PerkSlot = (typeof PERK_SLOTS)[number];
-
 interface StoredPerk {
   name: string;
   hash: string;
   icon: string;
   category: string;
+  slot: PerkSlot;
 }
 
 function collectUserPerks(rows: WishlistRow[]): Map<string, StoredPerk> {
@@ -42,13 +51,14 @@ function collectUserPerks(rows: WishlistRow[]): Map<string, StoredPerk> {
     for (const slot of PERK_SLOTS) {
       const perk = parsed[slot];
       if (!perk || typeof perk.name !== 'string' || !perk.name) continue;
-      const key = perk.name.toLowerCase();
+      const key = perk.name.toLowerCase() + '|' + slot;
       if (map.has(key)) continue;
       map.set(key, {
         name: perk.name,
         hash: typeof perk.hash === 'string' ? perk.hash : '',
         icon: typeof perk.icon === 'string' ? perk.icon : '',
         category: typeof perk.category === 'string' ? perk.category : '',
+        slot,
       });
     }
   }
@@ -61,14 +71,19 @@ export const GET: APIRoute = async ({ request, url }) => {
   if (!sess) return jsonOk({ error: 'unauthenticated' }, 401);
 
   const q = (url.searchParams.get('q') ?? '').trim();
-  const limit = Math.min(20, Math.max(1, Number(url.searchParams.get('limit') ?? 8)));
+  const slotParam = url.searchParams.get('slot') ?? '';
+  const slot = (PERK_SLOTS as readonly string[]).includes(slotParam)
+    ? (slotParam as PerkSlot)
+    : null;
+  const limit = Math.min(30, Math.max(1, Number(url.searchParams.get('limit') ?? 12)));
   if (!q) return jsonOk({ results: [] });
 
   const qLower = q.toLowerCase();
   const seen = new Set<string>();
   const results: PerkMatch[] = [];
+  const slotCategory = slot ? SLOT_TO_CATEGORY[slot] : null;
 
-  // 1. Pool del usuario: perks ya tipeadas en armas previas (de perks_json).
+  // 1. Pool de perks ya guardadas en armas (perks_json del wishlist del user).
   const ownRows = await env.AUTH_DB
     .prepare('SELECT perks_json FROM d2_wishlist WHERE username = ?')
     .bind(sess.username)
@@ -76,9 +91,11 @@ export const GET: APIRoute = async ({ request, url }) => {
   const userPool = collectUserPerks(ownRows.results ?? []);
 
   for (const [, perk] of userPool) {
-    if (results.length >= limit) break;
     if (!perk.name.toLowerCase().includes(qLower)) continue;
-    const key = perk.name.toLowerCase();
+    // Si se especifica slot, filtrar por la categoria del slot.
+    if (slot && slotCategory && perk.category && perk.category !== slotCategory) continue;
+    // Si no hay category en el perk (custom sin icono), incluirlo igual.
+    const key = perk.name.toLowerCase() + '|' + (perk.category || 'unknown');
     if (seen.has(key)) continue;
     seen.add(key);
 
@@ -100,32 +117,50 @@ export const GET: APIRoute = async ({ request, url }) => {
       icon,
       isCustom,
       category: perk.category,
+      source: 'wishlist',
     });
+    if (results.length >= limit) break;
   }
 
-  // 2. Iconos custom del usuario que aún no se usaron en una arma.
+  // 2. Iconos custom (d2_perk_icons) del usuario sin uso en armas.
   if (results.length < limit) {
     try {
       const customs = await listCustomPerkIcons(env.AUTH_DB, sess.username);
       for (const ic of customs) {
         if (results.length >= limit) break;
         if (!ic.perkNameLower.includes(qLower)) continue;
-        if (seen.has(ic.perkNameLower)) continue;
-        seen.add(ic.perkNameLower);
+        const key = 'ic:' + ic.perkNameLower;
+        if (seen.has(key)) continue;
+        seen.add(key);
         results.push({
           name: ic.perkNameDisplay,
           hash: '',
           icon: ic.iconPath,
           isCustom: true,
           category: '',
+          source: 'custom',
         });
       }
     } catch {
-      // d2_perk_icons puede no existir aún — caemos solo al pool del wishlist
+      // d2_perk_icons puede no existir; no hacer nada
     }
   }
 
   results.sort((a, b) => a.name.localeCompare(b.name));
 
-  return jsonOk({ results });
+  // Agrupar para que el cliente renderice secciones (Cañón / Cargador / Rasgo / Custom).
+  const groups: Record<string, { key: string; label: string; perks: PerkMatch[] }> = {
+    barrel: { key: 'barrel', label: 'Cañón', perks: [] },
+    magazine: { key: 'magazine', label: 'Cargador', perks: [] },
+    trait: { key: 'trait', label: 'Rasgo', perks: [] },
+    custom: { key: 'custom', label: 'Custom', perks: [] },
+  };
+  for (const p of results) {
+    if (p.category === 'Barrel') groups.barrel.perks.push(p);
+    else if (p.category === 'Magazine') groups.magazine.perks.push(p);
+    else if (p.category === 'Trait') groups.trait.perks.push(p);
+    else groups.custom.perks.push(p);
+  }
+
+  return jsonOk({ results, groups });
 };

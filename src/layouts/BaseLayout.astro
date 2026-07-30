@@ -5,11 +5,13 @@ import Header from '../components/Header.astro';
 interface Props {
   title?: string;
   description?: string;
+  contentMaxWidth?: string;
 }
 
 const {
   title = 'AppHub',
   description = 'Hub personal de apps — punto de partida a todas mis herramientas web.',
+  contentMaxWidth = 'max-w-6xl',
 } = Astro.props;
 ---
 
@@ -36,7 +38,7 @@ const {
   </head>
   <body class="min-h-screen">
     <Header />
-    <main class="mx-auto max-w-6xl px-4 py-10">
+    <main class={`mx-auto px-4 py-10 ${contentMaxWidth}`}>
       <slot />
     </main>
     <script is:inline>

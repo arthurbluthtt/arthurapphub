@@ -1,18 +1,29 @@
 ﻿# STATE — ArthurAppHub
 
 Estado actual del hub como **Identity Provider** (SSO multi-app) + lanzador de apps + sub-app de wishlist de Destiny 2.
-Última actualización: 2026-07-28.
+Última actualización: 2026-07-30.
 
 ## D2 Wishlist — deploy status
 
 - ✅ Migración `0003_d2_wishlist.sql` aplicada a D1 remota.
 - ✅ R2 bucket `arthurapphub-d2-assets` creado.
 - ✅ Secret `BUNGIE_API_KEY` configurado en el worker.
-- ✅ Manifest build descargado: 2058 armas, 875 perks (`data/d2/weapons-index.json` + `data/d2/perks.json`).
-- ✅ Build pasa, deploy pasa, smoke test de rutas OK (200/302/401 según corresponde).
-- ✅ **Selección manual de perks**: al agregar un arma, la app lista sus perks (barrel → mag → trait) y el usuario elige 2. Ya no se auto-aplica top picks.
-- ⏳ Manifest `category` enriquecido: pendiente re-correr `BUNGIE_API_KEY=... npm run build:d2-manifest` (el fallback por nombre funciona hasta entonces).
-- ⏳ Smoke test end-to-end (login → agregar arma → ver card) requiere sesión del browser.
+- ✅ Manifest build re-corrido: 2058 armas con `weaponType` real (Hand Cannon, Auto Rifle, etc — vía DestinyItemCategoryDefinition), 2000 perks con `category` real (Barrel/Magazine/Trait).
+- ✅ Selección manual de 4 perks por arma: **Cañón / Cargador / Rasgo 1 / Rasgo 2**. Usuario tipéa el nombre; server busca en el manifest por nombre y si no está, guarda como "custom" con placeholder.
+- ✅ Pool de iconos custom (`d2_perk_icons`) con tipo asignable (Cañón/Cargador/Rasgo). Migración `0006` aplicada.
+- ✅ Botón editar en cada card → modal abre con los 4 inputs pre-llenados.
+- ✅ Chip "✦ Icono perk" arriba del "+ Agregar arma" para gestionar iconos custom (subir URL + asignar/cambiar tipo inline).
+- ✅ Filtros por estado (Todas/Pendientes/Encontradas) + por tipo de arma (chips pill por tipo con conteo).
+- ✅ Type-ahead en inputs de perk: vacío = muestra todos los elegibles del slot (rankMatch trata q vacío como match-all).
+- ✅ Container ancho escalado en ultrawide (`max-w-[1760px] 2xl:max-w-[2240px]`) — grid de 8 columnas en 2xl.
+- ✅ **Bug del dropdown resuelto**: el commit `30739e1` corrigió solo la mitad. La constante estaba declarada como `PERK_SLOT_KEYS` (línea 259) pero `positionDropdown` (línea 465) y `repositionAllDropdowns` (línea 583) la referenciaban como `PERK_SLOTS`. Cada llamada tiraba `ReferenceError`, el throw subía al `setTimeout` del fetch, el `catch` ejecutaba `closePerkSuggestions` → dropdown siempre oculto. Fix: renombrar `PERK_SLOT_KEYS` → `PERK_SLOTS`.
+
+## ¿Qué está hecho?
+
+- Grid responsivo de tarjetas (`src/data/apps.json`), tema dark grey + white details (`DESIGN.md`), toggle de tema, status dots online/offline.
+- Cloudflare Worker (`arthurapphub.arthurbluthtt.workers.dev`), deployed y autodeploy via `.github/workflows/deploy.yml`.
+- Container ancho del destiny escalado: `max-w-6xl` (default) → `max-w-[1760px]` en xl → `max-w-[2240px]` en 2xl. Header escalado progresivamente (`AppHub` text-lg → 2xl).
+- `apps.json` apunta a `https://notes-app.arthurbluthtt.workers.dev` para Notas.
 
 ## ¿Qué está hecho?
 
@@ -64,13 +75,13 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + lanzador de a
 
 ## Próximo
 
-El SSO funciona end-to-end con notes-app y la wishlist de D2 ya toma perks manuales. Las ideas para seguir:
+Pendiente en orden de prioridad:
 
-- Re-correr `BUNGIE_API_KEY=... npm run build:d2-manifest` para popular `perk.category` real de Bungie (dejar de depender del fallback por nombre).
-- Smoke test end-to-end en el browser (login → /destiny → search → pick → modal → seleccionar 2 perks → agregar → ver card).
-- Agregar una segunda app al SSO (5-10 líneas en la nueva app + 2 entradas en el hub).
-- Si se quiere extender más allá del círculo personal, mejorar el handler de errores en `/api/redir` cuando el hub está caído (ya muestra la pantalla de notes-app).
-- El `AUTH_PEPPER` de notes-app (legacy) ya no se usa — puede limpiarse del worker + GH secret.
+1. Smoke test end-to-end (login → /destiny → search → pick → modal → escribir perks → agregar → ver card).
+2. **Corregir el cálculo de perks** cuando el manifest no tiene categoría (rebuildear categories.json de Bungie para popular `perk.category` real; el fallback por regex es heurístico).
+3. Agregar una segunda app al SSO (5-10 líneas en la nueva app + 2 entradas en el hub).
+4. Si se quiere extender más allá del círculo personal, mejorar el handler de errores en `/api/redir` cuando el hub está caído.
+5. El `AUTH_PEPPER` de notes-app (legacy) ya no se usa — puede limpiarse del worker + GH secret.
 
 ### Decisiones tomadas
 

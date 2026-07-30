@@ -372,7 +372,9 @@ function openForEdit(row) {
       if (typeof dialog.showModal === 'function') dialog.showModal();
       else dialog.setAttribute('open', '');
       showView('perks');
-      setTimeout(() => perkInputs[0].focus(), 50);
+      // No auto-focus: si focuseamos el primer perk input aca, el focus
+      // listener dispara el fetch+render del dropdown y se abre solo.
+      // El usuario hace click en el input cuando quiere tipear.
     }
 
     function checkPerksComplete() {
@@ -413,7 +415,7 @@ async function pickWeapon(weaponHash, name) {
       state.perkConfirmedValue = {};
       perkInputs.forEach((el) => { el.value = ''; });
       checkPerksComplete();
-      setTimeout(() => perkInputs[0].focus(), 50);
+      // No auto-focus: el focus listener dispararia el dropdown.
     }
 
     input.addEventListener('input', () => {

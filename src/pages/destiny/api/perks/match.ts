@@ -138,15 +138,19 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (results.length >= limit) break;
   }
 
-  // 2. Iconos custom (d2_perk_icons) del usuario, filtrados por categoria.
+  // 2. Iconos custom (d2_perk_icons) del usuario.
+  // Solo aparecen en el typeahead si tienen CATEGORIA asignada (Cañón /
+  // Cargador / Rasgo). Sin categoria asignada = no aparece en el picker
+  // (el usuario debe elegir tipo en 'Icono perk' para que aparezca).
   if (results.length < limit) {
     try {
       const customs = await listCustomPerkIcons(env.AUTH_DB, sess.username);
       for (const ic of customs) {
         if (results.length >= limit) break;
+        if (!ic.category) continue;
         const score = rankMatch(ic.perkNameDisplay, q);
         if (score < 0) continue;
-        if (slot && slotCategory && ic.category && ic.category !== slotCategory) continue;
+        if (slot && slotCategory && ic.category !== slotCategory) continue;
         const key = 'ic:' + ic.perkNameLower;
         if (seen.has(key)) continue;
         seen.add(key);
@@ -157,7 +161,6 @@ export const GET: APIRoute = async ({ request, url }) => {
           isCustom: true,
           category: ic.category,
           source: 'custom',
-          _score: score,
         });
       }
     } catch {

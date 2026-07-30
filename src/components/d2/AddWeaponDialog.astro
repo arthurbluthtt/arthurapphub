@@ -510,16 +510,13 @@
       el.addEventListener('input', () => {
         checkPerksComplete();
         clearTimeout(perkMatchTimers[slot]);
-        const q = el.value.trim();
-        if (!q) {
-          closePerkSuggestions(slot);
-          return;
-        }
+        // Siempre hacemos fetch: con q vacio el endpoint devuelve TODOS los
+        // elegibles para el slot (rankMatch trata q vacio como match-all).
         perkMatchTimers[slot] = setTimeout(async () => {
           try {
             const res = await fetch(
               '/destiny/api/perks/match?q=' +
-                encodeURIComponent(q) +
+                encodeURIComponent(el.value.trim()) +
                 '&slot=' +
                 encodeURIComponent(slot) +
                 '&limit=12'

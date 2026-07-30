@@ -2,7 +2,7 @@
 import { env } from 'cloudflare:workers';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import AppGrid from '../components/AppGrid.astro';
-import { apps } from '../lib/apps';
+import { getAllApps } from '../lib/apps';
 import {
   COOKIE_NAME_CONST,
   SESSION_TTL_MS_CONST,
@@ -75,7 +75,7 @@ if (!sess && Astro.request.method === 'POST') {
       <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Mis apps</h1>
       <p class="mt-2 text-zinc-500 dark:text-zinc-500">Lanzador rápido a todas mis herramientas web.</p>
     </div>
-    <AppGrid apps={apps} />
+    <AppGrid apps={getAllApps()} />
   ) : (
     <div class="mx-auto max-w-sm">
       <div class="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur">

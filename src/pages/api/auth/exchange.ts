@@ -5,6 +5,7 @@ import {
   deriveAppPinHash,
   getUserByUsername,
 } from '../../../lib/auth';
+import { isSsoApp } from '../../../lib/apps';
 import {
   internalError,
   jsonOk,
@@ -19,8 +20,6 @@ interface ExchangeBody {
   app: string;
 }
 
-const KNOWN_APPS = new Set<string>([]);
-
 export const POST: APIRoute = async ({ request }) => {
   if (!verifyInternal(request, env.INTERNAL_API_SECRET)) {
     return internalError('unauthorized');
@@ -28,7 +27,7 @@ export const POST: APIRoute = async ({ request }) => {
 
   const body = await readJsonBody<ExchangeBody>(request);
   if (!body || !body.code || !body.app) return internalError('missing fields', 400);
-  if (!KNOWN_APPS.has(body.app)) return internalError('unknown app', 400);
+  if (!isSsoApp(body.app)) return internalError('unknown app', 400);
 
   const consumed = await consumeAuthCode(env.AUTH_DB, body.code, body.app);
   if (!consumed) return internalError('invalid code', 400);

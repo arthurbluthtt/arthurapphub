@@ -21,7 +21,8 @@
       "icon": "🎯",
       "category": "gaming",
       "tags": ["destiny", "wishlist"],
-      "featured": true
+      "featured": true,
+      "sso": false
     }
   ]
 }

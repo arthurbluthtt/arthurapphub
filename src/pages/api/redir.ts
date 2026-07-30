@@ -1,20 +1,9 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import data from '../../data/apps.json';
 import { createAuthCode, lookupSession, readCookie } from '../../lib/auth';
+import { findApp } from '../../lib/apps';
 
 export const prerender = false;
-
-interface AppEntry {
-  id: string;
-  url: string;
-}
-
-const apps = ((data as { apps: AppEntry[] }).apps) ?? [];
-
-function findApp(id: string): AppEntry | undefined {
-  return apps.find((a) => a.id === id);
-}
 
 function safeAppUrl(url: string): URL | null {
   try {

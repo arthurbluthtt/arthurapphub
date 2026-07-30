@@ -1,12 +1,7 @@
 import type { APIRoute } from 'astro';
-import data from '../../data/apps.json';
+import { getAllApps } from '../../lib/apps';
 
 export const prerender = false;
-
-interface App {
-  id: string;
-  url: string;
-}
 
 interface Result {
   id: string;
@@ -16,7 +11,7 @@ interface Result {
 }
 
 export const GET: APIRoute = async () => {
-  const list = (data.apps ?? []) as App[];
+  const list = getAllApps();
   const results: Result[] = await Promise.all(
     list.map(async (app) => {
       const t0 = Date.now();

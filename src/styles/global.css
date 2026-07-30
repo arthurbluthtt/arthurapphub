@@ -13,10 +13,12 @@ html {
   -moz-osx-font-smoothing: grayscale;
   background-color: #fafafa;
   color: #18181b;
+  color-scheme: light;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 html.dark {
   background-color: #0a0a0a;
   color: #fafafa;
+  color-scheme: dark;
 }

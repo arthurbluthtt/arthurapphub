@@ -63,15 +63,6 @@ const visible =
     </span>
   </div>
 
-  <div class="mb-6">
-    <p
-      class="rounded-2xl border border-zinc-200 bg-white p-4 text-sm text-zinc-500 dark:border-white/10 dark:bg-white/[0.025]"
-      data-add-hint
-    >
-      Tocá <span class="font-medium text-zinc-900 dark:text-white">+ Agregar arma</span> abajo a la derecha para sumar un arma a tu wishlist.
-    </p>
-  </div>
-
   {
     totalCount > 0 && (
       <div
@@ -185,13 +176,11 @@ const visible =
       const added = e && e.detail;
       const grid = document.querySelector('[data-weapons-grid]');
       const allEmpty = document.querySelector('[data-empty-state][data-scope="all"]');
-      const hint = document.querySelector('[data-add-hint]');
       if (grid && added) {
         const node = buildCard(added);
         grid.prepend(node);
       }
       if (allEmpty) allEmpty.classList.add('hidden');
-      if (hint) hint.classList.add('hidden');
       if (typeof window.updateFilterCounts === 'function') window.updateFilterCounts();
       if (typeof window.applyFilter === 'function') window.applyFilter(window.currentFilter || 'pending');
     });

@@ -55,22 +55,30 @@ export function getPerk(hash: string): PerkEntry | null {
   return perks[hash] ?? null;
 }
 
-export function searchWeapons(query: string, limit = 10): WeaponIndexEntry[] {
+export function searchWeapons(query: string): WeaponIndexEntry | null {
   const q = query.trim().toLowerCase();
-  if (!q) return [];
-  const matches: { weapon: WeaponIndexEntry; score: number }[] = [];
+  if (!q) return null;
+  let best: { weapon: WeaponIndexEntry; score: number } | null = null;
   for (const w of weapons) {
     const name = w.name.toLowerCase();
+    if (name === q) return w;
+    if (name.startsWith(q)) {
+      const candidate = { weapon: w, score: 1 };
+      if (!best || candidate.score < best.score) best = candidate;
+      else if (candidate.score === best.score && w.name.localeCompare(best.weapon.name) < 0) {
+        best = candidate;
+      }
+      continue;
+    }
     const idx = name.indexOf(q);
     if (idx === -1) continue;
-    const score = idx === 0 ? 0 : idx;
-    matches.push({ weapon: w, score });
+    const candidate = { weapon: w, score: idx + 2 };
+    if (!best || candidate.score < best.score) best = candidate;
+    else if (candidate.score === best.score && w.name.localeCompare(best.weapon.name) < 0) {
+      best = candidate;
+    }
   }
-  matches.sort((a, b) => {
-    if (a.score !== b.score) return a.score - b.score;
-    return a.weapon.name.localeCompare(b.weapon.name);
-  });
-  return matches.slice(0, limit).map((m) => m.weapon);
+  return best?.weapon ?? null;
 }
 
 export function bungieCdnUrl(iconPath: string | undefined | null): string | null {
@@ -138,4 +146,30 @@ export function getEligiblePerk(hash: string): PerkWithMeta | null {
   const categoryKey = classifyPerk(perk);
   if (!categoryKey) return null;
   return { ...perk, hash, categoryKey };
+}
+
+export function searchPerksInPool(
+  pool: PerkWithMeta[],
+  query: string,
+  limit = 8
+): PerkWithMeta[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  const matches: { perk: PerkWithMeta; score: number }[] = [];
+  for (const p of pool) {
+    const name = p.name.toLowerCase();
+    if (name === q) return [p];
+    if (name.startsWith(q)) {
+      matches.push({ perk: p, score: 1 });
+      continue;
+    }
+    const idx = name.indexOf(q);
+    if (idx === -1) continue;
+    matches.push({ perk: p, score: idx + 2 });
+  }
+  matches.sort((a, b) => {
+    if (a.score !== b.score) return a.score - b.score;
+    return a.perk.name.localeCompare(b.perk.name);
+  });
+  return matches.slice(0, limit).map((m) => m.perk);
 }

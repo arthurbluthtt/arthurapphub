@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { lookupSession, readCookie } from '../../../../lib/auth';
 import { listCustomPerkIcons } from '../../../../lib/d2/perkIcons';
-import { listPerksByCategory } from '../../../../lib/d2/manifest';
+import { listAllPerks } from '../../../../lib/d2/manifest';
 import { jsonOk } from '../../../../lib/internal';
 
 export const prerender = false;
@@ -180,11 +180,22 @@ export const GET: APIRoute = async ({ request, url }) => {
       effectiveCategory = custom.category;
     }
 
-    // Sin filtro de categoria: dejamos que el usuario elija cualquier
-    // perk para cualquier slot. Algunas armas (arcos, lanzagranadas)
-    // usan perks categorizados como 'Trait' (e.g. 'Agile Bowstring')
-    // en la columna 'magazine', porque Bungie no tiene categoria
-    // 'Bowstring' separada. El usuario es quien sabe que perk va donde.
+    // Filtro por categoria del slot. Las perks del wishlist tienen
+    // category normalizada al slot en que fueron guardadas (ver
+    // add.ts/update.ts), asi que perks que el usuario ya uso en
+    // un slot aparecen en ese slot. Perks cross-categoria como
+    // 'Agile Bowstring' (que Bungie categoriza como 'Trait' pero
+    // va en columna magazine de los arcos) se tipean una vez y
+    // quedan guardadas correctamente.
+
+    if (
+      slot &&
+      slotCategory &&
+      effectiveCategory &&
+      effectiveCategory !== slotCategory
+    ) {
+      continue;
+    }
 
     // Dedup por nombre (no por nombre+slot) para evitar duplicados
     // cuando la misma perk se guardo en perk1 y perk2.
@@ -211,6 +222,7 @@ export const GET: APIRoute = async ({ request, url }) => {
       if (results.length >= limit) break;
       if (seen.has(ic.display.toLowerCase())) continue;
       if (!ic.iconPath || !ic.category) continue;
+      if (slot && slotCategory && ic.category !== slotCategory) continue;
       const score = rankMatch(ic.display, q);
       if (score < 0) continue;
       seen.add(ic.display.toLowerCase());
@@ -227,12 +239,12 @@ export const GET: APIRoute = async ({ request, url }) => {
     }
   }
 
-  // Fallback final: si el usuario nunca uso esta perk (no esta en su
-  // wishlist ni tiene icono custom), consultar el manifest de Bungie.
-  // Sin filtro de categoria del slot: mismo motivo que arriba (Bowstrings
-  // para arcos son 'Trait' en el manifest pero van en columna 'magazine').
-  // Solo se activa cuando hay `q` para no abrumar con 2000 perks cuando
-  // el dropdown abre vacio.
+  // Fallback final: si el usuario nunca uso esta perk, consultar el
+  // manifest de Bungie. Solo se activa cuando hay `q` para no abrumar
+  // con 2000 perks cuando el dropdown abre vacio. Sin filtro de
+  // categoria del slot para permitir encontrar perks cross-categoria
+  // (e.g. tipear 'bowstring' en slot magazine trae Agile Bowstring
+  // aunque el manifest la categorice como 'Trait').
   if (results.length < limit && q) {
     const manifestPerks = listAllPerks();
     for (const mp of manifestPerks) {

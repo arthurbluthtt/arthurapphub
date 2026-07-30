@@ -34,21 +34,33 @@ function sanitizeName(input: unknown): string {
   return input.trim().slice(0, 80);
 }
 
-function resolvePerk(name: string): WishlistPerk {
+// Categoria canonica por slot (la misma que usa perks/match.ts).
+// Normalizamos la categoria al slot para que perks cross-categoria
+// (e.g. 'Agile Bowstring' = Trait en el manifest) queden guardadas
+// con la categoria del slot donde el usuario las puso. Asi el
+// dropdown las muestra correctamente en futuras aperturas.
+const SLOT_CATEGORY: Record<PerkSlot, string> = {
+  barrel: 'Barrel',
+  magazine: 'Magazine',
+  perk1: 'Trait',
+  perk2: 'Trait',
+};
+
+function resolvePerk(name: string, slot: PerkSlot): WishlistPerk {
   const fromManifest = searchPerkByName(name);
   if (fromManifest) {
     return {
       name: fromManifest.name,
       hash: fromManifest.hash,
       icon: fromManifest.icon,
-      category: fromManifest.category,
+      category: SLOT_CATEGORY[slot],
     };
   }
   return {
     name,
     hash: '',
     icon: '',
-    category: '',
+    category: SLOT_CATEGORY[slot],
   };
 }
 
@@ -84,7 +96,7 @@ export const POST: APIRoute = async ({ request }) => {
         400
       );
     }
-    perks[slot as PerkSlot] = resolvePerk(sanitized);
+    perks[slot as PerkSlot] = resolvePerk(sanitized, slot as PerkSlot);
   }
 
   const result = await addWishlist(env.AUTH_DB, sess.username, {

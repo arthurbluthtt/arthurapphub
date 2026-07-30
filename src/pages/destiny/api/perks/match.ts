@@ -180,14 +180,11 @@ export const GET: APIRoute = async ({ request, url }) => {
       effectiveCategory = custom.category;
     }
 
-    if (
-      slot &&
-      slotCategory &&
-      effectiveCategory &&
-      effectiveCategory !== slotCategory
-    ) {
-      continue;
-    }
+    // Sin filtro de categoria: dejamos que el usuario elija cualquier
+    // perk para cualquier slot. Algunas armas (arcos, lanzagranadas)
+    // usan perks categorizados como 'Trait' (e.g. 'Agile Bowstring')
+    // en la columna 'magazine', porque Bungie no tiene categoria
+    // 'Bowstring' separada. El usuario es quien sabe que perk va donde.
 
     // Dedup por nombre (no por nombre+slot) para evitar duplicados
     // cuando la misma perk se guardo en perk1 y perk2.
@@ -214,7 +211,6 @@ export const GET: APIRoute = async ({ request, url }) => {
       if (results.length >= limit) break;
       if (seen.has(ic.display.toLowerCase())) continue;
       if (!ic.iconPath || !ic.category) continue;
-      if (slot && slotCategory && ic.category !== slotCategory) continue;
       const score = rankMatch(ic.display, q);
       if (score < 0) continue;
       seen.add(ic.display.toLowerCase());
@@ -232,11 +228,13 @@ export const GET: APIRoute = async ({ request, url }) => {
   }
 
   // Fallback final: si el usuario nunca uso esta perk (no esta en su
-  // wishlist ni tiene icono custom), consultar el manifest de Bungie
-  // por la categoria del slot. Esto es lo que permite descubrir perks
-  // nuevas (ej: 'Incandescent' si nunca la trackeaste).
-  if (results.length < limit && slotCategory) {
-    const manifestPerks = listPerksByCategory(slotCategory);
+  // wishlist ni tiene icono custom), consultar el manifest de Bungie.
+  // Sin filtro de categoria del slot: mismo motivo que arriba (Bowstrings
+  // para arcos son 'Trait' en el manifest pero van en columna 'magazine').
+  // Solo se activa cuando hay `q` para no abrumar con 2000 perks cuando
+  // el dropdown abre vacio.
+  if (results.length < limit && q) {
+    const manifestPerks = listAllPerks();
     for (const mp of manifestPerks) {
       if (results.length >= limit) break;
       const lowerName = mp.name.toLowerCase();

@@ -83,6 +83,20 @@ export function listPerksByCategory(category: string): PerkWithIcon[] {
   return perksByCategory.get(category) ?? [];
 }
 
+export function listAllPerks(): PerkWithIcon[] {
+  const out: PerkWithIcon[] = [];
+  for (const [hash, perk] of perksByHash) {
+    out.push({
+      hash,
+      name: perk.name,
+      icon: perk.icon,
+      description: perk.description,
+      category: perk.category,
+    });
+  }
+  return out;
+}
+
 export function searchPerkByName(name: string): PerkLookupResult | null {
   const normalized = name.trim().toLowerCase();
   if (!normalized) return null;

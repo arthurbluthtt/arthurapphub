@@ -23,6 +23,18 @@
       "tags": ["destiny", "wishlist"],
       "featured": true,
       "sso": false
+    },
+    {
+      "id": "umamusume-cards",
+      "name": "Uma Cards",
+      "description": "Mejores cartas de soporte para tus personajes de Umamusume",
+      "url": "https://arthurapphub.arthurbluthtt.workers.dev/umamusume",
+      "redir": "/umamusume",
+      "icon": "🐴",
+      "category": "gaming",
+      "tags": ["gacha", "umamusume", "cards"],
+      "featured": false,
+      "sso": false
     }
   ]
 }

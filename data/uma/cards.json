@@ -1,0 +1,730 @@
+[
+  {
+    "id": "agnes-tachyon-q-0",
+    "game8Id": "607343",
+    "name": "Agnes Tachyon",
+    "version": "Q≠0",
+    "icon": "https://img.game8.co/4545600/25491c58f556e0f5d4cc93779126ede8.png/show"
+  },
+  {
+    "id": "kitasan-black-fire-at-my-heels",
+    "game8Id": "537147",
+    "name": "Kitasan Black",
+    "version": "Fire at My Heels",
+    "icon": "https://img.game8.co/4218616/5381cc866a49ad65f83876f47662001e.png/show"
+  },
+  {
+    "id": "biko-pegasus-double-carrot-punch",
+    "game8Id": "536695",
+    "name": "Biko Pegasus",
+    "version": "Double Carrot Punch!",
+    "icon": "https://img.game8.co/4216915/273ed12209143b4b32b2664c5ac70333.png/show"
+  },
+  {
+    "id": "sakura-bakushin-o-eat-fast-yum-fast",
+    "game8Id": "536699",
+    "name": "Sakura Bakushin O",
+    "version": "Eat Fast! Yum Fast!",
+    "icon": "https://img.game8.co/4216997/9199c689e4fae87c75764644e1833aae.png/show"
+  },
+  {
+    "id": "silence-suzuka-beyond-this-shining-moment",
+    "game8Id": "536617",
+    "name": "Silence Suzuka",
+    "version": "Beyond This Shining Moment",
+    "icon": "https://img.game8.co/4216910/aa4e4ba1a9a3668f44f2aa386298385c.png/show"
+  },
+  {
+    "id": "special-week-the-setting-sun-and-rising-stars",
+    "game8Id": "536525",
+    "name": "Special Week",
+    "version": "The Setting Sun and Rising Stars",
+    "icon": "https://img.game8.co/4217015/153838608e154b6d9fc4f2739cab45c7.png/show"
+  },
+  {
+    "id": "king-halo-first-rate-plan",
+    "game8Id": "536672",
+    "name": "King Halo",
+    "version": "First-Rate Plan",
+    "icon": "https://img.game8.co/4216928/014824fcd1d9de631eccb6a433409cee.png/show"
+  },
+  {
+    "id": "shinko-windy-warning-gate",
+    "game8Id": "550085",
+    "name": "Shinko Windy",
+    "version": "///WARNING GATE///",
+    "icon": "https://img.game8.co/4265539/f87e48b64e3000ff0f36d297bc598588.png/show"
+  },
+  {
+    "id": "sweep-tosho-lamplit-training-of-a-witch-to-be",
+    "game8Id": "536670",
+    "name": "Sweep Tosho",
+    "version": "Lamplit Training of a Witch-to-Be",
+    "icon": "https://img.game8.co/4216948/9e6f130e4e2f5be3b66861c4c92da8fa.png/show"
+  },
+  {
+    "id": "gold-city-run-my-way",
+    "game8Id": "536700",
+    "name": "Gold City (Run",
+    "version": "my) way",
+    "icon": "https://img.game8.co/4216998/31975f7313b9d90e516b11a8fb401d16.png/show"
+  },
+  {
+    "id": "kawakami-princess-princess-bride",
+    "game8Id": "541407",
+    "name": "Kawakami Princess",
+    "version": "Princess Bride",
+    "icon": "https://img.game8.co/4240310/7e1e1c8e33168b4776b94edab682fa01.png/show"
+  },
+  {
+    "id": "mihono-bourbon-u-amp-me",
+    "game8Id": "607415",
+    "name": "Mihono Bourbon",
+    "version": "U &amp; Me",
+    "icon": "https://img.game8.co/4545599/5ff97704cf0e6c43314450ccda0aff8c.png/show"
+  },
+  {
+    "id": "nishino-flower-even-the-littlest-bud",
+    "game8Id": "536696",
+    "name": "Nishino Flower",
+    "version": "Even the Littlest Bud",
+    "icon": "https://img.game8.co/4216919/54fb7e8c2ee829ca0d4ec498ca151171.png/show"
+  },
+  {
+    "id": "tokai-teio-dream-big",
+    "game8Id": "536618",
+    "name": "Tokai Teio",
+    "version": "Dream Big!",
+    "icon": "https://img.game8.co/4216909/51948a362a139d9db95f858673d39164.png/show"
+  },
+  {
+    "id": "twin-turbo-turbo-booooost",
+    "game8Id": "536692",
+    "name": "Twin Turbo",
+    "version": "Turbo Booooost!",
+    "icon": "https://img.game8.co/4217002/2b9c281107ec3d4154f7fcc2b2f4cf43.png/show"
+  },
+  {
+    "id": "eishin-flash-5-00-a-m-right-on-schedule",
+    "game8Id": "536679",
+    "name": "Eishin Flash",
+    "version": "5:00 a.m.-Right on Schedule",
+    "icon": "https://img.game8.co/4216988/65712f78efdb6c1097a6f28ede3bf38a.png/show"
+  },
+  {
+    "id": "narita-taishin-poolside-high-tides",
+    "game8Id": "536678",
+    "name": "Narita Taishin",
+    "version": "Poolside High Tides",
+    "icon": "https://img.game8.co/4216949/dd886bfcb235062c2e41b877c42aaa4b.png/show"
+  },
+  {
+    "id": "gold-ship-that-time-i-became-the-strongest",
+    "game8Id": "550088",
+    "name": "Gold Ship",
+    "version": "That Time I Became the Strongest",
+    "icon": "https://img.game8.co/4265535/0ee8574957219b1df6d026df96a2ccdd.png/show"
+  },
+  {
+    "id": "super-creek-piece-of-mind",
+    "game8Id": "536698",
+    "name": "Super Creek",
+    "version": "Piece of Mind",
+    "icon": "https://img.game8.co/4216916/3c352856b5348f43d8c4f057c6a40b84.png/show"
+  },
+  {
+    "id": "seiun-sky-foolproof-plan",
+    "game8Id": "536706",
+    "name": "Seiun Sky",
+    "version": "Foolproof Plan",
+    "icon": "https://img.game8.co/4216918/ae698c30c34fe8a17261eeab497483e7.png/show"
+  },
+  {
+    "id": "manhattan-cafe-my-solo-drawn-to-raindrop-drums",
+    "game8Id": "536684",
+    "name": "Manhattan Cafe",
+    "version": "My Solo Drawn to Raindrop Drums",
+    "icon": "https://img.game8.co/4216952/f1b0919a543ae5bbbf7675dca6303063.png/show"
+  },
+  {
+    "id": "mayano-top-gun-cute-cute",
+    "game8Id": "536685",
+    "name": "Mayano Top Gun",
+    "version": "Cute + Cute = ?",
+    "icon": "https://img.game8.co/4216926/2bc1f9e84ecbf9679cdd487ffeaf9e26.png/show"
+  },
+  {
+    "id": "zenno-rob-roy-the-perfect-book-for-you",
+    "game8Id": "541413",
+    "name": "Zenno Rob Roy",
+    "version": "The Perfect Book for You",
+    "icon": "https://img.game8.co/4240325/bf5c49a492d10f49ce2b5eefb46f2618.png/show"
+  },
+  {
+    "id": "biwa-hayahide-uchronia-architect",
+    "game8Id": "607419",
+    "name": "Biwa Hayahide",
+    "version": "Uchronia Architect",
+    "icon": "https://img.game8.co/4545596/d6bdb42443db439a9fce762e6a3392ee.png/show"
+  },
+  {
+    "id": "mejiro-mcqueen-your-team-ace",
+    "game8Id": "536528",
+    "name": "Mejiro McQueen",
+    "version": "Your Team Ace",
+    "icon": "https://img.game8.co/4216967/4f3a2e381dc8d111a93fe38c85ad99af.png/show"
+  },
+  {
+    "id": "sakura-chiyono-o-peak-sakura-season",
+    "game8Id": "541406",
+    "name": "Sakura Chiyono O",
+    "version": "Peak Sakura Season",
+    "icon": "https://img.game8.co/4240303/fe95aa0a90beae0552e3b2590c7d0c1b.png/show"
+  },
+  {
+    "id": "satono-diamond-the-will-to-overtake",
+    "game8Id": "537145",
+    "name": "Satono Diamond",
+    "version": "The Will to Overtake",
+    "icon": "https://img.game8.co/4218617/68c4c7cdcd26a13fa87c5f083a7548e0.png/show"
+  },
+  {
+    "id": "rice-shower-showered-in-joy",
+    "game8Id": "536527",
+    "name": "Rice Shower",
+    "version": "Showered in Joy",
+    "icon": "https://img.game8.co/4216940/e66e67fb539011f5dcc2538201d78d7b.png/show"
+  },
+  {
+    "id": "tamamo-cross-split-the-sky-white-lightning",
+    "game8Id": "536705",
+    "name": "Tamamo Cross",
+    "version": "Split the Sky, White Lightning!",
+    "icon": "https://img.game8.co/4216995/100f8901e234bb4b2095dba2ae40f1ce.png/show"
+  },
+  {
+    "id": "gold-ship-breakaway-battleship",
+    "game8Id": "536710",
+    "name": "Gold Ship",
+    "version": "Breakaway Battleship",
+    "icon": "https://img.game8.co/4216912/ad2ffcd0c5a83b819990da8aeacf4040.png/show"
+  },
+  {
+    "id": "king-halo-tonight-we-waltz",
+    "game8Id": "550087",
+    "name": "King Halo",
+    "version": "Tonight, We Waltz",
+    "icon": "https://img.game8.co/4265538/ec50d2bfb95fac3ea272eb1ae10f96ae.png/show"
+  },
+  {
+    "id": "vodka-wild-rider",
+    "game8Id": "536709",
+    "name": "Vodka",
+    "version": "Wild Rider",
+    "icon": "https://img.game8.co/4216913/4d6bd93fa56fbfc5e0cd0030d2e2a9f6.png/show"
+  },
+  {
+    "id": "oguri-cap-get-lots-of-hugs-for-me",
+    "game8Id": "536693",
+    "name": "Oguri Cap",
+    "version": "Get Lots of Hugs for Me",
+    "icon": "https://img.game8.co/4217003/518c8eddab55c3f267dce7ef379fddc2.png/show"
+  },
+  {
+    "id": "smart-falcon-my-umadol-way",
+    "game8Id": "536697",
+    "name": "Smart Falcon",
+    "version": "My Umadol Way! ☆",
+    "icon": "https://img.game8.co/4217001/fe4cac07008576090fd964b3d38632c1.png/show"
+  },
+  {
+    "id": "winning-ticket-dreams-do-come-true",
+    "game8Id": "541839",
+    "name": "Winning Ticket",
+    "version": "Dreams Do Come True!",
+    "icon": "https://img.game8.co/4241068/b4f4cfe7abe0b4309e5fc0766987344b.png/show"
+  },
+  {
+    "id": "yaeno-muteki-fiery-discipline",
+    "game8Id": "541221",
+    "name": "Yaeno Muteki",
+    "version": "Fiery Discipline",
+    "icon": "https://img.game8.co/4237780/22199a75c4856c2b7cf4a62f924319d1.png/show"
+  },
+  {
+    "id": "hishi-amazon-reach-to-the-top",
+    "game8Id": "536689",
+    "name": "Hishi Amazon",
+    "version": "Reach to the Top!",
+    "icon": "https://img.game8.co/4216976/2534fb62fff784e4c60681a94f8d463f.png/show"
+  },
+  {
+    "id": "mihono-bourbon-pal-assisted-training",
+    "game8Id": "536683",
+    "name": "Mihono Bourbon",
+    "version": "Pal-Assisted Training",
+    "icon": "https://img.game8.co/4216922/d680f1ccee2313f552d68ef0df152c09.png/show"
+  },
+  {
+    "id": "nishino-flower-lifting-your-spirits",
+    "game8Id": "539475",
+    "name": "Nishino Flower",
+    "version": "Lifting Your Spirits",
+    "icon": "https://img.game8.co/4231268/c0730360dd0ff078fd0d4ffbe002f2ab.png/show"
+  },
+  {
+    "id": "bamboo-memory-head-on-fight",
+    "game8Id": "550080",
+    "name": "Bamboo Memory",
+    "version": "Head-On Fight!",
+    "icon": "https://img.game8.co/4265537/8175e07d8fd54c9db7442efbd1167136.png/show"
+  },
+  {
+    "id": "biwa-hayahide-trial-initiation",
+    "game8Id": "536686",
+    "name": "Biwa Hayahide",
+    "version": "Trial Initiation",
+    "icon": "https://img.game8.co/4217006/afec7558fcd9f4114e494bd8d383efe0.png/show"
+  },
+  {
+    "id": "mejiro-ryan-on-and-off-the-court",
+    "game8Id": "536682",
+    "name": "Mejiro Ryan",
+    "version": "On and Off the Court",
+    "icon": "https://img.game8.co/4216982/b37eb45e683a42665e0cd32a8db2eb9d.png/show"
+  },
+  {
+    "id": "ines-fujin-watch-my-star-fly",
+    "game8Id": "536703",
+    "name": "Ines Fujin",
+    "version": "Watch My Star Fly!",
+    "icon": "https://img.game8.co/4216996/83890ed399ec6f42c8d7e17d88e8d6ce.png/show"
+  },
+  {
+    "id": "grass-wonder-fairest-fleur",
+    "game8Id": "536708",
+    "name": "Grass Wonder",
+    "version": "Fairest Fleur",
+    "icon": "https://img.game8.co/4216914/d3a5be46db7cb56fbdb09a397bb2c3da.png/show"
+  },
+  {
+    "id": "matikane-tannhauser-just-keep-going",
+    "game8Id": "537598",
+    "name": "Matikane Tannhauser",
+    "version": "Just Keep Going",
+    "icon": "https://img.game8.co/4220093/f5f333c012b66df055ff4ba4d39b1074.png/show"
+  },
+  {
+    "id": "special-week-the-brightest-star-in-japan",
+    "game8Id": "536616",
+    "name": "Special Week",
+    "version": "The Brightest Star in Japan",
+    "icon": "https://img.game8.co/4216993/16c750efec8532117bc9ed533cf6fa0d.png/show"
+  },
+  {
+    "id": "twin-turbo-tt-ignition",
+    "game8Id": "607418",
+    "name": "Twin Turbo",
+    "version": "TT Ignition!",
+    "icon": "https://img.game8.co/4545597/684e999f6beda5fc9131add3427871a4.png/show"
+  },
+  {
+    "id": "air-groove-nothing-escapes-the-vice-prez",
+    "game8Id": "536688",
+    "name": "Air Groove",
+    "version": "Nothing Escapes the Vice Prez",
+    "icon": "https://img.game8.co/4217007/0616c623d3f8c40f45c449cbb823efe3.png/show"
+  },
+  {
+    "id": "hishi-akebono-who-wants-the-first-bite",
+    "game8Id": "541408",
+    "name": "Hishi Akebono",
+    "version": "Who Wants the First Bite?",
+    "icon": "https://img.game8.co/4240308/6bac02aa70f8f486171c2bab8ef4fcd5.png/show"
+  },
+  {
+    "id": "mejiro-palmer-go-ahead-and-laugh",
+    "game8Id": "536524",
+    "name": "Mejiro Palmer",
+    "version": "Go Ahead and Laugh",
+    "icon": "https://img.game8.co/4217014/a8135fb8f5e9321ab1481e325bf13107.png/show"
+  },
+  {
+    "id": "winning-ticket-bnwinner",
+    "game8Id": "536702",
+    "name": "Winning Ticket",
+    "version": "BNWinner!",
+    "icon": "https://img.game8.co/4217000/fddfb473ee49dd370770216053b5f8ab.png/show"
+  },
+  {
+    "id": "meisho-doto-fighting-for-fortune",
+    "game8Id": "536675",
+    "name": "Meisho Doto",
+    "version": "Fighting for Fortune",
+    "icon": "https://img.game8.co/4216956/9de8f34382a448c0c7b0d554f8785764.png/show"
+  },
+  {
+    "id": "yukino-bijin-city-girl-101",
+    "game8Id": "536681",
+    "name": "Yukino Bijin",
+    "version": "City Girl 101",
+    "icon": "https://img.game8.co/4216955/c4e8c1d6bdfaca1788be4f880ced0d8c.png/show"
+  },
+  {
+    "id": "fine-motion-wave-of-gratitude",
+    "game8Id": "536704",
+    "name": "Fine Motion",
+    "version": "Wave of Gratitude",
+    "icon": "https://img.game8.co/4216994/d4101a28256f6e1f77751492dd3d66c0.png/show"
+  },
+  {
+    "id": "tokai-teio-teio-oo-oo",
+    "game8Id": "607417",
+    "name": "Tokai Teio",
+    "version": "Teio-Oo-Oo!!!",
+    "icon": "https://img.game8.co/4545595/0d4d36d32745227beb16b94d6a659335.png/show"
+  },
+  {
+    "id": "agnes-tachyon-experimental-studies-on-subject-a",
+    "game8Id": "536680",
+    "name": "Agnes Tachyon",
+    "version": "Experimental Studies on Subject A",
+    "icon": "https://img.game8.co/4217009/addcf67073760c7d6819b1de161f8ac4.png/show"
+  },
+  {
+    "id": "marvelous-sunday-a-marvelous-plan",
+    "game8Id": "536677",
+    "name": "Marvelous Sunday",
+    "version": "A Marvelous ☆ Plan",
+    "icon": "https://img.game8.co/4216934/8ed4f64c8e2d6d323ef3c37497d037cc.png/show"
+  },
+  {
+    "id": "seiun-sky-bobbing-with-the-waves",
+    "game8Id": "607321",
+    "name": "Seiun Sky",
+    "version": "Bobbing with the Waves",
+    "icon": "https://img.game8.co/4545602/1a5fd018b220eaa1ee7c85ee2994f204.png/show"
+  },
+  {
+    "id": "mejiro-dober-my-thoughts-my-desires",
+    "game8Id": "545935",
+    "name": "Mejiro Dober",
+    "version": "My Thoughts, My Desires",
+    "icon": "https://img.game8.co/4253944/755c8a4932d0d26a397f6a46c92371f7.png/show"
+  },
+  {
+    "id": "seiun-sky-paint-the-sky-red",
+    "game8Id": "550086",
+    "name": "Seiun Sky",
+    "version": "Paint the Sky Red",
+    "icon": "https://img.game8.co/4265540/5238d14d098b14423656d4dda3597741.png/show"
+  },
+  {
+    "id": "yukino-bijin-hometown-cheers",
+    "game8Id": "537169",
+    "name": "Yukino Bijin",
+    "version": "Hometown Cheers",
+    "icon": "https://img.game8.co/4218903/869d49a4cf1ba071c652ddcf73df7a64.png/show"
+  },
+  {
+    "id": "nice-nature-messing-around",
+    "game8Id": "537780",
+    "name": "Nice Nature",
+    "version": "Messing Around",
+    "icon": "https://img.game8.co/4220989/f10dfe2e4cecd3e18a7534b2a791023c.png/show"
+  },
+  {
+    "id": "ikuno-dictus-never-skip-warm-ups",
+    "game8Id": "536523",
+    "name": "Ikuno Dictus",
+    "version": "Never Skip Warm-Ups",
+    "icon": "https://img.game8.co/4217012/b411b9e36183d24fda36f781bc9e6a1a.png/show"
+  },
+  {
+    "id": "mejiro-dober-ignore-the-stares",
+    "game8Id": "536674",
+    "name": "Mejiro Dober",
+    "version": "Ignore the Stares",
+    "icon": "https://img.game8.co/4216921/91b37320035a93c4d4797d5ad49278ea.png/show"
+  },
+  {
+    "id": "air-shakur-7-more-centimeters",
+    "game8Id": "536701",
+    "name": "Air Shakur",
+    "version": "7 More Centimeters",
+    "icon": "https://img.game8.co/4216999/6bac71aff0bb69cd1f4d3b0a9cffc62b.png/show"
+  },
+  {
+    "id": "light-hello-from-the-ground-up",
+    "game8Id": "607411",
+    "name": "Light Hello",
+    "version": "From the Ground Up",
+    "icon": "https://img.game8.co/4545598/bb286344786747e351dbe8bcfda244cc.png/show"
+  },
+  {
+    "id": "tazuna-hayakawa-tracen-reception",
+    "game8Id": "536694",
+    "name": "Tazuna Hayakawa",
+    "version": "Tracen Reception",
+    "icon": "https://img.game8.co/4216917/9b0f5878cb94b64a49393cb84ecc54d8.png/show"
+  },
+  {
+    "id": "maruzensky-sentimental-flare",
+    "game8Id": "607067",
+    "name": "Maruzensky",
+    "version": "Sentimental Flare ♪",
+    "icon": "https://j-img.game8.co/7023306/34a6cf3f273c050a6d0ec0eb44e77797.png/show"
+  },
+  {
+    "id": "mr-c-b-dear-mr-c-b",
+    "game8Id": "597587",
+    "name": "Mr. C.B.",
+    "version": "Dear Mr. C.B.",
+    "icon": "https://j-img.game8.co/6806185/9c0caeeb261d9978b5bc2449d27221ab.png/show"
+  },
+  {
+    "id": "sweep-tosho-it",
+    "game8Id": "557354",
+    "name": "Sweep Tosho (It",
+    "version": null,
+    "icon": "https://j-img.game8.co/6016547/2798bc830e1bf9abd02c90ead8164e69.png/show"
+  },
+  {
+    "id": "air-shakur-mag-c-number",
+    "game8Id": "590751",
+    "name": "Air Shakur",
+    "version": "Mag!c Number",
+    "icon": "https://j-img.game8.co/6681857/5f17a27a7a01d0a9a9de9f3128723067.png/show"
+  },
+  {
+    "id": "curren-chan-cozy-cute-memory",
+    "game8Id": "587506",
+    "name": "Curren Chan",
+    "version": "Cozy Cute Memory ♪",
+    "icon": "https://j-img.game8.co/6625432/a8a706cb6300a1a39b9aa4285a2f6de6.png/show"
+  },
+  {
+    "id": "nice-nature-daring-to-dream",
+    "game8Id": "558833",
+    "name": "Nice Nature",
+    "version": "Daring to Dream",
+    "icon": "https://j-img.game8.co/6086655/77647ff80a234772a65fd6fd449c8eda.png/show"
+  },
+  {
+    "id": "sirius-symboli-escorte-etoile",
+    "game8Id": "590750",
+    "name": "Sirius Symboli",
+    "version": "Escorte Étoile",
+    "icon": "https://j-img.game8.co/6681405/a6a98eed217893066fdf293bb508660f.png/show"
+  },
+  {
+    "id": "fuji-kiseki-well-look-who",
+    "game8Id": "536691",
+    "name": "Fuji Kiseki (Well, Look Who",
+    "version": null,
+    "icon": "https://img.game8.co/4217005/0ae89a5a90396fd64a70e7e3ac7ff61f.png/show"
+  },
+  {
+    "id": "matikane-fukukitaru-fate",
+    "game8Id": "536676",
+    "name": "Matikane Fukukitaru (Fate",
+    "version": null,
+    "icon": "https://img.game8.co/4216987/5379a2f017eb00497a1964a0000d1e61.png/show"
+  },
+  {
+    "id": "zenno-rob-roy-magical-heroine",
+    "game8Id": "567527",
+    "name": "Zenno Rob Roy",
+    "version": "Magical Heroine",
+    "icon": "https://j-img.game8.co/6194857/3140096dd7c0e56fc72d23db2db17353.png/show"
+  },
+  {
+    "id": "el-condor-pasa-mud-caked-companero",
+    "game8Id": "603347",
+    "name": "El Condor Pasa",
+    "version": "Mud-Caked Compañero",
+    "icon": "https://j-img.game8.co/7005829/6492f3be0dbf8ac6b03b32606160b8b2.png/show"
+  },
+  {
+    "id": "mihono-bourbon-the-ghost-finds-halloween-magic",
+    "game8Id": "567531",
+    "name": "Mihono Bourbon",
+    "version": "The Ghost Finds Halloween Magic",
+    "icon": "https://j-img.game8.co/6194890/8dcbc8ea75c47357af3243f8758b56c3.png/show"
+  },
+  {
+    "id": "taiki-shuttle-hands-up-crook",
+    "game8Id": "603338",
+    "name": "Taiki Shuttle",
+    "version": "Hands Up, Crook!",
+    "icon": "https://j-img.game8.co/6924230/dc2c35d053d268af0bde61e284c1b0d3.png/show"
+  },
+  {
+    "id": "daitaku-helios-make-some-noise",
+    "game8Id": "572281",
+    "name": "Daitaku Helios",
+    "version": "Make! Some! NOISE!",
+    "icon": "https://j-img.game8.co/6323965/2027da139c07918831f3d5eaebc89d7b.png/show"
+  },
+  {
+    "id": "daitaku-helios-let",
+    "game8Id": "536669",
+    "name": "Daitaku Helios (Let",
+    "version": null,
+    "icon": "https://img.game8.co/4216925/cdc63377f6c99bceb7fa4aad1ebdf636.png/show"
+  },
+  {
+    "id": "daiwa-scarlet-nothing-hard-work-can",
+    "game8Id": "536690",
+    "name": "Daiwa Scarlet (Nothing Hard Work Can",
+    "version": null,
+    "icon": "https://img.game8.co/4217004/a1dca6a3b7dc01d7260b61354206572b.png/show"
+  },
+  {
+    "id": "el-condor-pasa-champion",
+    "game8Id": "536707",
+    "name": "El Condor Pasa (Champion",
+    "version": null,
+    "icon": "https://img.game8.co/4216923/1472686860a94fb146fde06ce54e8b1f.png/show"
+  },
+  {
+    "id": "daiwa-scarlet-number-1-outfit",
+    "game8Id": "590752",
+    "name": "Daiwa Scarlet",
+    "version": "Number 1 Outfit",
+    "icon": "https://j-img.game8.co/6722319/55999d1018b4031282debccb4a9bdebf.png/show"
+  },
+  {
+    "id": "mayano-top-gun-party-formation",
+    "game8Id": "572589",
+    "name": "Mayano Top Gun",
+    "version": "Party Formation",
+    "icon": "https://j-img.game8.co/6346020/b48b87bcd6fbe1c83ba01b65556935ee.png/show"
+  },
+  {
+    "id": "matikanefukukitaru-touching-sleeves-is-good-luck",
+    "game8Id": "575511",
+    "name": "Matikanefukukitaru",
+    "version": "Touching Sleeves Is Good Luck! ♪",
+    "icon": "https://j-img.game8.co/6435147/8d5faca7fcf3ff98be4347537d123240.png/show"
+  },
+  {
+    "id": "marvelous-sunday-dazzling-day-in-the-snow",
+    "game8Id": "572591",
+    "name": "Marvelous Sunday",
+    "version": "Dazzling Day in the Snow",
+    "icon": "https://j-img.game8.co/6346031/4546e1d6214f74ac3146d2e41cb713b4.png/show"
+  },
+  {
+    "id": "admire-vega-aim-for-the-brightest",
+    "game8Id": "584445",
+    "name": "Admire Vega",
+    "version": "Aim for the Brightest",
+    "icon": "https://j-img.game8.co/6598079/3ac9ac4896d6a12e3ddb366f5f04b224.png/show"
+  },
+  {
+    "id": "narita-top-road-peachy-silhouette",
+    "game8Id": "584441",
+    "name": "Narita Top Road",
+    "version": "Peachy Silhouette",
+    "icon": "https://j-img.game8.co/6598084/73d78e6a3631acd61b2a0beecea6b1c6.png/show"
+  },
+  {
+    "id": "admire-vega-lucky-star-in-the-sky",
+    "game8Id": "575513",
+    "name": "Admire Vega",
+    "version": "Lucky Star in the Sky",
+    "icon": "https://j-img.game8.co/6435152/3ce336059a600bad1c6890be3757c052.png/show"
+  },
+  {
+    "id": "agnes-digital-digital",
+    "game8Id": "536687",
+    "name": "Agnes Digital (Digital",
+    "version": null,
+    "icon": "https://img.game8.co/4217008/9b0fff05441ee19ba7d325d87970381a.png/show"
+  },
+  {
+    "id": "daiwa-scarlet-mini-vacation",
+    "game8Id": "557356",
+    "name": "Daiwa Scarlet",
+    "version": "Mini☆Vacation",
+    "icon": "https://j-img.game8.co/6016542/d74ef657b6cb291ea598dea28198006b.png/show"
+  },
+  {
+    "id": "matikanetannhauser-machitan-adventure",
+    "game8Id": "603344",
+    "name": "Matikanetannhauser",
+    "version": "Machitan☆Adventure",
+    "icon": "https://j-img.game8.co/6953386/86f4692fe6cc7e5d98570cc54b10a6ba.png/show"
+  },
+  {
+    "id": "curren-chan-cutie-pie-with-shining-eyes",
+    "game8Id": "570673",
+    "name": "Curren Chan",
+    "version": "Cutie Pie with Shining Eyes",
+    "icon": "https://j-img.game8.co/6261712/fe60db3a2bdbabd9d0baf22130fae22b.png/show"
+  },
+  {
+    "id": "tosen-jordan-my-way",
+    "game8Id": "580455",
+    "name": "Tosen Jordan",
+    "version": "My Way",
+    "icon": "https://j-img.game8.co/6528952/74b92e27160279835b7389bd482cea45.png/show"
+  },
+  {
+    "id": "ines-fujin-you-earned-it",
+    "game8Id": "582112",
+    "name": "Ines Fujin",
+    "version": "You Earned It!",
+    "icon": "https://j-img.game8.co/6544595/305009a3cbd139f65717753f8fa0b2cb.png/show"
+  },
+  {
+    "id": "rice-shower-happiness-just-around-the-bend",
+    "game8Id": "561494",
+    "name": "Rice Shower",
+    "version": "Happiness Just around the Bend",
+    "icon": "https://j-img.game8.co/6114397/cd956f5a6bd4b723d9a982e4355274f0.png/show"
+  },
+  {
+    "id": "mejiro-ardan-my-heart-will-go-on",
+    "game8Id": "554966",
+    "name": "Mejiro Ardan",
+    "version": "My Heart Will Go On",
+    "icon": "https://j-img.game8.co/5979044/20be67c0059e892cd25d5a4e32497cce.png/show"
+  },
+  {
+    "id": "silence-suzuka-searching-for-unseen-sights",
+    "game8Id": "575297",
+    "name": "Silence Suzuka",
+    "version": "Searching for Unseen Sights",
+    "icon": "https://j-img.game8.co/6401694/350e508a7dcc93a4928410041d581abc.png/show"
+  },
+  {
+    "id": "narita-brian-two-pieces",
+    "game8Id": "556309",
+    "name": "Narita Brian",
+    "version": "Two Pieces",
+    "icon": "https://j-img.game8.co/5999066/86be0ae4e735c6322c615dcdcb854e58.png/show"
+  },
+  {
+    "id": "narita-taishin-strict-shopper",
+    "game8Id": "572590",
+    "name": "Narita Taishin",
+    "version": "Strict Shopper",
+    "icon": "https://j-img.game8.co/6346019/70506babecdf51a49e9f8e0d8b63ef04.png/show"
+  },
+  {
+    "id": "sweep-tosho-reckless-witch-training",
+    "game8Id": "590754",
+    "name": "Sweep Tosho",
+    "version": "Reckless Witch Training",
+    "icon": "https://j-img.game8.co/6722320/f4f248eef80898a0ed7bbf37efbf6133.png/show"
+  },
+  {
+    "id": "manhattan-cafe-it",
+    "game8Id": "607320",
+    "name": "Manhattan Cafe (It",
+    "version": null,
+    "icon": "https://img.game8.co/4545601/6129dc980db140582cdae966f6dff479.png/show"
+  }
+]

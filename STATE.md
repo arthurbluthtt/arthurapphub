@@ -1,6 +1,6 @@
 ﻿# STATE — ArthurAppHub
 
-Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de apps** + **sub-app de wishlist de Destiny 2**.
+Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de apps** + **sub-apps internas** (D2 Wishlist + Umamusume Cards).
 Última actualización: 2026-07-30.
 
 ## AppHub — deploy status
@@ -10,8 +10,37 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - ✅ Grid responsivo de tarjetas (`src/data/apps.json`), tema dark/light persistente con `color-scheme` sincronizado (form controls nativos respetan el tema).
 - ✅ Status dots online/offline (HEAD a cada `app.url`, cache 5 min).
 - ✅ Click en cards abre en la misma pestaña.
-- ✅ Container ancho del destiny escalado: `max-w-6xl` (default) → `max-w-[1760px]` en xl → `max-w-[2240px]` en 2xl. Header escalado progresivamente.
-- ✅ `apps.json` solo incluye D2 Wishlist (única sub-app interna; las apps externas con SSO se registran cuando se necesiten).
+- ✅ Container ancho escalado: `max-w-6xl` (default) → `max-w-[1760px]` en xl → `max-w-[2240px]` en 2xl. Header escalado progresivamente.
+- ✅ `apps.json` incluye D2 Wishlist y Umamusume Cards (sub-apps internas). Las apps externas con SSO se registran cuando se necesiten.
+
+### Umamusume Cards (sub-app interna) — deploy status
+
+- ✅ Migración aplicada a D1 remota: `0008_uma_wishlist.sql` (tabla `uma_wishlist`).
+- ✅ Script `scripts/build-uma-data.mjs` scrapea game8.co (tier list + build guides de cada personaje). Regenerable con `npm run build:uma-data`. Tolerante a HTML mal-formado (apostrofes en alts, colspan fuera de `<tr>`).
+- ✅ Output estático en `data/uma/`: 96 personajes, 105 cartas (67 con icon), 91 personajes con recomendaciones. Cobertura ~95% de las páginas build (5% tienen layouts viejos sin "Grand Live Build" o "Grand Concert Build").
+- ✅ Datos regenerados en build (Vite los bundlea inline como módulo JSON).
+- ✅ R2 bucket `arthurapphub-d2-assets` reusado con prefix `uma/` (un solo bucket, dos apps).
+- ✅ Páginas:
+  - `/umamusume` (login requerido): wishlist con filtro Pendientes/Encontradas, expand "Ver más" para ver Budget + Alternates Speed/Power/Wit.
+- ✅ API:
+  - `GET /umamusume/api/search?q=&limit=` — typeahead sobre `characters.json` (case-insensitive, ranked).
+  - `POST /umamusume/api/add` `{characterId}` — agrega. 409 si duplicado.
+  - `POST /umamusume/api/remove` `{characterId}` — DELETE.
+  - `POST /umamusume/api/toggle-found` `{characterId}` — toggle found/found_at.
+  - `GET /umamusume/api/character/[id]` — `{character, recommendations}` con cards resueltos (icon path incluido).
+  - `GET /umamusume/api/icon?type=character|card&id=` — R2 con fallback game8 CDN, cache 30 días.
+- ✅ Iconos: el proxy hace fallback a CDN y guarda en R2 on-demand. Tarda ~2-3 min la primera carga (cold cache).
+- ✅ El scenario label del card muestra el nombre del scenario actual (Grand Live / Trackblazer). Algunas páginas viejas muestran Trackblazer si game8 ya migró a esa version.
+- ✅ Grid del character card `2xl:grid-cols-5` → `2xl:grid-cols-4` para que las 6 cartas del Main build entren en una sola fila (antes 5 + 1 wrap). Cada tarjeta de personaje queda ~540px en 2xl en vez de ~365px.
+
+### Decisiones Umamusume
+
+- Snapshot estático JSON commiteado (no scrape runtime). Refresh manual con `npm run build:uma-data` cuando sale nuevo scenario (~cada 2-3 meses).
+- Cards se leen estáticamente desde `recommendations.json` (no se guardan en D1). La wishlist solo guarda el `character_id` + `found`.
+- Solo Grand Live (o Trackblazer si game8 ya migró). No histórico (URA / Unity Cup).
+- Cada versión del personaje es entry separada (Maruzensky Formula R ≠ Hot☆Summer Night). El user agrega la que tiene.
+- Whitelist de categorías por slot no aplica (Umamusume no tiene Barrel/Magazine/Trait como D2).
+- Iconos del CDN de game8 (img.game8.co) cacheados en R2. Sin auth para servir (público).
 
 ### Identity Provider (SSO multi-app)
 
@@ -86,7 +115,7 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 
 - `src/lib/d2/resolver.ts` `resolveWishlistRow(row)` arma el shape final para el cliente.
 
-### Refresh manifest (~cada season de D2)
+### Refresh D2 manifest (~cada season)
 
 ```bash
 BUNGIE_API_KEY=<key> npm run build:d2-manifest
@@ -94,14 +123,26 @@ git add data/d2/weapons-index.json data/d2/perks.json
 git commit -m "d2: refresh manifest" && git push
 ```
 
+### Refresh Umamusume data (~cada nuevo scenario / balance)
+
+```bash
+npm run build:uma-data
+git add data/uma/characters.json data/uma/cards.json data/uma/recommendations.json
+git commit -m "uma: refresh manifest" && git push
+```
+
+Script tarda ~2 min (96 requests secuenciales con rate limit 1.2s entre cada uno). Cobertura actual: 91/96 personajes con recomendaciones Grand Live / Trackblazer.
+
 ## Próximo
 
 Pendiente en orden de prioridad:
 
-1. Smoke test end-to-end final en el browser (login → /destiny → search → modal → escribir 4 perks con typeahead cross-categoría → agregar → editar perks → toggle found → filter por tipo → reload).
+1. Smoke test E2E del Umamusume Cards en el browser (login → /umamusume → search Maruzensky → agregar → ver "Ver más" → toggle found → filter → remove).
 2. Agregar una segunda app al SSO (5-10 líneas en la nueva app + 2 entradas en el hub).
 3. Si se quiere extender más allá del círculo personal, mejorar el handler de errores en `/api/redir` cuando el hub está caído.
 4. **Eliminado**: la entrada de notes-app en `apps.json` y los `app_id` en `ALLOWED_APPS` / `KNOWN_APPS` (de momento vacíos). El worker `notes-app` en Cloudflare sigue corriendo con sus datos hasta que se borre manualmente.
+5. Umamusume: refresh de datos si game8 reorganiza o sale nuevo scenario.
+6. Umamusume: agregar las 5 páginas que quedaron sin recomendaciones (El Condor Pasa Kukulkan Warrior, Mayano Top Gun Sunlight Bouquet, Special Week Special Dreamer, Special Week Ruler of Japan, "564 Escapades" — esta última es un skill id mal clasificado como character).
 
 ## Decisiones tomadas
 
@@ -120,6 +161,10 @@ Pendiente en orden de prioridad:
 - D2 perks `category` se normaliza al slot al guardar (`add.ts`/`update.ts` usan `SLOT_CATEGORY`). Si el usuario guardó "Agile Bowstring" en slot magazine, queda con `category: 'Magazine'` en la wishlist y aparece correctamente en futuras aperturas del dropdown magazine sin tipear.
 - D2 iconos custom con tipo asignable para que el picker los filtre correctamente.
 - D2 orden del dropdown por uso: las perks más usadas primero (count desde `d2_wishlist.perks_json`).
+- UMA: snapshot estático JSON commiteado, refresh manual con `npm run build:uma-data`.
+- UMA: scenario se detecta automáticamente del heading de game8 (Grand Live / Grand Concert / Trackblazer).
+- UMA: type-ahead sobre `characters.json` con ranking (exact prefix > word prefix > substring).
+- UMA: cards referenciadas en builds que no estaban en `Best Support Cards` se agregan al `cards.json` (merge por `game8Id`).
 
 ## Riesgos remanentes
 
@@ -129,6 +174,8 @@ Pendiente en orden de prioridad:
 - **Logout no revoca sesiones de apps**: el botón "Salir" del hub solo limpia la cookie del hub; las cookies de las apps siguen vivas hasta expirar (90 días). Mejora futura: tracking de sesiones por app con `/api/auth/logout-all` real.
 - **`AUTH_PEPPER` legacy en cualquier app externa**: ya no se usa para auth (todo viene del hub). Puede borrarse del worker correspondiente + GH secret si se confirma que la app está desvinculada.
 - **`<select>` nativos**: en algunos navegadores OS es coherciano (los options nativos pueden tener contraste bajo si el SO tiene tema claro del sistema). `color-scheme: dark` en `<html>` mitiga esto en navegadores modernos (Chrome/Edge/Safari/Firefox). Fallback adicional: si un día hace falta, `appearance: none` + dropdown custom.
+- **UMA scraping**: game8.co puede cambiar la estructura HTML. El script es tolerante a casos comunes (apostrofes en alt, colspan fuera de `<tr>`, headings Trackblazer/Grand Live/Grand Concert) pero un redesign grande rompería el parser. Mitigación: el script loggea skips, hay que monitorear el ratio de cobertura (actual 91/96).
+- **R2 bucket compartido**: `arthurapphub-d2-assets` se usa para D2 y UMA. Si una app nueva necesita icons, hay que decidir si comparte bucket (más simple) o crea uno nuevo (más aislado). Por ahora un bucket con prefix por app funciona bien.
 
 ## Recap de credenciales actuales
 
@@ -137,8 +184,8 @@ Pendiente en orden de prioridad:
 | Repo | github.com/arthurbluthtt/arthurapphub |
 | Worker | arthurapphub |
 | URL producción | https://arthurapphub.arthurbluthtt.workers.dev |
-| D1 auth | arthurapphub-auth-db (id `09663bc8-89c0-422f-833f-de9f48b0a8ab`) |
-| R2 | arthurapphub-d2-assets (binding `D2_ASSETS`) |
+| D1 auth | arthurapphub-auth-db (id `09663bc8-89c0-422f-833f-de9f48b0a8ab`) — tablas: pin_credentials, sessions, auth_codes, d2_wishlist, d2_perk_icons, **uma_wishlist** |
+| R2 | arthurapphub-d2-assets (binding `D2_ASSETS`) — reusado por D2 y UMA con prefix `uma/` |
 | GH Secrets set | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `INTERNAL_API_SECRET` |
 | Worker Secrets | `AUTH_PEPPER` (64 chars random en `~/.config/cloudflare-tokens/hub-pepper.txt`), `INTERNAL_API_SECRET` (en `~/.config/cloudflare-tokens/shared-secret.txt`), `BUNGIE_API_KEY` |
 | CF API Token | (cuenta completa — ver `~/.config/cloudflare-tokens/account-wide.pat`, no commitear valor) |

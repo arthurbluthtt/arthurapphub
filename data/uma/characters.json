@@ -1,0 +1,674 @@
+[
+  {
+    "id": "narita-taishin-difference-engineer",
+    "game8Id": "607444",
+    "name": "Narita Taishin",
+    "version": "Difference Engineer",
+    "icon": "https://img.game8.co/4569779/d63cd45e13f809c7d42605acd8682745.png/show"
+  },
+  {
+    "id": "winning-ticket-dream-deliverer",
+    "game8Id": "607445",
+    "name": "Winning Ticket",
+    "version": "Dream Deliverer",
+    "icon": "https://img.game8.co/4569780/a66f07c5f2df9f23fc4d815388ba2731.png/show"
+  },
+  {
+    "id": "smart-falcon-twilight-triumph",
+    "game8Id": "607408",
+    "name": "Smart Falcon",
+    "version": "Twilight Triumph",
+    "icon": "https://img.game8.co/4543616/c98f163d8bbe6d4d5e1b24f3b35a0251.png/show"
+  },
+  {
+    "id": "copano-rickey-eightfold-fortune",
+    "game8Id": "607426",
+    "name": "Copano Rickey",
+    "version": "Eightfold ☆Fortune",
+    "icon": "https://img.game8.co/4543446/7a674ac4e6ba27c3a237d2ada76c7024.png/show"
+  },
+  {
+    "id": "oguri-cap-ashen-miracle",
+    "game8Id": "572578",
+    "name": "Oguri Cap",
+    "version": "Ashen Miracle",
+    "icon": "https://img.game8.co/4372573/6af39314f30d8d63fc0de101b00d6428.png/show"
+  },
+  {
+    "id": "smart-falcon-love-4ever",
+    "game8Id": "541253",
+    "name": "Smart Falcon",
+    "version": "LOVE☆4EVER",
+    "icon": "https://img.game8.co/4215631/337c5bf43c5719926207ba459d43bec9.png/show"
+  },
+  {
+    "id": "inari-one-edomurasaki",
+    "game8Id": "597849",
+    "name": "Inari One",
+    "version": "Edomurasaki",
+    "icon": "https://img.game8.co/4486913/609ebb9aae1550a4f583a5088f3ac05e.png/show"
+  },
+  {
+    "id": "agnes-digital-full-color-fangirling",
+    "game8Id": "566109",
+    "name": "Agnes Digital",
+    "version": "Full-Color Fangirling",
+    "icon": "https://img.game8.co/4215633/59ca99727f3f24e2c049d72ae6594527.png/show"
+  },
+  {
+    "id": "oguri-cap-starlight-beat",
+    "game8Id": "536318",
+    "name": "Oguri Cap",
+    "version": "Starlight Beat",
+    "icon": "https://img.game8.co/4215120/b88f532cf2ad5d92e2cba38d4e3e1967.png/show"
+  },
+  {
+    "id": "el-condor-pasa-el-numero-1",
+    "game8Id": "536304",
+    "name": "El Condor Pasa",
+    "version": "El Numero 1",
+    "icon": "https://img.game8.co/4215091/71f519fcd85bcc88940cb05a06aa5fad.png/show"
+  },
+  {
+    "id": "el-condor-pasa-kukulkan-warrior",
+    "game8Id": "547832",
+    "name": "El Condor Pasa",
+    "version": "Kukulkan Warrior",
+    "icon": "https://img.game8.co/4265082/6b379764f113de4136df307ecd70de13.png/show"
+  },
+  {
+    "id": "taiki-shuttle-bubblegum-memories",
+    "game8Id": "603278",
+    "name": "Taiki Shuttle",
+    "version": "Bubblegum ☆Memories",
+    "icon": "https://img.game8.co/4531082/39dfcaf3af235af46b72d47890b3e597.png/show"
+  },
+  {
+    "id": "mihono-bourbon-code-icing",
+    "game8Id": "580437",
+    "name": "Mihono Bourbon",
+    "version": "CODE: ICING",
+    "icon": "https://img.game8.co/4418691/c0bcba1795739069ea290ce6139918d3.png/show"
+  },
+  {
+    "id": "maruzensky-hot-summer-night",
+    "game8Id": "556411",
+    "name": "Maruzensky",
+    "version": "Hot☆Summer Night",
+    "icon": "https://img.game8.co/4292909/dfa724321de6577126deae310ef24d04.png/show"
+  },
+  {
+    "id": "gold-city-autumn-cosmos",
+    "game8Id": "570623",
+    "name": "Gold City",
+    "version": "Autumn Cosmos",
+    "icon": "https://img.game8.co/4377475/62f05f232bdfa17f2a92b8951da0ca8b.png/show"
+  },
+  {
+    "id": "nice-nature-poinsettia-ribbon",
+    "game8Id": "536287",
+    "name": "Nice Nature",
+    "version": "Poinsettia Ribbon",
+    "icon": "https://img.game8.co/4215099/f427b728c8fff6a14b9db7b1c88edab0.png/show"
+  },
+  {
+    "id": "mayano-top-gun-sunlight-bouquet",
+    "game8Id": "541251",
+    "name": "Mayano Top Gun",
+    "version": "Sunlight Bouquet",
+    "icon": "https://img.game8.co/4238069/bbdc765c2d8a16c29c109e79e8a4d11b.png/show"
+  },
+  {
+    "id": "super-creek-chiffon-wrapped-mummy",
+    "game8Id": "567548",
+    "name": "Super Creek",
+    "version": "Chiffon-Wrapped Mummy",
+    "icon": "https://img.game8.co/4346982/5713107635f13fe4ea31d8b4abfd49da.png/show"
+  },
+  {
+    "id": "agnes-tachyon-tach-nology",
+    "game8Id": "536293",
+    "name": "Agnes Tachyon",
+    "version": "Tach-nology",
+    "icon": "https://img.game8.co/4215119/866e3174290a1db9f1b5e9b0707022fd.png/show"
+  },
+  {
+    "id": "grass-wonder-stone-piercing-blue",
+    "game8Id": "536306",
+    "name": "Grass Wonder",
+    "version": "Stone-Piercing Blue",
+    "icon": "https://img.game8.co/4215106/abb5535583d439297e38fd88351acb0f.png/show"
+  },
+  {
+    "id": "symboli-rudolf-emperor",
+    "game8Id": "536314",
+    "name": "Symboli Rudolf (Emperor",
+    "version": null,
+    "icon": "https://img.game8.co/4215094/cfe21be4d0eaa0f7fd7bfca081137cf6.png/show"
+  },
+  {
+    "id": "eishin-flash-meisterschaft",
+    "game8Id": "558104",
+    "name": "Eishin Flash",
+    "version": "Meisterschaft",
+    "icon": "https://img.game8.co/4215629/9f8605d49f3289e1b48dd470a8a44872.png/show"
+  },
+  {
+    "id": "nice-nature-run-amp-win",
+    "game8Id": "596601",
+    "name": "Nice Nature",
+    "version": "Run &amp; Win",
+    "icon": "https://img.game8.co/4478864/b0bd3665ba01e7f907ac0a24229adae3.png/show"
+  },
+  {
+    "id": "curren-chan-ma-cherie-of-the-new-moon",
+    "game8Id": "597848",
+    "name": "Curren Chan",
+    "version": "Ma Chérie of the New Moon",
+    "icon": "https://img.game8.co/4486912/f262eff404bee6c2a073ede4823d4c15.png/show"
+  },
+  {
+    "id": "king-halo-cheerleader-in-noble-white",
+    "game8Id": "596602",
+    "name": "King Halo",
+    "version": "Cheerleader in Noble White",
+    "icon": "https://img.game8.co/4478863/c98f3e6abae1e509c90673707aea3bb3.png/show"
+  },
+  {
+    "id": "nishino-flower-layered-petals",
+    "game8Id": "590844",
+    "name": "Nishino Flower",
+    "version": "Layered Petals",
+    "icon": "https://img.game8.co/4215636/b5b9c3bed462ff751dcf703f5ba42544.png/show"
+  },
+  {
+    "id": "silence-suzuka-innocent-silence",
+    "game8Id": "536321",
+    "name": "Silence Suzuka",
+    "version": "Innocent Silence",
+    "icon": "https://img.game8.co/4215102/de7844318b232ff98575cd731da5da5b.png/show"
+  },
+  {
+    "id": "taiki-shuttle-wild-frontier",
+    "game8Id": "536317",
+    "name": "Taiki Shuttle",
+    "version": "Wild Frontier",
+    "icon": "https://img.game8.co/4215092/2c86727fc3e27a1455f765b1be6aaf9b.png/show"
+  },
+  {
+    "id": "curren-chan-fille-eclair",
+    "game8Id": "537177",
+    "name": "Curren Chan",
+    "version": "Fille Éclair",
+    "icon": "https://img.game8.co/4246626/af30ce09d65c0e609c8dc4355f5d323d.png/show"
+  },
+  {
+    "id": "hishi-akebono-buono-alla-moda",
+    "game8Id": "564091",
+    "name": "Hishi Akebono",
+    "version": "Buono☆Alla Moda",
+    "icon": "https://img.game8.co/4329654/b6475f4b211412eb6683c0e1014794ed.png/show"
+  },
+  {
+    "id": "sakura-bakushin-o-blossom-in-learning",
+    "game8Id": "536298",
+    "name": "Sakura Bakushin O",
+    "version": "Blossom in Learning",
+    "icon": "https://img.game8.co/4215124/b43daef3029d668d934a74fc6dedc106.png/show"
+  },
+  {
+    "id": "air-groove-empress-road",
+    "game8Id": "536302",
+    "name": "Air Groove",
+    "version": "Empress Road",
+    "icon": "https://img.game8.co/4215095/7ae933e5523e8b0be50e79481aa74d64.png/show"
+  },
+  {
+    "id": "bamboo-memory-iron-ambition",
+    "game8Id": "607406",
+    "name": "Bamboo Memory",
+    "version": "Iron Ambition",
+    "icon": "https://img.game8.co/4550587/7a246bead5245586a150972c01c7b3e9.png/show"
+  },
+  {
+    "id": "fuji-kiseki-succes-etoile",
+    "game8Id": "554812",
+    "name": "Fuji Kiseki",
+    "version": "Succès Étoilé",
+    "icon": "https://img.game8.co/4458276/6ea0d707ab789e0989b7c969ae863623.png/show"
+  },
+  {
+    "id": "king-halo-king-of-emeralds",
+    "game8Id": "536295",
+    "name": "King Halo",
+    "version": "King of Emeralds",
+    "icon": "https://img.game8.co/4215104/6c6a894d4249705341fc8e8f3729c2c1.png/show"
+  },
+  {
+    "id": "seiun-sky-reeling-in-the-big-one",
+    "game8Id": "547834",
+    "name": "Seiun Sky",
+    "version": "Reeling in the Big One",
+    "icon": "https://img.game8.co/4215637/0186eb67d34e69743cb30de78de05eff.png/show"
+  },
+  {
+    "id": "fine-motion-titania",
+    "game8Id": "597847",
+    "name": "Fine Motion",
+    "version": "Titania",
+    "icon": "https://img.game8.co/4486915/9ea214cb14a859c441ce47a79725bcb6.png/show"
+  },
+  {
+    "id": "fuji-kiseki-shooting-star-revue",
+    "game8Id": "553122",
+    "name": "Fuji Kiseki",
+    "version": "Shooting Star Revue",
+    "icon": "https://img.game8.co/4215639/8a19fa7cf442bea3d45a84273946c8f7.png/show"
+  },
+  {
+    "id": "maruzensky-formula-r",
+    "game8Id": "536319",
+    "name": "Maruzensky",
+    "version": "Formula R",
+    "icon": "https://img.game8.co/4215129/d710f507283c55a35b5a5ca256380ef3.png/show"
+  },
+  {
+    "id": "vodka-wild-top-gear",
+    "game8Id": "536310",
+    "name": "Vodka",
+    "version": "Wild Top Gear",
+    "icon": "https://img.game8.co/4215123/8c3ddeb9090b518a35fd5265ce3b0e1f.png/show"
+  },
+  {
+    "id": "air-groove-quercus-civilis",
+    "game8Id": "541250",
+    "name": "Air Groove",
+    "version": "Quercus Civilis",
+    "icon": "https://img.game8.co/4238068/3120a85fb8c9bc3ca8abaaf5d2523a78.png/show"
+  },
+  {
+    "id": "fine-motion-noble-seamair",
+    "game8Id": "573474",
+    "name": "Fine Motion",
+    "version": "Noble Seamair",
+    "icon": "https://img.game8.co/4215621/2950ad28b409821d05fe4eb69168ef53.png/show"
+  },
+  {
+    "id": "gold-city-authentic-1928",
+    "game8Id": "555980",
+    "name": "Gold City",
+    "version": "Authentic / 1928",
+    "icon": "https://img.game8.co/4215622/13a954122fa56c982abf91a2f3c655d7.png/show"
+  },
+  {
+    "id": "hishi-amazon-azure-amazon",
+    "game8Id": "547833",
+    "name": "Hishi Amazon",
+    "version": "Azure Amazon",
+    "icon": "https://img.game8.co/4215630/680022e0ffec85a5fa151ca1120ea64e.png/show"
+  },
+  {
+    "id": "gold-ship-run-ruin-launcher",
+    "game8Id": "607649",
+    "name": "Gold Ship",
+    "version": "RUN! RUIN! LAUNCHER!",
+    "icon": "https://img.game8.co/4547448/ad6aa9995d71005f4405ea452559d636.png/show"
+  },
+  {
+    "id": "daiwa-scarlet-peak-blue",
+    "game8Id": "536303",
+    "name": "Daiwa Scarlet",
+    "version": "Peak Blue",
+    "icon": "https://img.game8.co/4215127/849b6a25d5a9115a17ba0dd9484d4632.png/show"
+  },
+  {
+    "id": "gold-ship-red-strife",
+    "game8Id": "536305",
+    "name": "Gold Ship",
+    "version": "Red Strife",
+    "icon": "https://img.game8.co/4215126/f865ae8805e1a047c197b41dcf629128.png/show"
+  },
+  {
+    "id": "ines-fujin-always-electrifying",
+    "game8Id": "597585",
+    "name": "Ines Fujin",
+    "version": "Always Electrifying",
+    "icon": "https://img.game8.co/4215628/981b89c6951e171f66a9c6b26f65c96a.png/show"
+  },
+  {
+    "id": "mayano-top-gun-scramble-zone",
+    "game8Id": "536307",
+    "name": "Mayano Top Gun",
+    "version": "Scramble Zone",
+    "icon": "https://img.game8.co/4215107/10b354aa6881ac931850fdfdd65e4bfa.png/show"
+  },
+  {
+    "id": "mejiro-dober-off-the-line",
+    "game8Id": "572255",
+    "name": "Mejiro Dober",
+    "version": "Off the Line",
+    "icon": "https://img.game8.co/4215623/3b18da3a002fb5efbdd33e0fb63840f2.png/show"
+  },
+  {
+    "id": "mejiro-dober-sapphire-sojourn",
+    "game8Id": "603279",
+    "name": "Mejiro Dober",
+    "version": "Sapphire Sojourn",
+    "icon": "https://img.game8.co/4531083/d4806b49c38b0be2011feae52a1723a9.png/show"
+  },
+  {
+    "id": "special-week-hopp",
+    "game8Id": "556853",
+    "name": "Special Week (Hopp",
+    "version": null,
+    "icon": "https://img.game8.co/4292908/648e53b547019ed8388f7dc88720bb74.png/show"
+  },
+  {
+    "id": "special-week-special-dreamer",
+    "game8Id": "536322",
+    "name": "Special Week",
+    "version": "Special Dreamer",
+    "icon": "https://img.game8.co/4215100/ccdae6e32950d689004ae06d0d12b7fb.png/show"
+  },
+  {
+    "id": "sweep-tosho-platanus-witch",
+    "game8Id": "603277",
+    "name": "Sweep Tosho",
+    "version": "Platanus Witch",
+    "icon": "https://img.game8.co/4215625/08b46680dd8f8f45479b442d9e0b3f52.png/show"
+  },
+  {
+    "id": "tamamo-cross-fast-as-lightning",
+    "game8Id": "575246",
+    "name": "Tamamo Cross",
+    "version": "Fast as Lightning",
+    "icon": "https://img.game8.co/4215634/8ba9055637fafd9223d2957c4398355e.png/show"
+  },
+  {
+    "id": "admire-vega-starry-nocturne",
+    "game8Id": "583792",
+    "name": "Admire Vega",
+    "version": "Starry Nocturne",
+    "icon": "https://img.game8.co/4428700/6ee256690af9074148e795eeabe7b18a.png/show"
+  },
+  {
+    "id": "air-shakur-unsigned",
+    "game8Id": "603280",
+    "name": "Air Shakur",
+    "version": "unsigned",
+    "icon": "https://img.game8.co/4215635/0d3799869b6bb76b3ea72c979bcbcb60.png/show"
+  },
+  {
+    "id": "eishin-flash-precise-chocolatier",
+    "game8Id": "580438",
+    "name": "Eishin Flash",
+    "version": "Precise Chocolatier",
+    "icon": "https://img.game8.co/4418692/93056ed5a4cd9b1deb503014edc40155.png/show"
+  },
+  {
+    "id": "kawakami-princess-princess-of-pink",
+    "game8Id": "568906",
+    "name": "Kawakami Princess",
+    "version": "Princess of Pink",
+    "icon": "https://img.game8.co/4350967/f76539f7640dae30e9d1c4a7a6ac4495.png/show"
+  },
+  {
+    "id": "meisho-doto-turbulent-blue",
+    "game8Id": "557789",
+    "name": "Meisho Doto",
+    "version": "Turbulent Blue",
+    "icon": "https://img.game8.co/4215619/df6d6e2bad11c267eabab8effa9a56dd.png/show"
+  },
+  {
+    "id": "mejiro-ardan-crystalline",
+    "game8Id": "581631",
+    "name": "Mejiro Ardan",
+    "version": "Crystalline",
+    "icon": "https://img.game8.co/4482693/58c257205bf11321e1b5e5583de537c8.png/show"
+  },
+  {
+    "id": "mejiro-palmer-line-breakthrough",
+    "game8Id": "597845",
+    "name": "Mejiro Palmer",
+    "version": "Line Breakthrough",
+    "icon": "https://img.game8.co/4486914/f70cd95d5768bf3f07df0b1b3517b9a1.png/show"
+  },
+  {
+    "id": "mejiro-ryan-down-the-line",
+    "game8Id": "536297",
+    "name": "Mejiro Ryan",
+    "version": "Down the Line",
+    "icon": "https://img.game8.co/4215093/cf29dcafa459fe6526ae63511010b6c6.png/show"
+  },
+  {
+    "id": "mihono-bourbon-mb-19890425",
+    "game8Id": "536312",
+    "name": "Mihono Bourbon",
+    "version": "MB-19890425",
+    "icon": "https://img.game8.co/4215103/c8daf8408a496ca99f2f409141480ee3.png/show"
+  },
+  {
+    "id": "sakura-chiyono-o-strength-in-full-bloom",
+    "game8Id": "579926",
+    "name": "Sakura Chiyono O",
+    "version": "Strength in Full Bloom",
+    "icon": "https://img.game8.co/4482694/ebcbe09f89bd75eaaa47dae62ffad858.png/show"
+  },
+  {
+    "id": "satono-diamond-natural-brilliance",
+    "game8Id": "587494",
+    "name": "Satono Diamond",
+    "version": "Natural Brilliance",
+    "icon": "https://img.game8.co/4390284/353b58c6e8cba72cb732a251fd350ff3.png/show"
+  },
+  {
+    "id": "symboli-rudolf-archer-by-moonlight",
+    "game8Id": "570624",
+    "name": "Symboli Rudolf",
+    "version": "Archer by Moonlight",
+    "icon": "https://img.game8.co/4377474/970abfb6cd503e91fc0268f0a2e725f7.png/show"
+  },
+  {
+    "id": "t-m-opera-o-o-sole-suo",
+    "game8Id": "536315",
+    "name": "T.M. Opera O",
+    "version": "O Sole Suo!",
+    "icon": "https://img.game8.co/4215118/01614857f603e325d89d2672ff7be956.png/show"
+  },
+  {
+    "id": "tokai-teio-beyond-the-horizon",
+    "game8Id": "537150",
+    "name": "Tokai Teio",
+    "version": "Beyond the Horizon",
+    "icon": "https://img.game8.co/4218713/54e61e6ffef143af6ee086fb5773fbaf.png/show"
+  },
+  {
+    "id": "tokai-teio-peak-joy",
+    "game8Id": "536320",
+    "name": "Tokai Teio",
+    "version": "Peak Joy",
+    "icon": "https://img.game8.co/4215117/a32a700acf40156c4a14e5628d4528c2.png/show"
+  },
+  {
+    "id": "tosen-jordan-jokester-vibes",
+    "game8Id": "571291",
+    "name": "Tosen Jordan",
+    "version": "Jokester ☆ Vibes",
+    "icon": "https://img.game8.co/4366864/3f9d397318a8a57a8fd54cc54c73f78d.png/show"
+  },
+  {
+    "id": "yaeno-muteki-blazed-head-covered-fists",
+    "game8Id": "595720",
+    "name": "Yaeno Muteki",
+    "version": "Blazed Head, Covered Fists",
+    "icon": "https://img.game8.co/4473565/ec3f1b1a58ae5fe9ccd43441c86a8bba.png/show"
+  },
+  {
+    "id": "matikane-fukukitaru-rising-fortune",
+    "game8Id": "536296",
+    "name": "Matikane Fukukitaru",
+    "version": "Rising Fortune",
+    "icon": "https://img.game8.co/4215420/9f0d54387a98e16a1ccfbdb13a164bb6.png/show"
+  },
+  {
+    "id": "winning-ticket-get-to-winning",
+    "game8Id": "536299",
+    "name": "Winning Ticket",
+    "version": "Get to Winning!",
+    "icon": "https://img.game8.co/4215097/f315789918074a13bde91667b52ef450.png/show"
+  },
+  {
+    "id": "grass-wonder-saintly-jade-cleric",
+    "game8Id": "547831",
+    "name": "Grass Wonder",
+    "version": "Saintly Jade Cleric",
+    "icon": "https://img.game8.co/4348863/08446c53a9419da523b6a9929482942b.png/show"
+  },
+  {
+    "id": "kitasan-black-gilded-shrine-to-glory",
+    "game8Id": "583950",
+    "name": "Kitasan Black",
+    "version": "Gilded Shrine to Glory",
+    "icon": "https://img.game8.co/4429384/09e22df6ace2158f153fcf6b554c6fc5.png/show"
+  },
+  {
+    "id": "manhattan-cafe-creeping-shadow",
+    "game8Id": "568614",
+    "name": "Manhattan Cafe",
+    "version": "Creeping Shadow",
+    "icon": "https://img.game8.co/4215624/c02b4399161742cf25b85e5cc8efaf07.png/show"
+  },
+  {
+    "id": "narita-taishin-nevertheless",
+    "game8Id": "541215",
+    "name": "Narita Taishin",
+    "version": "Nevertheless",
+    "icon": "https://img.game8.co/4215638/c9a9a3352015b98b96bcf5adc58a3c71.png/show"
+  },
+  {
+    "id": "seiun-sky-soiree-des-chatons",
+    "game8Id": "557604",
+    "name": "Seiun Sky",
+    "version": "Soirée des Chatons",
+    "icon": "https://img.game8.co/4458277/2611b69f522adb2ac71bcdfd0b63a67d.png/show"
+  },
+  {
+    "id": "super-creek-murmuring-stream",
+    "game8Id": "536309",
+    "name": "Super Creek",
+    "version": "Murmuring Stream",
+    "icon": "https://img.game8.co/4215105/0fef6616422e8cafe011db3f4297d458.png/show"
+  },
+  {
+    "id": "t-m-opera-o-new-year-same-radiance",
+    "game8Id": "575507",
+    "name": "T.M. Opera O",
+    "version": "New Year, Same Radiance!",
+    "icon": "https://img.game8.co/4394913/335929dfaab1a7f8dde239372cb0a0dc.png/show"
+  },
+  {
+    "id": "mejiro-bright-brunissage-line",
+    "game8Id": "541718",
+    "name": "Mejiro Bright",
+    "version": "Brunissage Line",
+    "icon": "https://img.game8.co/4390243/a0b15246dc97833b8b2d7c7ec783464b.png/show"
+  },
+  {
+    "id": "mejiro-mcqueen-fair-lady-of-the-waves",
+    "game8Id": "607050",
+    "name": "Mejiro McQueen",
+    "version": "Fair Lady of the Waves",
+    "icon": "https://img.game8.co/4547447/81d288a69b8798520f04fef9fc935591.png/show"
+  },
+  {
+    "id": "narita-brian-maverick",
+    "game8Id": "541252",
+    "name": "Narita Brian",
+    "version": "Maverick",
+    "icon": "https://img.game8.co/4237874/b48663f39c85e997a057e14ccc6fd9ea.png/show"
+  },
+  {
+    "id": "special-week-ruler-of-japan",
+    "game8Id": "603281",
+    "name": "Special Week",
+    "version": "Ruler of Japan",
+    "icon": "https://img.game8.co/4542808/687aa4bf145eaaef0b0f6c8aee0cbedb.png/show"
+  },
+  {
+    "id": "biwa-hayahide-pf-winning-equation",
+    "game8Id": "536325",
+    "name": "Biwa Hayahide",
+    "version": "pf. Winning Equation...",
+    "icon": "https://img.game8.co/4215620/d57362dcb3e68fba4902f89e08f59ad5.png/show"
+  },
+  {
+    "id": "biwa-hayahide-rouge-caroler",
+    "game8Id": "572583",
+    "name": "Biwa Hayahide",
+    "version": "Rouge Caroler",
+    "icon": "https://img.game8.co/4372685/0b4aa7fe454a07312226406ea0b0a436.png/show"
+  },
+  {
+    "id": "matikane-fukukitaru-lucky-tidings",
+    "game8Id": "562609",
+    "name": "Matikane Fukukitaru",
+    "version": "Lucky Tidings",
+    "icon": "https://img.game8.co/4323111/9e613651b17dcac72a65aa3c3693c2f7.png/show"
+  },
+  {
+    "id": "matikane-tannhauser-clippety-tippety-clop",
+    "game8Id": "585855",
+    "name": "Matikane Tannhauser",
+    "version": "Clippety Tippety Clop",
+    "icon": "https://img.game8.co/4242261/1cb9156529d898584a555df8ee107aee.png/show"
+  },
+  {
+    "id": "mejiro-mcqueen-end-of-the-skies",
+    "game8Id": "537151",
+    "name": "Mejiro McQueen",
+    "version": "End of the Skies",
+    "icon": "https://img.game8.co/4218714/60a1167b86af10045042a3bb142c22df.png/show"
+  },
+  {
+    "id": "mejiro-mcqueen-frontline-elegance",
+    "game8Id": "536316",
+    "name": "Mejiro McQueen",
+    "version": "Frontline Elegance",
+    "icon": "https://img.game8.co/4215096/d1b0fba85e39f8388349b0d7eb51e94e.png/show"
+  },
+  {
+    "id": "rice-shower-rosy-dreams",
+    "game8Id": "536313",
+    "name": "Rice Shower",
+    "version": "Rosy Dreams",
+    "icon": "https://img.game8.co/4215101/df3fdc1f11bff2145a1e0580f00d6233.png/show"
+  },
+  {
+    "id": "rice-shower-vampire-makeover",
+    "game8Id": "567547",
+    "name": "Rice Shower",
+    "version": "Vampire Makeover!",
+    "icon": "https://img.game8.co/4346983/abd78f25e08f753dd82d617966b66c63.png/show"
+  },
+  {
+    "id": "haru-urara-new-year-new-urara",
+    "game8Id": "575508",
+    "name": "Haru Urara",
+    "version": "New Year ♪ New Urara!",
+    "icon": "https://img.game8.co/4394914/5e5439a7bebb62ac4549aa52d74c19aa.png/show"
+  },
+  {
+    "id": "haru-urara-bestest-prize",
+    "game8Id": "536294",
+    "name": "Haru Urara",
+    "version": "Bestest Prize",
+    "icon": "https://img.game8.co/4215125/8a0d5987ff05baa4e52b7b75dd8db0ac.png/show"
+  },
+  {
+    "id": "564-escapades",
+    "game8Id": "607867",
+    "name": "564 Escapades",
+    "version": null,
+    "icon": "https://img.game8.co/4246875/51c1541f92974fb2a9b4e1e5819fbf31.png/show"
+  }
+]

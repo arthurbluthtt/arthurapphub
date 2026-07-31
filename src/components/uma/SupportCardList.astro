@@ -1,0 +1,35 @@
+---
+import type { UmaCard } from '../../lib/uma/data';
+
+interface Props {
+  cards: UmaCard[];
+  size?: 'xs' | 'sm';
+}
+
+const { cards, size = 'sm' } = Astro.props;
+// Data URL del placeholder. En data: URLs el browser SÍ URL-decodea el body,
+// por eso usamos %23 (no #) — al decodificar se convierte en #.
+const EMPTY_DATA_URL =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 66"><rect width="50" height="66" fill="%23e4e4e7"/><text x="50%" y="58%" font-size="22" text-anchor="middle" fill="%2371717a" font-family="sans-serif">?</text></svg>';
+// Las cartas de game8 son 50×66 px (aspect ratio ~0.76, portrait).
+// `w-12` o `w-16` controla el ancho, aspect-[50/66] mantiene la proporción.
+const sizeCls = size === 'xs' ? 'w-12 aspect-[50/66]' : 'w-16 aspect-[50/66]';
+---
+
+<div class="flex flex-wrap gap-2">
+  {
+    cards.map((c) => (
+      <img
+        src={`/umamusume/api/icon?type=card&id=${encodeURIComponent(c.game8Id)}`}
+        alt={c.name ?? ''}
+        title={c.name ?? ''}
+        loading="lazy"
+        class:list={[
+          'shrink-0 rounded ring-1 ring-zinc-200 dark:ring-white/10 bg-zinc-50 dark:bg-white/[0.04] object-cover',
+          sizeCls,
+        ]}
+        onerror={`this.onerror=null;this.src='${EMPTY_DATA_URL}'`}
+      />
+    ))
+  }
+</div>

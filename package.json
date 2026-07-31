@@ -12,7 +12,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "generate-types": "wrangler types",
-    "build:d2-manifest": "node scripts/build-d2-manifest.mjs"
+    "build:d2-manifest": "node scripts/build-d2-manifest.mjs",
+    "build:uma-data": "node scripts/build-uma-data.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.1.4",

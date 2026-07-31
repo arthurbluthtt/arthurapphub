@@ -1,0 +1,412 @@
+---
+import { env } from 'cloudflare:workers';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AddCharacterDialog from '../../components/uma/AddCharacterDialog.astro';
+import SupportCardList from '../../components/uma/SupportCardList.astro';
+import { lookupSession, readCookie } from '../../lib/auth';
+import { listWishlist } from '../../lib/uma/wishlist';
+import { getRecommendations, getCharacter, cards } from '../../lib/uma/data';
+
+export const prerender = false;
+
+const sessionId = readCookie(Astro.request);
+const sess = sessionId ? await lookupSession(env.AUTH_DB, sessionId) : null;
+if (!sess) {
+  return Astro.redirect('/?next=' + encodeURIComponent('/umamusume'));
+}
+
+const rows = await listWishlist(env.AUTH_DB, sess.username);
+
+// Hydrate cada row con el character + recommendations.
+const cardByGame8Id = new Map(cards.map((c) => [c.game8Id, c]));
+const resolveCards = (ids: string[]) =>
+  ids.map((id) => cardByGame8Id.get(id)).filter((c): c is NonNullable<typeof c> => c != null);
+
+const items = rows
+  .map((row) => {
+    const character = getCharacter(row.characterId);
+    if (!character) return null;
+    const recs = getRecommendations(row.characterId);
+    const recsResolved = recs
+      ? {
+          scenario: recs.scenario,
+          main: resolveCards(recs.main),
+          budget: resolveCards(recs.budget),
+          alternates: {
+            speed: resolveCards(recs.alternates.speed),
+            power: resolveCards(recs.alternates.power),
+            wit: resolveCards(recs.alternates.wit),
+          },
+        }
+      : null;
+    return {
+      row,
+      character,
+      recommendations: recsResolved,
+    };
+  })
+  .filter((x): x is NonNullable<typeof x> => x !== null);
+
+const totalCount = items.length;
+
+function iconUrl(type: 'character' | 'card', id: string): string {
+  return `/umamusume/api/icon?type=${type}&id=${encodeURIComponent(id)}`;
+}
+---
+
+<BaseLayout title="Uma Cards — AppHub" contentMaxWidth="max-w-[1760px] 2xl:max-w-[2240px]">
+  <div class="mb-6 flex items-baseline justify-between gap-6">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl xl:text-5xl dark:text-white">
+        Umamusume Cards
+      </h1>
+      <p class="mt-2 text-sm text-zinc-500 xl:text-base">
+        Wishlist de personajes con las cartas de soporte más recomendadas (game8.co).
+      </p>
+    </div>
+    <span class="text-xs uppercase tracking-wider text-zinc-500 xl:text-sm">
+      {totalCount} {totalCount === 1 ? 'personaje' : 'personajes'}
+    </span>
+  </div>
+
+  {
+    totalCount === 0 ? (
+      <p
+        class="rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500"
+        data-empty-state
+      >
+        Tu wishlist está vacía. Buscá un personaje arriba y agregalo con un click.
+      </p>
+    ) : (
+      <div
+        class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4"
+        data-characters-grid
+      >
+        {items.map((item) => (
+          <article
+            data-character-card
+            data-character-id={item.character.id}
+            data-recommendations={item.recommendations ? '1' : '0'}
+            class="group relative flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-5 transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur"
+          >
+            <div class="flex items-center gap-4">
+              <div class="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-white/[0.04]">
+                <img
+                  src={iconUrl('character', item.character.id)}
+                  alt={item.character.name}
+                  loading="lazy"
+                  class="h-20 w-20 object-contain"
+                  style="image-rendering: -webkit-optimize-contrast;"
+                />
+              </div>
+              <div class="min-w-0 flex-1">
+                <h3 class="font-semibold text-zinc-900 dark:text-white">
+                  {item.character.name}
+                </h3>
+                {item.character.version && (
+                  <p class="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
+                    {item.character.version}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                data-remove-character
+                data-character-id={item.character.id}
+                title="Quitar de la wishlist"
+                aria-label="Quitar"
+                class="grid h-7 w-7 shrink-0 place-items-center rounded-full text-zinc-400 transition hover:bg-red-500/10 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+              >
+                ×
+              </button>
+            </div>
+
+            {
+              item.recommendations ? (
+                <>
+                  <p class="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
+                    Main build ({item.recommendations.scenario.replace('_', ' ')})
+                  </p>
+                  <SupportCardList cards={item.recommendations.main} />
+                  <button
+                    type="button"
+                    class="mt-1 self-start text-xs uppercase tracking-wider text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white"
+                    data-toggle-expand
+                    aria-expanded="false"
+                  >
+                    Ver más
+                  </button>
+                  <div
+                    class="hidden flex-col gap-3 border-t border-zinc-200 pt-3 dark:border-white/10"
+                    data-expand-content
+                  >
+                    {item.recommendations.budget.length > 0 && (
+                      <div class="flex flex-col gap-1.5">
+                        <p class="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
+                          Budget build
+                        </p>
+                        <SupportCardList cards={item.recommendations.budget} />
+                      </div>
+                    )}
+                    {(item.recommendations.alternates.speed.length > 0 ||
+                      item.recommendations.alternates.power.length > 0 ||
+                      item.recommendations.alternates.wit.length > 0) && (
+                      <div class="flex flex-col gap-2">
+                        <p class="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
+                          Alternates
+                        </p>
+                        {item.recommendations.alternates.speed.length > 0 && (
+                          <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Spd</span>
+                            <SupportCardList cards={item.recommendations.alternates.speed} size="xs" />
+                          </div>
+                        )}
+                        {item.recommendations.alternates.power.length > 0 && (
+                          <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Pow</span>
+                            <SupportCardList cards={item.recommendations.alternates.power} size="xs" />
+                          </div>
+                        )}
+                        {item.recommendations.alternates.wit.length > 0 && (
+                          <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-500">Wit</span>
+                            <SupportCardList cards={item.recommendations.alternates.wit} size="xs" />
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p class="text-[10px] uppercase tracking-wider text-zinc-500">
+                  Sin recomendaciones (refresh pendiente)
+                </p>
+              )
+            }
+          </article>
+        ))}
+      </div>
+    )
+  }
+
+  <script is:inline define:vars={{ emptyDataUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="%23e4e4e7"/><text x="50%" y="58%" font-size="28" text-anchor="middle" fill="%2371717a" font-family="sans-serif">?</text></svg>' }}>
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      })[c]);
+    }
+
+    document.querySelector('[data-characters-grid]')?.addEventListener('click', async (e) => {
+      const removeBtn = e.target.closest('[data-remove-character]');
+      const expandBtn = e.target.closest('[data-toggle-expand]');
+
+      if (expandBtn) {
+        e.preventDefault();
+        const card = expandBtn.closest('[data-character-card]');
+        const content = card?.querySelector('[data-expand-content]');
+        if (!content) return;
+        const expanded = expandBtn.getAttribute('aria-expanded') === 'true';
+        if (expanded) {
+          content.classList.add('hidden');
+          content.classList.remove('flex');
+          expandBtn.setAttribute('aria-expanded', 'false');
+          expandBtn.textContent = 'Ver más';
+        } else {
+          content.classList.remove('hidden');
+          content.classList.add('flex');
+          expandBtn.setAttribute('aria-expanded', 'true');
+          expandBtn.textContent = 'Ver menos';
+        }
+        return;
+      }
+
+      if (removeBtn) {
+        e.preventDefault();
+        const card = removeBtn.closest('[data-character-card]');
+        const characterId = removeBtn.dataset.characterId;
+        if (!card || !characterId) return;
+        card.style.transition = 'opacity 0.2s';
+        card.style.opacity = '0';
+        try {
+          const res = await fetch('/umamusume/api/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ characterId }),
+          });
+          if (!res.ok && res.status !== 204) throw new Error('remove');
+        } catch {
+          card.style.opacity = '';
+          return;
+        }
+        setTimeout(() => {
+          card.remove();
+          const grid = document.querySelector('[data-characters-grid]');
+          const totalEmpty = document.querySelector('[data-empty-state]');
+          if (grid && grid.children.length === 0 && totalEmpty) {
+            grid.remove();
+            totalEmpty.classList.remove('hidden');
+          }
+        }, 200);
+      }
+    });
+
+    // Construye el DOM de un card de personaje sin usar innerHTML — evita
+    // cualquier problema de rendering cuando el nombre contiene caracteres
+    // especiales (apostrofes, comillas, <, >, &).
+    function buildCharacterArticle(character, recs) {
+      const article = document.createElement('article');
+      article.dataset.characterCard = '';
+      article.dataset.characterId = character.id;
+      article.dataset.recommendations = recs ? '1' : '0';
+      article.className =
+        'group relative flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-5 transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur';
+
+      // Header: icono + nombre + botón eliminar.
+      const header = document.createElement('div');
+      header.className = 'flex items-center gap-4';
+
+      const iconWrap = document.createElement('div');
+      iconWrap.className =
+        'flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-white/[0.04]';
+      const charIcon = document.createElement('img');
+      charIcon.src = '/umamusume/api/icon?type=character&id=' + encodeURIComponent(character.id);
+      charIcon.alt = character.name || '';
+      charIcon.loading = 'lazy';
+      charIcon.className = 'h-20 w-20 object-contain';
+      charIcon.style.imageRendering = '-webkit-optimize-contrast';
+      charIcon.onerror = () => {
+        charIcon.onerror = null;
+        charIcon.src = emptyDataUrl;
+      };
+      iconWrap.appendChild(charIcon);
+      header.appendChild(iconWrap);
+
+      const info = document.createElement('div');
+      info.className = 'min-w-0 flex-1';
+      const nameEl = document.createElement('h3');
+      nameEl.className = 'font-semibold text-zinc-900 dark:text-white';
+      nameEl.textContent = character.name || '';
+      info.appendChild(nameEl);
+      if (character.version) {
+        const verEl = document.createElement('p');
+        verEl.className =
+          'text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500';
+        verEl.textContent = character.version;
+        info.appendChild(verEl);
+      }
+      header.appendChild(info);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.dataset.removeCharacter = '';
+      removeBtn.dataset.characterId = character.id;
+      removeBtn.title = 'Quitar de la wishlist';
+      removeBtn.ariaLabel = 'Quitar';
+      removeBtn.className =
+        'grid h-7 w-7 shrink-0 place-items-center rounded-full text-zinc-400 transition hover:bg-red-500/10 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400';
+      removeBtn.textContent = '×';
+      header.appendChild(removeBtn);
+
+      article.appendChild(header);
+
+      // Main build: label + lista de iconos.
+      if (recs) {
+        const label = document.createElement('p');
+        label.className =
+          'text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500';
+        label.textContent = 'Main build (' + (recs.scenario || '').replace(/_/g, ' ') + ')';
+        article.appendChild(label);
+
+        const iconsWrap = document.createElement('div');
+        iconsWrap.className = 'flex flex-wrap gap-2';
+        for (const c of recs.main.slice(0, 6)) {
+          const cardIcon = document.createElement('img');
+          cardIcon.src = '/umamusume/api/icon?type=card&id=' + encodeURIComponent(c.game8Id);
+          cardIcon.alt = c.name || '';
+          cardIcon.title = c.name || '';
+          cardIcon.loading = 'lazy';
+          cardIcon.className =
+            'w-16 aspect-[50/66] object-cover shrink-0 rounded ring-1 ring-zinc-200 dark:ring-white/10 bg-zinc-50 dark:bg-white/[0.04]';
+          cardIcon.onerror = () => {
+            cardIcon.onerror = null;
+            cardIcon.src = emptyDataUrl;
+          };
+          iconsWrap.appendChild(cardIcon);
+        }
+        article.appendChild(iconsWrap);
+
+        // Botón Ver más + contenido expandible.
+        const expandBtn = document.createElement('button');
+        expandBtn.type = 'button';
+        expandBtn.dataset.toggleExpand = '';
+        expandBtn.setAttribute('aria-expanded', 'false');
+        expandBtn.className =
+          'mt-1 self-start text-xs uppercase tracking-wider text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white';
+        expandBtn.textContent = 'Ver más';
+        article.appendChild(expandBtn);
+
+        const expandContent = document.createElement('div');
+        expandContent.className =
+          'hidden flex-col gap-3 border-t border-zinc-200 pt-3 dark:border-white/10';
+        expandContent.dataset.expandContent = '';
+
+        if (recs.budget && recs.budget.length > 0) {
+          const budgetWrap = document.createElement('div');
+          budgetWrap.className = 'flex flex-col gap-1.5';
+          const bl = document.createElement('p');
+          bl.className =
+            'text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500';
+          bl.textContent = 'Budget build';
+          budgetWrap.appendChild(bl);
+          const bi = document.createElement('div');
+          bi.className = 'flex flex-wrap gap-2';
+          for (const c of recs.budget) {
+            const ci = document.createElement('img');
+            ci.src = '/umamusume/api/icon?type=card&id=' + encodeURIComponent(c.game8Id);
+            ci.alt = c.name || '';
+            ci.title = c.name || '';
+            ci.loading = 'lazy';
+            ci.className =
+              'w-16 aspect-[50/66] object-cover shrink-0 rounded ring-1 ring-zinc-200 dark:ring-white/10 bg-zinc-50 dark:bg-white/[0.04]';
+            ci.onerror = () => {
+              ci.onerror = null;
+              ci.src = emptyDataUrl;
+            };
+            bi.appendChild(ci);
+          }
+          budgetWrap.appendChild(bi);
+          expandContent.appendChild(budgetWrap);
+        }
+        article.appendChild(expandContent);
+      } else {
+        const empty = document.createElement('p');
+        empty.className = 'text-[10px] uppercase tracking-wider text-zinc-500';
+        empty.textContent = 'Sin recomendaciones (refresh pendiente)';
+        article.appendChild(empty);
+      }
+      return article;
+    }
+
+    window.addEventListener('umamusume:character-added', async (e) => {
+      const detail = e && e.detail;
+      if (!detail || !detail.characterId) return;
+      try {
+        const res = await fetch('/umamusume/api/character/' + encodeURIComponent(detail.characterId));
+        if (!res.ok) {
+          window.location.reload();
+          return;
+        }
+        const data = await res.json();
+        const article = buildCharacterArticle(data.character, data.recommendations);
+        const grid = document.querySelector('[data-characters-grid]');
+        const allEmpty = document.querySelector('[data-empty-state]');
+        if (grid) grid.prepend(article);
+        if (allEmpty) allEmpty.classList.add('hidden');
+      } catch {
+        window.location.reload();
+      }
+    });
+  </script>
+
+  <AddCharacterDialog />
+</BaseLayout>

@@ -37,6 +37,9 @@ AppHub/
 │   │       ├── AddWeaponDialog.astro       # Modal: search arma + 4 inputs perk
 │   │       ├── CustomPerkIconDialog.astro  # Modal: pool de iconos custom
 │   │       └── WeaponCard.astro            # Card de arma en la wishlist
+│   │   └── uma/                            # Sub-app Umamusume Cards
+│   │       ├── AddCharacterDialog.astro    # Modal: search personaje + agregar
+│   │       └── SupportCardList.astro       # Lista de cartas (icon + tooltip)
 │   ├── layouts/
 │   │   └── BaseLayout.astro                # HTML shell + scripts de bootstrap
 │   ├── lib/
@@ -44,11 +47,14 @@ AppHub/
 │   │   ├── internal.ts                     # verifyInternal (Bearer INTERNAL_API_SECRET)
 │   │   ├── apps.ts                         # Helpers para apps.json
 │   │   ├── types.ts                        # Tipos compartidos
-│   │   └── d2/                             # Lib D2
-│   │       ├── manifest.ts                 # Lookup de armas/perks + filtrado por categoría
-│   │       ├── wishlist.ts                 # CRUD d2_wishlist
-│   │       ├── perkIcons.ts                # CRUD d2_perk_icons
-│   │       └── resolver.ts                 # resolveWishlistRow(row) → shape para el cliente
+│   │   ├── d2/                             # Lib D2
+│   │   │   ├── manifest.ts                 # Lookup de armas/perks + filtrado por categoría
+│   │   │   ├── wishlist.ts                 # CRUD d2_wishlist
+│   │   │   ├── perkIcons.ts                # CRUD d2_perk_icons
+│   │   │   └── resolver.ts                 # resolveWishlistRow(row) → shape para el cliente
+│   │   └── uma/                            # Lib UMA
+│   │       ├── data.ts                     # Carga characters/cards/recommendations + search
+│   │       └── wishlist.ts                 # CRUD uma_wishlist (D1)
 │   ├── pages/
 │   │   ├── index.astro                     # / → login (sin sesión) o grid (con sesión)
 │   │   ├── login.astro                     # /login → shim que redirige a /
@@ -61,18 +67,27 @@ AppHub/
 │   │   │       ├── exchange.ts             # POST /api/auth/exchange (code → session_token)
 │   │   │       ├── logout.ts               # POST/GET /api/auth/logout
 │   │   │       └── logout-all.ts           # POST /api/auth/logout-all (stub no-op)
-│   │   └── destiny/                        # Sub-app D2 Wishlist
-│   │       ├── index.astro                 # /destiny → wishlist
+│   │   ├── destiny/                        # Sub-app D2 Wishlist
+│   │   │   ├── index.astro                 # /destiny → wishlist
+│   │   │   └── api/
+│   │   │       ├── search.ts               # GET /destiny/api/search?q=
+│   │   │       ├── add.ts                  # POST /destiny/api/add
+│   │   │       ├── update.ts               # POST /destiny/api/update
+│   │   │       ├── remove.ts               # POST /destiny/api/remove
+│   │   │       ├── toggle-found.ts         # POST /destiny/api/toggle-found
+│   │   │       ├── icon.ts                 # GET /destiny/api/icon?type=&hash=
+│   │   │       ├── perk-icon.ts            # GET/POST /destiny/api/perk-icon
+│   │   │       └── perks/
+│   │   │           └── match.ts            # GET /destiny/api/perks/match?q=&slot=&limit=
+│   │   └── umamusume/                      # Sub-app Umamusume Cards
+│   │       ├── index.astro                 # /umamusume → wishlist
 │   │       └── api/
-│   │           ├── search.ts               # GET /destiny/api/search?q=
-│   │           ├── add.ts                  # POST /destiny/api/add
-│   │           ├── update.ts               # POST /destiny/api/update
-│   │           ├── remove.ts               # POST /destiny/api/remove
-│   │           ├── toggle-found.ts         # POST /destiny/api/toggle-found
-│   │           ├── icon.ts                 # GET /destiny/api/icon?type=&hash=
-│   │           ├── perk-icon.ts            # GET/POST /destiny/api/perk-icon
-│   │           └── perks/
-│   │               └── match.ts            # GET /destiny/api/perks/match?q=&slot=&limit=
+│   │           ├── search.ts               # GET /umamusume/api/search?q=
+│   │           ├── add.ts                  # POST /umamusume/api/add
+│   │           ├── remove.ts               # POST /umamusume/api/remove
+│   │           ├── toggle-found.ts         # POST /umamusume/api/toggle-found
+│   │           ├── icon.ts                 # GET /umamusume/api/icon?type=character|card&id=
+│   │           └── character/[id].ts       # GET /umamusume/api/character/[id] → recs
 │   ├── styles/
 │   │   └── global.css                      # Tokens CSS + color-scheme sync
 │   └── env.d.ts                            # Tipos del env (cloudflare:workers)
@@ -84,14 +99,20 @@ AppHub/
 │   ├── 0004_d2_wishlist_perks_json.sql     # Agrega perks_json
 │   ├── 0005_drop_top_perk_hashes.sql       # Drop columna top_perk_hashes (legacy)
 │   ├── 0006_d2_perk_icons.sql              # Tabla d2_perk_icons
-│   └── 0007_d2_perk_icons_category.sql     # Agrega category a d2_perk_icons
+│   ├── 0007_d2_perk_icons_category.sql     # Agrega category a d2_perk_icons
+│   └── 0008_uma_wishlist.sql               # Tabla uma_wishlist
 │
 ├── data/d2/                                # Generado por build:d2-manifest
 │   ├── weapons-index.json                  # 2058 armas con weaponType real
 │   └── perks.json                          # 2000 perks con category real
+├── data/uma/                                # Generado por build:uma-data
+│   ├── characters.json                     # 96 personajes con icon
+│   ├── cards.json                          # 105 cartas (67 con icon)
+│   └── recommendations.json                # 91 personajes con Main+Budget+Alternates
 │
 ├── scripts/
-│   └── build-d2-manifest.mjs               # Genera data/d2/* desde Bungie API
+│   ├── build-d2-manifest.mjs               # Genera data/d2/* desde Bungie API
+│   └── build-uma-data.mjs                  # Genera data/uma/* desde game8.co
 │
 ├── public/
 │   └── favicon.svg
@@ -136,8 +157,19 @@ AppHub/
 | POST | `/destiny/api/remove` | `{ itemHash }` | `{ ok: true }` |
 | POST | `/destiny/api/toggle-found` | `{ itemHash }` | `{ weapon }` |
 | GET | `/destiny/api/icon?type=weapon\|perk&hash=` | — | imagen (R2 con fallback Bungie CDN, cache 30 días) |
-| GET | `/destiny/api/perk-icon` | — | `{ icons: [{ perkName, iconPath, category }] }` |
+| GET/POST | `/destiny/api/perk-icon` | — | `{ icons: [{ perkName, iconPath, category }] }` |
 | POST | `/destiny/api/perk-icon` | `{ perkName, iconPath, category }` o `{ perkName, setCategory: true, category }` o `{ perkName, delete: true }` | `{ ok: true }` |
+
+## API — Umamusume Cards (sub-app)
+
+| Method | Path | Body / Query | Respuesta |
+|---|---|---|---|
+| GET | `/umamusume/api/search?q=&limit=` | — | `{ results: [{ id, name, version, icon }] }` (top 10-30) |
+| POST | `/umamusume/api/add` | `{ characterId }` | `{ ok: true, character }` o 409 si duplicado |
+| POST | `/umamusume/api/remove` | `{ characterId }` | 204 |
+| POST | `/umamusume/api/toggle-found` | `{ characterId }` | `{ found, foundAt }` |
+| GET | `/umamusume/api/character/[id]` | — | `{ character, recommendations: { scenario, main, budget, alternates: { speed, power, wit } } }` |
+| GET | `/umamusume/api/icon?type=character\|card&id=` | — | imagen (R2 con fallback game8 CDN, cache 30 días, prefix `uma/`) |
 
 ---
 
@@ -158,12 +190,20 @@ AppHub/
 | `d2_wishlist` | `(username, item_hash, weapon_name, weapon_icon_path, perks_json, found, found_at, added_at)` + índice `(username, found, added_at DESC)` |
 | `d2_perk_icons` | `(username, perk_name_lower, perk_name_display, icon_path, category, created_at)` |
 
+### D1 — sub-app Umamusume (`arthurapphub-auth-db`)
+
+| Tabla | Schema |
+|---|---|
+| `uma_wishlist` | `(username, character_id, found, found_at, added_at)` + índice `(username, found, added_at DESC)` |
+
 ### R2 — `arthurapphub-d2-assets` (binding `D2_ASSETS`)
 
 | Prefix | Contenido |
 |---|---|
-| `weapons/<hash>.png` | Iconos de armas (cache desde Bungie CDN) |
-| `perks/<hash>.png` | Iconos de perks (cache desde Bungie CDN) |
+| `weapons/<hash>.png` | Iconos de armas D2 (cache desde Bungie CDN) |
+| `perks/<hash>.png` | Iconos de perks D2 (cache desde Bungie CDN) |
+| `uma/characters/<id>.png` | Iconos de personajes UMA (cache desde game8 CDN) |
+| `uma/cards/<game8Id>.png` | Iconos de cartas UMA (cache desde game8 CDN) |
 
 ---
 
@@ -177,6 +217,7 @@ AppHub/
 | `astro` | `astro` | CLI de Astro |
 | `generate-types` | `wrangler types` | Regenera `worker-configuration.d.ts` con los tipos de los bindings |
 | `build:d2-manifest` | `node scripts/build-d2-manifest.mjs` | Regenera `data/d2/*.json` desde Bungie API (necesita `BUNGIE_API_KEY`) |
+| `build:uma-data` | `node scripts/build-uma-data.mjs` | Regenera `data/uma/*.json` desde game8.co (Best Characters + Best Support Cards tier lists + 96 build guides) |
 
 ---
 

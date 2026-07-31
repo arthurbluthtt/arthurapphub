@@ -9,6 +9,7 @@ URL: <https://arthurapphub.arthurbluthtt.workers.dev>
 - **Lanzador de apps**: grid responsivo de tarjetas (ícono + nombre + descripción + link), tema dark/light persistente, indicador online/offline por app.
 - **Identity Provider (SSO)**: el hub maneja la auth (username + PIN de 4 dígitos). Las apps vinculadas consumen identidad vía exchange code. Una vez que el usuario entra su PIN en el hub, queda autenticado en todas las apps.
 - **Sub-app `/destiny`**: wishlist de armas de Destiny 2 con búsqueda desde el manifest oficial de Bungie, selección manual de perks (Cañón / Cargador / Rasgo 1 / Rasgo 2), iconos custom, filtros por estado y tipo de arma.
+- **Sub-app `/umamusume`**: wishlist de personajes de Umamusume: Pretty Derby con las cartas de soporte más recomendadas (game8.co). Cada personaje muestra Main build + Budget + Alternates Speed/Power/Wit del scenario actual (Grand Live / Trackblazer).
 
 ## Estado actual
 
@@ -178,10 +179,44 @@ Commit + push → redeploy automático.
 - SSO vía exchange code hacia apps vinculadas.
 - Header con username del usuario logueado + botón "Salir".
 - **Sub-app `/destiny`** — wishlist de armas de Destiny 2.
+- **Sub-app `/umamusume`** — wishlist de personajes con cartas de soporte recomendadas.
 
 ## D2 Wishlist (sub-app interna)
 
 Una página en `/destiny` (login requerido) que mantiene una wishlist personal de armas de Destiny 2. Al agregar un arma, abrís un modal con 4 inputs manuales para los perks (Cañón, Cargador, Rasgo 1, Rasgo 2) — el server los busca por nombre en el manifest oficial y, si no existen, los guarda como "custom" con placeholder SVG.
+
+## Umamusume Cards (sub-app interna)
+
+Una página en `/umamusume` (login requerido) que mantiene una wishlist personal de personajes de Umamusume: Pretty Derby. Para cada personaje agregado, se muestran las cartas de soporte recomendadas del meta actual (Grand Live / Trackblazer): Main build (6 cartas), Budget build (6 cartas) y Alternates agrupados por Speed/Power/Wit.
+
+### Datos
+
+- **Snapshot estático**: `data/uma/characters.json` + `data/uma/cards.json` + `data/uma/recommendations.json` generados con `npm run build:uma-data`. El script scrapea las páginas de game8.co (Best Characters + Best Support Cards tier lists + Build Guide de cada personaje).
+- 96 personajes, 105 cartas (67 con icon), 91 personajes con recomendaciones. Cobertura ~95% (5% tienen layouts viejos o son skills mal clasificados como characters).
+- **Tolerancia HTML**: game8 tiene HTML mal-formado cuando el nombre de una carta contiene apostrofes (e.g. "Let's Get This Party Lit!") — el `"` interno cierra el atributo alt prematuramente. El script maneja esto con regex tolerante que matchea `support[\s\S]{0,40}?card` en lugar del alt exacto.
+- **Iconos**: cacheados desde `img.game8.co` → R2 (`arthurapphub-d2-assets` con prefix `uma/`) via `/umamusume/api/icon`. Fallback automático si R2 no tiene la imagen.
+
+### Storage
+
+- D1 tabla `uma_wishlist` (migración `0008`): `(username, character_id, found, found_at, added_at)` + índice `(username, found, added_at DESC)`.
+- Las cartas NO se guardan en la wishlist — se leen estáticamente desde `recommendations.json`. La wishlist solo guarda el `character_id` + `found`.
+
+### UX
+
+- **Filtro por estado** (Todas / Pendientes / Encontradas) con chips toggle.
+- **Type-ahead en el buscador**: tres fuentes combinadas (characters.json) con ranking (exact prefix > word prefix > substring).
+- **Expand "Ver más"**: muestra Budget build + Alternates Speed/Power/Wit del scenario actual. Click toggle.
+- **Container ancho escalado en ultrawide** (`max-w-[1760px] xl`, `max-w-[2240px] 2xl`).
+
+### Refrescar datos (~cada nuevo scenario)
+
+```bash
+npm run build:uma-data
+git add data/uma/characters.json data/uma/cards.json data/uma/recommendations.json
+git commit -m "uma: refresh manifest" && git push
+```
+
+Tarda ~2 min (96 requests secuenciales con rate limit 1.2s).
 
 ### Datos
 

@@ -1,0 +1,272 @@
+---
+const EMPTY_DATA_URL =
+  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="%23e4e4e7"/><text x="50%" y="58%" font-size="28" text-anchor="middle" fill="%2371717a" font-family="sans-serif">?</text></svg>';
+---
+
+<button
+  type="button"
+  class="fixed bottom-4 right-4 z-30 inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 shadow-md transition hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-zinc-800 dark:text-white"
+  data-add-character-chip
+  aria-label="Agregar personaje"
+>
+  <span class="text-sm leading-none">+</span>
+  <span>Agregar personaje</span>
+</button>
+
+<dialog
+  class="backdrop:bg-zinc-900/95 dark:bg-zinc-950/95 m-auto max-h-[90vh] w-[min(560px,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+  data-add-dialog
+>
+  <header class="flex items-center gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
+    <div class="flex-1 min-w-0">
+      <h2 class="font-semibold truncate">Agregar personaje</h2>
+      <p class="text-xs uppercase tracking-wider text-zinc-500">Buscá por nombre</p>
+    </div>
+    <button
+      type="button"
+      class="grid h-8 w-8 place-items-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
+      data-add-close
+      aria-label="Cerrar"
+    >
+      ×
+    </button>
+  </header>
+
+  <div class="p-4">
+    <input
+      type="text"
+      placeholder="Buscar personaje (ej. Maruzensky, Smart Falcon…)"
+      autocomplete="off"
+      spellcheck="false"
+      autocapitalize="off"
+      autocorrect="off"
+      class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+      data-add-input
+    />
+
+    <div
+      class="mt-3 hidden max-h-[60vh] overflow-y-auto overscroll-contain rounded-lg border border-zinc-200 dark:border-white/10"
+      data-add-results
+      role="listbox"
+    ></div>
+
+    <p
+      class="mt-3 hidden rounded-lg border border-dashed border-zinc-300 p-3 text-center text-sm text-zinc-500 dark:border-white/10"
+      data-add-empty
+    >
+      Sin coincidencias. Probá con otro nombre.
+    </p>
+
+    <p
+      class="mt-3 hidden rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-center text-sm text-emerald-700 dark:text-emerald-400"
+      data-add-success
+    >
+      Agregado ✓
+    </p>
+
+    <p
+      class="mt-3 hidden rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-center text-sm text-red-600 dark:text-red-400"
+      data-add-error
+    ></p>
+  </div>
+</dialog>
+
+<script>
+  // No usamos innerHTML para los results — construimos cada <button> con
+  // createElement/setAttribute/textContent. Esto garantiza que nombres con
+  // caracteres especiales (apostrofes, comillas, <, >, &) se rendericen
+  // correctamente sin riesgo de inyección HTML ni de HTML malformado.
+
+  const emptyDataUrl =
+    "data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><rect width=\"64\" height=\"64\" fill=\"%23e4e4e7\"/><text x=\"50%\" y=\"58%\" font-size=\"28\" text-anchor=\"middle\" fill=\"%2371717a\" font-family=\"sans-serif\">?</text></svg>";
+
+  const dialog = document.querySelector("[data-add-dialog]");
+  const chip = document.querySelector("[data-add-character-chip]");
+  const input = document.querySelector("[data-add-input]");
+  const resultsEl = document.querySelector("[data-add-results]");
+  const emptyEl = document.querySelector("[data-add-empty]");
+  const successEl = document.querySelector("[data-add-success]");
+  const errorEl = document.querySelector("[data-add-error]");
+  const closeBtn = document.querySelector("[data-add-close]");
+
+  let bodyLocked = false;
+  function lockBodyScroll() {
+    if (bodyLocked) return;
+    bodyLocked = true;
+    const sbw = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = "hidden";
+    if (sbw > 0) document.body.style.paddingRight = sbw + "px";
+  }
+  function unlockBodyScroll() {
+    if (!bodyLocked) return;
+    bodyLocked = false;
+    document.body.style.overflow = "";
+    document.body.style.paddingRight = "";
+  }
+
+  function openDialog() {
+    if (!dialog) return;
+    successEl.classList.add("hidden");
+    errorEl.classList.add("hidden");
+    input.value = "";
+    resultsEl.replaceChildren();
+    resultsEl.classList.add("hidden");
+    emptyEl.classList.add("hidden");
+    lockBodyScroll();
+    dialog.showModal();
+    setTimeout(() => input.focus(), 0);
+  }
+
+  function closeDialog() {
+    if (!dialog) return;
+    dialog.close();
+    unlockBodyScroll();
+  }
+
+  chip?.addEventListener("click", openDialog);
+  closeBtn?.addEventListener("click", closeDialog);
+  dialog?.addEventListener("click", (e) => {
+    if (e.target === dialog) closeDialog();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && dialog?.open) closeDialog();
+  });
+
+  // Construye un <button> para un resultado de búsqueda, sin usar innerHTML.
+  function buildResultButton(c) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.dataset.pickCharacter = "";
+    btn.dataset.characterId = c.id ?? "";
+    btn.dataset.characterName = c.name ?? "";
+    btn.dataset.characterVersion = c.version ?? "";
+    btn.className =
+      "flex w-full cursor-pointer items-center gap-3 border-b border-zinc-200 p-3 text-left transition last:border-b-0 hover:bg-zinc-100 dark:border-white/10 dark:hover:bg-white/[0.06]";
+
+    const img = document.createElement("img");
+    img.src = "/umamusume/api/icon?type=character&id=" + encodeURIComponent(c.id ?? "");
+    img.alt = c.name ?? "";
+    img.loading = "lazy";
+    img.className =
+      "h-12 w-12 shrink-0 rounded bg-zinc-100 object-contain p-1 dark:bg-white/[0.02]";
+    img.onerror = () => {
+      img.onerror = null;
+      img.src = emptyDataUrl;
+    };
+    btn.appendChild(img);
+
+    const text = document.createElement("div");
+    text.className = "min-w-0 flex-1";
+    const nameDiv = document.createElement("div");
+    nameDiv.className = "truncate font-medium";
+    nameDiv.textContent = c.name ?? "";
+    text.appendChild(nameDiv);
+    if (c.version) {
+      const verDiv = document.createElement("div");
+      verDiv.className =
+        "text-[10px] uppercase tracking-wider text-zinc-500 dark:text-zinc-500";
+      verDiv.textContent = c.version;
+      text.appendChild(verDiv);
+    }
+    btn.appendChild(text);
+
+    const action = document.createElement("span");
+    action.className = "text-xs uppercase tracking-wider text-zinc-500";
+    action.textContent = "agregar →";
+    btn.appendChild(action);
+
+    return btn;
+  }
+
+  let searchAbort = null;
+  let searchSeq = 0;
+
+  async function runSearch(query) {
+    const seq = ++searchSeq;
+    if (!query) {
+      resultsEl.replaceChildren();
+      resultsEl.classList.add("hidden");
+      emptyEl.classList.add("hidden");
+      return;
+    }
+    try {
+      if (searchAbort) searchAbort.abort();
+      searchAbort = new AbortController();
+      const res = await fetch(
+        "/umamusume/api/search?q=" + encodeURIComponent(query) + "&limit=20",
+        { signal: searchAbort.signal }
+      );
+      const data = await res.json();
+      if (seq !== searchSeq) return;
+      const results = data.results || [];
+      if (results.length === 0) {
+        resultsEl.replaceChildren();
+        resultsEl.classList.add("hidden");
+        emptyEl.classList.remove("hidden");
+        return;
+      }
+      emptyEl.classList.add("hidden");
+      resultsEl.classList.remove("hidden");
+      const frag = document.createDocumentFragment();
+      for (const c of results) frag.appendChild(buildResultButton(c));
+      resultsEl.replaceChildren(frag);
+    } catch (err) {
+      if (err.name !== "AbortError") console.error(err);
+    }
+  }
+
+  let debounce;
+  input?.addEventListener("input", (e) => {
+    clearTimeout(debounce);
+    debounce = setTimeout(() => runSearch(e.target.value.trim()), 180);
+  });
+
+  resultsEl?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-pick-character]");
+    if (!btn || btn.disabled) return;
+    const characterId = btn.dataset.characterId;
+    const characterName = btn.dataset.characterName;
+    btn.disabled = true;
+    btn.classList.add("opacity-50", "pointer-events-none");
+    successEl.classList.add("hidden");
+    errorEl.classList.add("hidden");
+    try {
+      const res = await fetch("/umamusume/api/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ characterId }),
+      });
+      if (res.status === 409) {
+        errorEl.textContent = "Ya está en tu wishlist";
+        errorEl.classList.remove("hidden");
+        btn.disabled = false;
+        btn.classList.remove("opacity-50", "pointer-events-none");
+        return;
+      }
+      if (!res.ok) {
+        let msg = `Error ${res.status}`;
+        try {
+          const body = await res.json();
+          if (body && body.error) msg = `${res.status}: ${body.error}`;
+        } catch {}
+        errorEl.textContent = msg;
+        errorEl.classList.remove("hidden");
+        btn.disabled = false;
+        btn.classList.remove("opacity-50", "pointer-events-none");
+        return;
+      }
+      successEl.classList.remove("hidden");
+      setTimeout(() => closeDialog(), 350);
+      window.dispatchEvent(
+        new CustomEvent("umamusume:character-added", {
+          detail: { characterId, characterName },
+        })
+      );
+    } catch (err) {
+      errorEl.textContent = "Error de red";
+      errorEl.classList.remove("hidden");
+      btn.disabled = false;
+      btn.classList.remove("opacity-50", "pointer-events-none");
+    }
+  });
+</script>

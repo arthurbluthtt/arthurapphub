@@ -108,6 +108,13 @@ function iconUrl(type: 'character' | 'card', id: string): string {
                     {item.character.version}
                   </p>
                 )}
+                {item.character.aptitudes && (
+                  <div class="mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-zinc-500 dark:text-zinc-400">
+                    <span>Surface: {item.character.aptitudes.surface.join(' / ') || '—'}</span>
+                    <span>Distance: {item.character.aptitudes.distance.join(' / ') || '—'}</span>
+                    <span>Pace: {item.character.aptitudes.pace.join(' / ') || '—'}</span>
+                  </div>
+                )}
               </div>
               <button
                 type="button"
@@ -293,6 +300,20 @@ function iconUrl(type: 'character' | 'card', id: string): string {
           'text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500';
         verEl.textContent = character.version;
         info.appendChild(verEl);
+      }
+      if (character.aptitudes) {
+        const aptitudesEl = document.createElement('div');
+        aptitudesEl.className = 'mt-1 flex flex-wrap gap-x-2 gap-y-0.5 text-[10px] text-zinc-500 dark:text-zinc-400';
+        for (const [label, values] of [
+          ['Surface', character.aptitudes.surface],
+          ['Distance', character.aptitudes.distance],
+          ['Pace', character.aptitudes.pace],
+        ]) {
+          const valueEl = document.createElement('span');
+          valueEl.textContent = label + ': ' + (values?.join(' / ') || '—');
+          aptitudesEl.appendChild(valueEl);
+        }
+        info.appendChild(aptitudesEl);
       }
       header.appendChild(info);
 

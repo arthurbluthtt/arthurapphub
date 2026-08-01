@@ -9,7 +9,7 @@
  *   - https://game8.co/games/Umamusume-Pretty-Derby/archives/<id>     Build guide de cada personaje
  *
  * Salida:
- *   data/uma/characters.json     lista de personajes con {id, name, version, game8Id, icon}
+ *   data/uma/characters.json     lista de personajes con {id, name, version, game8Id, icon, aptitudes}
  *   data/uma/cards.json          lista de cartas (deduplicadas) con {id, name, version, game8Id, icon}
  *   data/uma/recommendations.json  map { [characterId]: { scenario, main: [], budget: [], alternates: { speed, power, wit } } }
  *
@@ -74,6 +74,53 @@ function parseNameVersion(s) {
   const version = s.slice(idx + 2, -1).trim();
   if (!name || !version) return { name: s.trim(), version: null };
   return { name, version };
+}
+
+const APTITUDE_RANK = { A: 5, B: 4, C: 3, D: 2, E: 1, F: 0, G: -1 };
+
+/**
+ * Extrae las aptitudes del bloque de stats de una guía de personaje y conserva
+ * todas las categorías empatadas con la mejor calificación.
+ */
+function parseAptitudeCategory(html, heading, labelMap = {}) {
+  const headingRe = new RegExp(`<th[^>]*>\\s*${escapeRegex(heading)}\\s*</th>`, 'i');
+  const headingMatch = headingRe.exec(html);
+  if (!headingMatch) return [];
+
+  const afterHeading = html.slice(headingMatch.index + headingMatch[0].length);
+  const rowMatch = /<tr[^>]*>([\s\S]*?)<\/tr>/i.exec(afterHeading);
+  if (!rowMatch) return [];
+
+  const entries = [];
+  const cellRe = /<td[^>]*>([\s\S]*?)<\/td>/gi;
+  let cellMatch;
+  while ((cellMatch = cellRe.exec(rowMatch[1])) !== null) {
+    const text = cellMatch[1]
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const valueMatch = text.match(/^(.+?):\s*([A-G])$/i);
+    if (!valueMatch) continue;
+    const label = valueMatch[1].trim();
+    const value = valueMatch[2].toUpperCase();
+    entries.push({
+      label: labelMap[label.toLowerCase()] ?? label,
+      rank: APTITUDE_RANK[value] ?? -1,
+    });
+  }
+
+  if (!entries.length) return [];
+  const bestRank = Math.max(...entries.map((entry) => entry.rank));
+  return entries.filter((entry) => entry.rank === bestRank).map((entry) => entry.label);
+}
+
+function parseAptitudes(html) {
+  const surface = parseAptitudeCategory(html, 'Track Aptitude');
+  const distance = parseAptitudeCategory(html, 'Distance Aptitude', { med: 'Medium' });
+  const pace = parseAptitudeCategory(html, 'Pace Aptitude');
+  if (!surface.length && !distance.length && !pace.length) return null;
+  return { surface, distance, pace };
 }
 
 /**
@@ -154,6 +201,7 @@ const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
  *   </table>
  */
 function parseBuildGuide(html, charName) {
+  const aptitudes = parseAptitudes(html);
   // El icono del personaje en la página tiene alt="<Name> Icon" (sin la versión).
   // El `charName` que recibimos puede tener la versión (correcta o truncada).
   // Buscamos el primer <img> con alt que matchee el nombre base (sin versión).
@@ -170,11 +218,11 @@ function parseBuildGuide(html, charName) {
   const targetRe =
     /<h([2-4])[^>]*>(?:<a[^>]*>)?\s*Recommended Support Cards\b[^<]*<\/(?:a|h\1)>/i;
   const m = targetRe.exec(html);
-  if (!m) return { icon, recommendations: null };
+  if (!m) return { icon, aptitudes, recommendations: null };
   const startLevel = Number(m[1]);
   const startIdx = m.index + m[0].length;
   const section = sliceSection(html, startIdx, startLevel);
-  if (!section) return { icon, recommendations: null };
+  if (!section) return { icon, aptitudes, recommendations: null };
 
   // Primer h4 "X Build" (cualquier scenario): Grand Live, Grand Concert, Trackblazer, etc.
   const primaryBuildMatch = /<h4[^>]*>(?:<a[^>]*>)?\s*([^<]*?Build)\b[^<]*<\/(?:a|h4)>/i.exec(section);
@@ -266,7 +314,7 @@ function parseBuildGuide(html, charName) {
     }
   }
 
-  if (!main.length && !budget.length) return { icon, recommendations: null, cardInfo };
+  if (!main.length && !budget.length) return { icon, aptitudes, recommendations: null, cardInfo };
 
   // Ahora sabemos qué IDs son cards. Construir el cardInfo final solo con esos.
   // Los cards en main/budget/alternates son los que sabemos que son cartas.
@@ -288,6 +336,7 @@ function parseBuildGuide(html, charName) {
 
   return {
     icon,
+    aptitudes,
     recommendations: {
       scenario,
       main,
@@ -394,8 +443,9 @@ async function main() {
     try {
       const html = await fetchHtml(url);
       await sleep(SLEEP_MS);
-      const { icon, recommendations: recs, cardInfo } = parseBuildGuide(html, c.name);
+      const { icon, aptitudes, recommendations: recs, cardInfo } = parseBuildGuide(html, c.name);
       if (icon) c.icon = icon;
+      c.aptitudes = aptitudes;
       if (recs) {
         recommendations[c.id] = recs;
         recs.main.forEach((id) => cardIdsFromBuilds.add(id));
@@ -460,7 +510,14 @@ async function main() {
   await writeFile(
     'data/uma/characters.json',
     JSON.stringify(
-      characters.map(({ id, game8Id, name, version, icon }) => ({ id, game8Id, name, version, icon })),
+      characters.map(({ id, game8Id, name, version, icon, aptitudes }) => ({
+        id,
+        game8Id,
+        name,
+        version,
+        icon,
+        aptitudes: aptitudes ?? null,
+      })),
       null,
       2
     )

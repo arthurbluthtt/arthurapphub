@@ -14,6 +14,11 @@ export interface UmaCharacter {
   name: string;
   version: string | null;
   icon: string | null;
+  aptitudes: {
+    surface: string[];
+    distance: string[];
+    pace: string[];
+  } | null;
 }
 
 export interface UmaCard {

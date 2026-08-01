@@ -35,7 +35,7 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 
 ### Decisiones Umamusume
 
-- Snapshot estático JSON commiteado (no scrape runtime). Refresh manual con `npm run build:uma-data` cuando sale nuevo scenario (~cada 2-3 meses).
+- Snapshot estático JSON commiteado (no scrape runtime). Refresh manual con `npm run build:uma-data` cuando sale nuevo scenario (~cada 2-3 meses). El comando vuelve a consultar Game8 y actualiza `data/uma/characters.json`, `data/uma/cards.json` y `data/uma/recommendations.json`; después revisar el diff, hacer commit y deploy. No hay botón runtime porque el scraping tarda y no debe ejecutarse desde una request web.
 - Cards se leen estáticamente desde `recommendations.json` (no se guardan en D1). La wishlist solo guarda el `character_id` + `found`.
 - Solo Grand Live (o Trackblazer si game8 ya migró). No histórico (URA / Unity Cup).
 - Cada versión del personaje es entry separada (Maruzensky Formula R ≠ Hot☆Summer Night). El user agrega la que tiene.

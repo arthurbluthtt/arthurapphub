@@ -2,7 +2,7 @@
 
 Mapa navegable del proyecto. Single entry point: si no sabés por dónde empezar, **arrancá acá**.
 
-AppHub es un hub personal de apps **+ Identity Provider (SSO)** + sub-app interna de wishlist de Destiny 2. Astro 7 + Tailwind 4 + Cloudflare Workers.
+AppHub es un hub personal de apps **+ Identity Provider (SSO)** + sub-apps internas de wishlist de Destiny 2 y Umamusume. Astro 7 + Tailwind 4 + Cloudflare Workers.
 
 URL producción: <https://arthurapphub.arthurbluthtt.workers.dev>
 
@@ -106,8 +106,8 @@ AppHub/
 │   ├── weapons-index.json                  # 2058 armas con weaponType real
 │   └── perks.json                          # 2000 perks con category real
 ├── data/uma/                                # Generado por build:uma-data
-│   ├── characters.json                     # 96 personajes con icon
-│   ├── cards.json                          # 105 cartas (67 con icon)
+│   ├── characters.json                     # 96 personajes, 95 con aptitudes
+│   ├── cards.json                          # 106 cartas con icon
 │   └── recommendations.json                # 91 personajes con Main+Budget+Alternates
 │
 ├── scripts/
@@ -164,11 +164,11 @@ AppHub/
 
 | Method | Path | Body / Query | Respuesta |
 |---|---|---|---|
-| GET | `/umamusume/api/search?q=&limit=` | — | `{ results: [{ id, name, version, icon }] }` (top 10-30) |
+| GET | `/umamusume/api/search?q=&limit=` | — | `{ results: [{ id, name, version, icon, aptitudes }] }` (top 10-30) |
 | POST | `/umamusume/api/add` | `{ characterId }` | `{ ok: true, character }` o 409 si duplicado |
 | POST | `/umamusume/api/remove` | `{ characterId }` | 204 |
 | POST | `/umamusume/api/toggle-found` | `{ characterId }` | `{ found, foundAt }` |
-| GET | `/umamusume/api/character/[id]` | — | `{ character, recommendations: { scenario, main, budget, alternates: { speed, power, wit } } }` |
+| GET | `/umamusume/api/character/[id]` | — | `{ character: { ..., aptitudes }, recommendations: { scenario, main, budget, alternates: { speed, power, wit } } }` |
 | GET | `/umamusume/api/icon?type=character\|card&id=` | — | imagen (R2 con fallback game8 CDN, cache 30 días, prefix `uma/`) |
 
 ---
@@ -217,7 +217,7 @@ AppHub/
 | `astro` | `astro` | CLI de Astro |
 | `generate-types` | `wrangler types` | Regenera `worker-configuration.d.ts` con los tipos de los bindings |
 | `build:d2-manifest` | `node scripts/build-d2-manifest.mjs` | Regenera `data/d2/*.json` desde Bungie API (necesita `BUNGIE_API_KEY`) |
-| `build:uma-data` | `node scripts/build-uma-data.mjs` | Regenera `data/uma/*.json` desde game8.co (Best Characters + Best Support Cards tier lists + 96 build guides) |
+| `build:uma-data` | `node scripts/build-uma-data.mjs` | Regenera `data/uma/*.json` desde game8.co (Best Characters + Best Support Cards tier lists + 96 build guides, incluyendo aptitudes) |
 
 ---
 

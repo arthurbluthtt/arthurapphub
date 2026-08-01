@@ -1,7 +1,7 @@
 ﻿# STATE — ArthurAppHub
 
 Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de apps** + **sub-apps internas** (D2 Wishlist + Umamusume Cards).
-Última actualización: 2026-07-30.
+Última actualización: 2026-07-31.
 
 ## AppHub — deploy status
 
@@ -17,17 +17,17 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 
 - ✅ Migración aplicada a D1 remota: `0008_uma_wishlist.sql` (tabla `uma_wishlist`).
 - ✅ Script `scripts/build-uma-data.mjs` scrapea game8.co (tier list + build guides de cada personaje). Regenerable con `npm run build:uma-data`. Tolerante a HTML mal-formado (apostrofes en alts, colspan fuera de `<tr>`).
-- ✅ Output estático en `data/uma/`: 96 personajes, 105 cartas (67 con icon), 91 personajes con recomendaciones. Cobertura ~95% de las páginas build (5% tienen layouts viejos sin "Grand Live Build" o "Grand Concert Build").
+- ✅ Output estático en `data/uma/`: 96 personajes, 106 cartas con icon, 95 personajes con aptitudes y 91 personajes con recomendaciones. Las 5 guías sin recomendaciones tienen layouts viejos; `564 Escapades` está mal clasificado por Game8 como personaje aunque es un skill.
 - ✅ Datos regenerados en build (Vite los bundlea inline como módulo JSON).
 - ✅ R2 bucket `arthurapphub-d2-assets` reusado con prefix `uma/` (un solo bucket, dos apps).
 - ✅ Páginas:
-  - `/umamusume` (login requerido): wishlist con filtro Pendientes/Encontradas, expand "Ver más" para ver Budget + Alternates Speed/Power/Wit.
+  - `/umamusume` (login requerido): wishlist con filtro Pendientes/Encontradas, aptitudes `Surface/Distance/Pace` y expand "Ver más" para ver Budget + Alternates Speed/Power/Wit.
 - ✅ API:
   - `GET /umamusume/api/search?q=&limit=` — typeahead sobre `characters.json` (case-insensitive, ranked).
   - `POST /umamusume/api/add` `{characterId}` — agrega. 409 si duplicado.
   - `POST /umamusume/api/remove` `{characterId}` — DELETE.
   - `POST /umamusume/api/toggle-found` `{characterId}` — toggle found/found_at.
-  - `GET /umamusume/api/character/[id]` — `{character, recommendations}` con cards resueltos (icon path incluido).
+  - `GET /umamusume/api/character/[id]` — `{character, recommendations}` con cards resueltos (icon path incluido); `character.aptitudes` contiene las mejores aptitudes de Game8.
   - `GET /umamusume/api/icon?type=character|card&id=` — R2 con fallback game8 CDN, cache 30 días.
 - ✅ Iconos: el proxy hace fallback a CDN y guarda en R2 on-demand. Tarda ~2-3 min la primera carga (cold cache).
 - ✅ El scenario label del card muestra el nombre del scenario actual (Grand Live / Trackblazer). Algunas páginas viejas muestran Trackblazer si game8 ya migró a esa version.
@@ -162,6 +162,7 @@ Pendiente en orden de prioridad:
 - D2 iconos custom con tipo asignable para que el picker los filtre correctamente.
 - D2 orden del dropdown por uso: las perks más usadas primero (count desde `d2_wishlist.perks_json`).
 - UMA: snapshot estático JSON commiteado, refresh manual con `npm run build:uma-data`.
+- UMA: cada personaje muestra las mejores aptitudes de `Surface`, `Distance` y `Pace`; si hay empate se conservan todas.
 - UMA: scenario se detecta automáticamente del heading de game8 (Grand Live / Grand Concert / Trackblazer).
 - UMA: type-ahead sobre `characters.json` con ranking (exact prefix > word prefix > substring).
 - UMA: cards referenciadas en builds que no estaban en `Best Support Cards` se agregan al `cards.json` (merge por `game8Id`).

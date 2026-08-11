@@ -62,6 +62,7 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - Zona horaria fija `America/Mexico_City` para el día de "hoy" (el worker corre en UTC) y para el label del próximo cobro ("12 ago").
 - Monedas soportadas: MXN y USD (editable por suscripción). El total se muestra por moneda, ocultando la que no tiene subs.
 - Pausada ≠ borrada: el toggle permite sacar una sub del total sin perderla.
+- Día de cobro elegido con **cuadrícula numérica** (7 columnas, 1-31) en vez de `<select>`; sin selección default, se valida al guardar. Patrón documentado en DESIGN.md.
 
 ## Identity Provider (SSO multi-app)
 

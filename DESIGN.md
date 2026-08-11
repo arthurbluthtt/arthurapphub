@@ -195,6 +195,17 @@ html.dark { color-scheme: dark; }
 
 Sin esto, los options nativos se renderizan con los colores del SO (fondo blanco + texto oscuro) y heredan el `text-white` del select = invisible.
 
+### Día picker (cuadrícula numérica)
+
+Para elegir un día del mes sin scrollear un `<select>` (ej: día de cobro en Suscripciones). Preferible a un `<select>` cuando el rango es fijo y chico (1-31):
+
+- **Container**: `grid grid-cols-7 gap-1` (7 columnas, como las semanas de un calendario).
+- **Botón base**: `grid h-8 place-items-center rounded-lg border border-zinc-200 text-xs tabular-nums text-zinc-700 transition dark:border-white/10 dark:text-zinc-200`.
+- **Hover (solo si NO está seleccionado)**: `hover:border-zinc-400 hover:bg-zinc-100 dark:hover:bg-white/10` — se quitan al seleccionar para no pisar el fondo invertido (toggle por `classList.toggle`).
+- **Seleccionado**: `border-transparent bg-zinc-900 text-white dark:bg-white dark:text-zinc-900` (mismo lenguaje de chips activos) + `aria-pressed="true"`.
+- **Sin selección default**: el submit valida que haya un día elegido y muestra el error inline (no hay día preseleccionado al abrir).
+- Al editar, el estado se restaura desde el valor guardado (misma función de render que el click).
+
 ### Filtros (chips de estado / tipo)
 
 Para filtros pill con conteo:

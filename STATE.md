@@ -1,7 +1,7 @@
 ﻿# STATE — ArthurAppHub
 
 Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de apps** + **sub-apps internas** (D2 Wishlist + Umamusume Cards).
-Última actualización: 2026-08-10.
+Última actualización: 2026-08-11.
 
 ## AppHub — deploy status
 
@@ -56,6 +56,7 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
   - `POST /subs/api/remove` `{id}` — 204.
   - `POST /subs/api/toggle-active` `{id}` — `{active}`.
 - ✅ Verificado end-to-end vía curl contra D1 remota (signup → add → toggle → update → remove + cálculo del próximo cobro).
+- ✅ Smoke test E2E en browser: agregar MXN + USD, editar, toggle pausada, borrar. **Fix**: colisión de data-attributes (`data-sub-price` / `data-sub-currency` del dialog vs los mismos en las cards) hacía que `querySelector` del dialog resolviera a la card con subs ya renderizadas → `priceInput.value` undefined → "Precio inválido" siempre. Renombrados a `data-sub-dialog-price` / `data-sub-dialog-currency`.
 
 ### Decisiones Suscripciones
 
@@ -63,6 +64,7 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - Monedas soportadas: MXN y USD (editable por suscripción). El total se muestra por moneda, ocultando la que no tiene subs.
 - Pausada ≠ borrada: el toggle permite sacar una sub del total sin perderla.
 - Día de cobro elegido con **cuadrícula numérica** (7 columnas, 1-31) en vez de `<select>`; sin selección default, se valida al guardar. Patrón documentado en DESIGN.md.
+- Los controles del dialog usan prefijo propio `data-sub-dialog-*` para no colisionar con los data-attributes de las cards (`data-sub-price`, `data-sub-currency`), ya que `querySelector` toma el primer match en el DOM y las cards van antes que el dialog.
 
 ## Identity Provider (SSO multi-app)
 
@@ -165,7 +167,7 @@ Pendiente en orden de prioridad:
 4. **Eliminado**: la entrada de notes-app en `apps.json` y los `app_id` en `ALLOWED_APPS` / `KNOWN_APPS` (de momento vacíos). El worker `notes-app` en Cloudflare sigue corriendo con sus datos hasta que se borre manualmente.
 5. Umamusume: refresh de datos si game8 reorganiza o sale nuevo scenario.
 6. Umamusume: agregar las 5 páginas que quedaron sin recomendaciones (El Condor Pasa Kukulkan Warrior, Mayano Top Gun Sunlight Bouquet, Special Week Special Dreamer, Special Week Ruler of Japan, "564 Escapades" — esta última es un skill id mal clasificado como character).
-7. Suscripciones: smoke test E2E en browser (login → /subs → agregar MXN + USD → ver total y próximo cobro → toggle pausada → editar → borrar).
+7. ~~Suscripciones: smoke test E2E en browser (login → /subs → agregar MXN + USD → ver total y próximo cobro → toggle pausada → editar → borrar)~~ — **hecho 2026-08-11**, incluye fix de colisión de data-attributes del dialog.
 
 ## Decisiones tomadas
 

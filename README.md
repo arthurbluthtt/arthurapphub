@@ -10,6 +10,7 @@ URL: <https://arthurapphub.arthurbluthtt.workers.dev>
 - **Identity Provider (SSO)**: el hub maneja la auth (username + PIN de 4 dígitos). Las apps vinculadas consumen identidad vía exchange code. Una vez que el usuario entra su PIN en el hub, queda autenticado en todas las apps.
 - **Sub-app `/destiny`**: wishlist de armas de Destiny 2 con búsqueda desde el manifest oficial de Bungie, selección manual de perks (Cañón / Cargador / Rasgo 1 / Rasgo 2), iconos custom, filtros por estado y tipo de arma.
 - **Sub-app `/umamusume`**: wishlist de personajes de Umamusume: Pretty Derby con las cartas de soporte más recomendadas (game8.co). Cada personaje muestra sus mejores aptitudes de `Surface`, `Distance` y `Pace`, además de Main build + Budget + Alternates Speed/Power/Wit del scenario actual.
+- **Sub-app `/subs`**: control de gastos de suscripciones mensuales (MXN/USD). Total del mes por moneda + próxima suscripción por cobrar, con toggle activa/pausada.
 
 ## Estado actual
 
@@ -52,6 +53,9 @@ src/
 │   └── uma/                             # componentes sub-app Umamusume
 │       ├── AddCharacterDialog.astro     # modal: buscar y agregar personaje
 │       └── SupportCardList.astro        # lista de cartas recomendadas
+│   └── subs/                            # componentes sub-app Suscripciones
+│       ├── AddSubDialog.astro           # chip FAB + dialog agregar/editar
+│       └── SubCard.astro                # card de suscripción (toggle activa)
 ├── layouts/
 │   └── BaseLayout.astro
 ├── lib/
@@ -65,6 +69,10 @@ src/
 │   └── uma/
 │       ├── data.ts                      # characters/cards/recommendations + aptitudes
 │       └── wishlist.ts                  # CRUD de uma_wishlist
+│   └── subs/
+│       ├── store.ts                     # CRUD subs + CURRENCIES
+│       ├── validate.ts                  # parseSubInput (add/update)
+│       └── format.ts                    # formatPrice + nextCharge + totalsByCurrency
 ├── pages/
 │   ├── index.astro                     # login (sin sesión) o grid (con sesión)
 │   ├── signup.astro
@@ -92,6 +100,13 @@ src/
 │   └── umamusume/
 │       ├── index.astro                  # página /umamusume (wishlist + aptitudes)
 │       └── api/                         # search, add, remove, found, icon y character
+│   └── subs/
+│       ├── index.astro                  # página /subs (total del mes + próximo cobro)
+│       └── api/
+│           ├── add.ts                   # POST: agregar suscripción
+│           ├── update.ts                # POST: editar suscripción
+│           ├── remove.ts                # POST: eliminar suscripción
+│           └── toggle-active.ts         # POST: toggle activa/pausada
 ├── styles/
 │   └── global.css                      # tokens + color-scheme
 └── env.d.ts
@@ -105,6 +120,7 @@ migrations/
 ├── 0006_d2_perk_icons.sql
 ├── 0007_d2_perk_icons_category.sql
 └── 0008_uma_wishlist.sql
+└── 0009_subs.sql
 
 data/d2/
 ├── weapons-index.json                  # generado por build:d2-manifest
@@ -195,6 +211,7 @@ Commit + push → redeploy automático.
 - Header con username del usuario logueado + botón "Salir".
 - **Sub-app `/destiny`** — wishlist de armas de Destiny 2.
 - **Sub-app `/umamusume`** — wishlist de personajes con cartas de soporte recomendadas.
+- **Sub-app `/subs`** — gastos mensuales de suscripciones con total y próximo cobro.
 
 ## D2 Wishlist (sub-app interna)
 
@@ -274,5 +291,26 @@ BUNGIE_API_KEY=<key> npm run build:d2-manifest
 git add data/d2/weapons-index.json data/d2/perks.json
 git commit -m "d2: refresh manifest" && git push
 ```
+
+## Suscripciones (sub-app interna)
+
+Una página en `/subs` (login requerido) que mantiene el control de las suscripciones mensuales: nombre, precio por mes, moneda (MXN/USD) y día de cobro. Un chip flotante "+ Agregar suscripción" abre el dialog para crear o editar; cada card tiene toggle Activa/Pausada, editar y eliminar.
+
+### Summary superior
+
+- **Total del mes**: suma de las suscripciones **activas**, desglosada por moneda (ej. `$219.00 MXN · $12.00 USD`). Se oculta la moneda que no tiene subs.
+- **Próximo cobro**: la sub activa más cercana por cobrar, con su día (`Netflix · 12 ago · $219.00 MXN`). El día de cobro se clampea al último día del mes en meses cortos (31 en feb → 28/29) y la fecha de "hoy" se calcula en `America/Mexico_City` (el worker corre en UTC).
+- Todo se recalcula en el cliente tras agregar/editar/toggle/eliminar.
+
+### Storage
+
+- D1 tabla `subs` (migración `0009`): `(username, id, name, price_cents, currency, billing_day, active, created_at)` + índice `(username, active, created_at DESC)`. Precio en **centavos** (enteros, sin floats).
+
+### API
+
+- `POST /subs/api/add` `{name, priceCents, currency, billingDay}` → 201 `{sub}` (400 si inválido).
+- `POST /subs/api/update` `{id, ...}` → `{sub}` (404 si no existe).
+- `POST /subs/api/remove` `{id}` → 204.
+- `POST /subs/api/toggle-active` `{id}` → `{active}`.
 
 Ver `STATE.md` para el plan completo, próximos pasos y la historia del proyecto.

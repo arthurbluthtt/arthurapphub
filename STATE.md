@@ -1,7 +1,7 @@
 ﻿# STATE — ArthurAppHub
 
 Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de apps** + **sub-apps internas** (D2 Wishlist + Umamusume Cards).
-Última actualización: 2026-07-31.
+Última actualización: 2026-08-10.
 
 ## AppHub — deploy status
 
@@ -42,7 +42,28 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - Whitelist de categorías por slot no aplica (Umamusume no tiene Barrel/Magazine/Trait como D2).
 - Iconos del CDN de game8 (img.game8.co) cacheados en R2. Sin auth para servir (público).
 
-### Identity Provider (SSO multi-app)
+### Suscripciones (sub-app interna) — deploy status
+
+- ✅ Migración aplicada a D1 remota: `0009_subs.sql` (tabla `subs`).
+- ✅ Página `/subs` (login requerido): lista de suscripciones + summary superior con **Total del mes** (desglosado por moneda MXN/USD, suma solo de activas) + **Próximo cobro** (próxima sub activa por cobrar, con día y monto).
+- ✅ Chip FAB "+ Agregar suscripción" (patrón de la línea base) → dialog con nombre, precio, moneda (MXN/USD) y día de cobro (1-31). El mismo dialog sirve para editar (evento `subs:edit-sub`).
+- ✅ Cards: nombre, precio, moneda, día de cobro, toggle **Activa/Pausada**, editar, eliminar. Las pausadas no suman al total.
+- ✅ Todo el summary (totales + próximo cobro) se recalcula en el cliente tras cualquier cambio (`subs:subs-changed`).
+- ✅ Precio guardado en centavos (enteros, sin floats). Próximo cobro clampeado al último día del mes en meses cortos (31 en feb → 28/29).
+- ✅ API:
+  - `POST /subs/api/add` `{name, priceCents, currency, billingDay}` — 201 `{sub}`. 400 si name vacío, price<0, currency ≠ MXN/USD o día fuera de 1-31.
+  - `POST /subs/api/update` `{id, ...}` — `{sub}`. 404 si no existe.
+  - `POST /subs/api/remove` `{id}` — 204.
+  - `POST /subs/api/toggle-active` `{id}` — `{active}`.
+- ✅ Verificado end-to-end vía curl contra D1 remota (signup → add → toggle → update → remove + cálculo del próximo cobro).
+
+### Decisiones Suscripciones
+
+- Zona horaria fija `America/Mexico_City` para el día de "hoy" (el worker corre en UTC) y para el label del próximo cobro ("12 ago").
+- Monedas soportadas: MXN y USD (editable por suscripción). El total se muestra por moneda, ocultando la que no tiene subs.
+- Pausada ≠ borrada: el toggle permite sacar una sub del total sin perderla.
+
+## Identity Provider (SSO multi-app)
 
 - **D1 `arthurapphub-auth-db`** con tablas `pin_credentials` (PK `username`), `sessions`, `auth_codes`.
 - **Migraciones aplicadas**: `0001_auth_init.sql`, `0002_username.sql`.
@@ -143,6 +164,7 @@ Pendiente en orden de prioridad:
 4. **Eliminado**: la entrada de notes-app en `apps.json` y los `app_id` en `ALLOWED_APPS` / `KNOWN_APPS` (de momento vacíos). El worker `notes-app` en Cloudflare sigue corriendo con sus datos hasta que se borre manualmente.
 5. Umamusume: refresh de datos si game8 reorganiza o sale nuevo scenario.
 6. Umamusume: agregar las 5 páginas que quedaron sin recomendaciones (El Condor Pasa Kukulkan Warrior, Mayano Top Gun Sunlight Bouquet, Special Week Special Dreamer, Special Week Ruler of Japan, "564 Escapades" — esta última es un skill id mal clasificado como character).
+7. Suscripciones: smoke test E2E en browser (login → /subs → agregar MXN + USD → ver total y próximo cobro → toggle pausada → editar → borrar).
 
 ## Decisiones tomadas
 
@@ -185,7 +207,7 @@ Pendiente en orden de prioridad:
 | Repo | github.com/arthurbluthtt/arthurapphub |
 | Worker | arthurapphub |
 | URL producción | https://arthurapphub.arthurbluthtt.workers.dev |
-| D1 auth | arthurapphub-auth-db (id `09663bc8-89c0-422f-833f-de9f48b0a8ab`) — tablas: pin_credentials, sessions, auth_codes, d2_wishlist, d2_perk_icons, **uma_wishlist** |
+| D1 auth | arthurapphub-auth-db (id `09663bc8-89c0-422f-833f-de9f48b0a8ab`) — tablas: pin_credentials, sessions, auth_codes, d2_wishlist, d2_perk_icons, uma_wishlist, **subs** |
 | R2 | arthurapphub-d2-assets (binding `D2_ASSETS`) — reusado por D2 y UMA con prefix `uma/` |
 | GH Secrets set | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `INTERNAL_API_SECRET` |
 | Worker Secrets | `AUTH_PEPPER` (64 chars random en `~/.config/cloudflare-tokens/hub-pepper.txt`), `INTERNAL_API_SECRET` (en `~/.config/cloudflare-tokens/shared-secret.txt`), `BUNGIE_API_KEY` |

@@ -40,6 +40,9 @@ AppHub/
 │   │   └── uma/                            # Sub-app Umamusume Cards
 │   │       ├── AddCharacterDialog.astro    # Modal: search personaje + agregar
 │   │       └── SupportCardList.astro       # Lista de cartas (icon + tooltip)
+│   │   └── subs/                           # Sub-app Suscripciones
+│   │       ├── AddSubDialog.astro          # Chip FAB + dialog agregar/editar
+│   │       └── SubCard.astro               # Card de suscripción (toggle activa)
 │   ├── layouts/
 │   │   └── BaseLayout.astro                # HTML shell + scripts de bootstrap
 │   ├── lib/
@@ -55,6 +58,10 @@ AppHub/
 │   │   └── uma/                            # Lib UMA
 │   │       ├── data.ts                     # Carga characters/cards/recommendations + search
 │   │       └── wishlist.ts                 # CRUD uma_wishlist (D1)
+│   │   └── subs/                           # Lib Suscripciones
+│   │       ├── store.ts                    # CRUD subs + CURRENCIES + validación de tipos
+│   │       ├── validate.ts                 # parseSubInput (add/update)
+│   │       └── format.ts                   # formatPrice, nextCharge, totalsByCurrency
 │   ├── pages/
 │   │   ├── index.astro                     # / → login (sin sesión) o grid (con sesión)
 │   │   ├── login.astro                     # /login → shim que redirige a /
@@ -87,7 +94,14 @@ AppHub/
 │   │           ├── remove.ts               # POST /umamusume/api/remove
 │   │           ├── toggle-found.ts         # POST /umamusume/api/toggle-found
 │   │           ├── icon.ts                 # GET /umamusume/api/icon?type=character|card&id=
-│   │           └── character/[id].ts       # GET /umamusume/api/character/[id] → recs
+│   │       └── character/[id].ts       # GET /umamusume/api/character/[id] → recs
+│   │   └── subs/                        # Sub-app Suscripciones
+│   │       ├── index.astro              # /subs → wishlist (total + próximo cobro)
+│   │       └── api/
+│   │           ├── add.ts               # POST /subs/api/add
+│   │           ├── update.ts            # POST /subs/api/update
+│   │           ├── remove.ts            # POST /subs/api/remove
+│   │           └── toggle-active.ts     # POST /subs/api/toggle-active
 │   ├── styles/
 │   │   └── global.css                      # Tokens CSS + color-scheme sync
 │   └── env.d.ts                            # Tipos del env (cloudflare:workers)
@@ -101,6 +115,7 @@ AppHub/
 │   ├── 0006_d2_perk_icons.sql              # Tabla d2_perk_icons
 │   ├── 0007_d2_perk_icons_category.sql     # Agrega category a d2_perk_icons
 │   └── 0008_uma_wishlist.sql               # Tabla uma_wishlist
+│   └── 0009_subs.sql                       # Tabla subs (suscripciones)
 │
 ├── data/d2/                                # Generado por build:d2-manifest
 │   ├── weapons-index.json                  # 2058 armas con weaponType real
@@ -171,6 +186,15 @@ AppHub/
 | GET | `/umamusume/api/character/[id]` | — | `{ character: { ..., aptitudes }, recommendations: { scenario, main, budget, alternates: { speed, power, wit } } }` |
 | GET | `/umamusume/api/icon?type=character\|card&id=` | — | imagen (R2 con fallback game8 CDN, cache 30 días, prefix `uma/`) |
 
+## API — Suscripciones (sub-app)
+
+| Method | Path | Body / Query | Respuesta |
+|---|---|---|---|
+| POST | `/subs/api/add` | `{ name, priceCents, currency, billingDay }` | 201 `{ sub }` (400 si name vacío, price<0, currency ≠ MXN/USD o día fuera de 1-31) |
+| POST | `/subs/api/update` | `{ id, name, priceCents, currency, billingDay }` | `{ sub }` (404 si no existe) |
+| POST | `/subs/api/remove` | `{ id }` | 204 (404 si no existe) |
+| POST | `/subs/api/toggle-active` | `{ id }` | `{ active }` (404 si no existe) |
+
 ---
 
 ## Storage
@@ -195,6 +219,12 @@ AppHub/
 | Tabla | Schema |
 |---|---|
 | `uma_wishlist` | `(username, character_id, found, found_at, added_at)` + índice `(username, found, added_at DESC)` |
+
+### D1 — sub-app Suscripciones (`arthurapphub-auth-db`)
+
+| Tabla | Schema |
+|---|---|
+| `subs` | `(username, id, name, price_cents, currency, billing_day, active, created_at)` + índice `(username, active, created_at DESC)` |
 
 ### R2 — `arthurapphub-d2-assets` (binding `D2_ASSETS`)
 

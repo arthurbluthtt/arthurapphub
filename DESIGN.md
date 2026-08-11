@@ -232,5 +232,6 @@ Para filtros pill con conteo:
 
 - **productividad** — apps de trabajo/notas (color `#3b82f6`, solo metadata).
 - **gaming** — apps de juegos (D2 Wishlist, etc.). Color `#fafafa` (metadata).
+- **finanzas** — apps de dinero/gastos (Suscripciones). Color `#fafafa` (metadata).
 
 Cuando se sume una nueva, agregar arriba siguiendo el patrón.

@@ -9,6 +9,11 @@
       "id": "gaming",
       "label": "Gaming",
       "color": "#fafafa"
+    },
+    {
+      "id": "finanzas",
+      "label": "Finanzas",
+      "color": "#fafafa"
     }
   ],
   "apps": [
@@ -33,6 +38,18 @@
       "icon": "🐴",
       "category": "gaming",
       "tags": ["gacha", "umamusume", "cards"],
+      "featured": false,
+      "sso": false
+    },
+    {
+      "id": "suscripciones",
+      "name": "Suscripciones",
+      "description": "Mis gastos mensuales de suscripciones",
+      "url": "https://arthurapphub.arthurbluthtt.workers.dev/subs",
+      "redir": "/subs",
+      "icon": "💳",
+      "category": "finanzas",
+      "tags": ["subs", "gastos"],
       "featured": false,
       "sso": false
     }

@@ -1,0 +1,239 @@
+---
+const BILLING_DAYS = Array.from({ length: 31 }, (_, i) => i + 1);
+---
+
+<button
+  type="button"
+  class="fixed bottom-4 right-4 z-30 inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 shadow-md transition hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-zinc-800 dark:text-white"
+  data-add-sub-chip
+  aria-label="Agregar suscripción"
+>
+  <span class="text-sm leading-none">+</span>
+  <span>Agregar suscripción</span>
+</button>
+
+<dialog
+  class="m-auto max-h-[90vh] w-[min(440px,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white backdrop:bg-zinc-900/95 dark:backdrop:bg-zinc-950/95"
+  data-sub-dialog
+>
+  <header class="flex items-center gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
+    <div class="min-w-0 flex-1">
+      <h2 class="truncate font-semibold" data-sub-dialog-title>Agregar suscripción</h2>
+      <p class="text-xs uppercase tracking-wider text-zinc-500">Nombre, precio y día de cobro</p>
+    </div>
+    <button
+      type="button"
+      class="grid h-8 w-8 place-items-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
+      data-sub-close
+      aria-label="Cerrar"
+    >
+      ×
+    </button>
+  </header>
+
+  <form class="p-4" data-sub-form>
+    <label class="block">
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Nombre</span>
+      <input
+        type="text"
+        name="name"
+        placeholder="Ej. Netflix, Spotify, Patreon…"
+        autocomplete="off"
+        spellcheck="false"
+        required
+        class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+        data-sub-name
+      />
+    </label>
+
+    <div class="mt-3 grid grid-cols-2 gap-3">
+      <label class="block">
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Precio / mes</span>
+        <input
+          type="number"
+          name="price"
+          inputmode="decimal"
+          step="0.01"
+          min="0"
+          placeholder="219.00"
+          required
+          class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+          data-sub-price
+        />
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Moneda</span>
+        <select
+          name="currency"
+          class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:focus:border-white/30"
+          data-sub-currency
+        >
+          <option value="MXN">MXN</option>
+          <option value="USD">USD</option>
+        </select>
+      </label>
+    </div>
+
+    <label class="mt-3 block">
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Día de cobro</span>
+      <select
+        name="billingDay"
+        class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:focus:border-white/30"
+        data-sub-billing-day
+      >
+        {BILLING_DAYS.map((d) => (
+          <option value={d}>Día {d}</option>
+        ))}
+      </select>
+    </label>
+
+    <div class="mt-4 flex items-center justify-end gap-3">
+      <button
+        type="button"
+        class="rounded-lg border border-zinc-200 px-4 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/10"
+        data-sub-cancel
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        class="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white transition hover:opacity-90 dark:bg-white dark:text-zinc-900"
+        data-sub-submit
+      >
+        Guardar
+      </button>
+    </div>
+
+    <p
+      class="m-0 border-t border-zinc-200 px-0 pt-3 text-center text-xs text-zinc-500 dark:border-white/10 hidden"
+      data-sub-error
+    ></p>
+  </form>
+</dialog>
+
+<script>
+  const dialog = document.querySelector("[data-sub-dialog]");
+  const chip = document.querySelector("[data-add-sub-chip]");
+  const form = document.querySelector("[data-sub-form]");
+  const titleEl = document.querySelector("[data-sub-dialog-title]");
+  const nameInput = document.querySelector("[data-sub-name]");
+  const priceInput = document.querySelector("[data-sub-price]");
+  const currencySelect = document.querySelector("[data-sub-currency]");
+  const billingDaySelect = document.querySelector("[data-sub-billing-day]");
+  const closeBtn = document.querySelector("[data-sub-close]");
+  const cancelBtn = document.querySelector("[data-sub-cancel]");
+  const errorEl = document.querySelector("[data-sub-error]");
+  const submitBtn = document.querySelector("[data-sub-submit]");
+
+  let bodyLocked = false;
+  let editingId = null;
+  let submitting = false;
+
+  function lockBodyScroll() {
+    if (bodyLocked) return;
+    bodyLocked = true;
+    const sbw = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = "hidden";
+    if (sbw > 0) document.body.style.paddingRight = sbw + "px";
+  }
+  function unlockBodyScroll() {
+    if (!bodyLocked) return;
+    bodyLocked = false;
+    document.body.style.overflow = "";
+    document.body.style.paddingRight = "";
+  }
+
+  function openDialog(sub) {
+    if (!dialog) return;
+    editingId = sub ? sub.id : null;
+    errorEl.classList.add("hidden");
+    titleEl.textContent = sub ? "Editar suscripción" : "Agregar suscripción";
+    nameInput.value = sub ? sub.name : "";
+    priceInput.value = sub ? String(sub.priceCents / 100) : "";
+    currencySelect.value = sub ? sub.currency : "MXN";
+    billingDaySelect.value = sub ? String(sub.billingDay) : "1";
+    lockBodyScroll();
+    dialog.showModal();
+    setTimeout(() => nameInput.focus(), 0);
+  }
+
+  function closeDialog() {
+    if (!dialog) return;
+    dialog.close();
+    unlockBodyScroll();
+  }
+
+  chip?.addEventListener("click", () => openDialog(null));
+  closeBtn?.addEventListener("click", closeDialog);
+  cancelBtn?.addEventListener("click", closeDialog);
+  dialog?.addEventListener("click", (e) => {
+    if (e.target === dialog) closeDialog();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && dialog?.open) closeDialog();
+  });
+  window.addEventListener("subs:edit-sub", (e) => {
+    const sub = e && e.detail && e.detail.sub;
+    if (sub) openDialog(sub);
+  });
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+
+    errorEl.classList.add("hidden");
+    const name = nameInput.value.trim();
+    const price = parseFloat(priceInput.value);
+    if (!name) {
+      errorEl.textContent = "Poné un nombre";
+      errorEl.classList.remove("hidden");
+      nameInput.focus();
+      return;
+    }
+    if (!Number.isFinite(price) || price < 0) {
+      errorEl.textContent = "Precio inválido";
+      errorEl.classList.remove("hidden");
+      priceInput.focus();
+      return;
+    }
+
+    const payload = {
+      name,
+      priceCents: Math.round(price * 100),
+      currency: currencySelect.value,
+      billingDay: parseInt(billingDaySelect.value, 10),
+    };
+    if (editingId) payload.id = editingId;
+
+    submitting = true;
+    submitBtn.disabled = true;
+    try {
+      const res = await fetch(editingId ? "/subs/api/update" : "/subs/api/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        let msg = "Error " + res.status;
+        try {
+          const b = await res.json();
+          if (b && b.error) msg = b.error;
+        } catch {}
+        throw new Error(msg);
+      }
+      const data = await res.json();
+      window.dispatchEvent(
+        new CustomEvent("subs:subs-changed", {
+          detail: { sub: data.sub, prevId: editingId || null },
+        })
+      );
+      closeDialog();
+    } catch (err) {
+      errorEl.textContent = err.message || "Error de red";
+      errorEl.classList.remove("hidden");
+    } finally {
+      submitting = false;
+      submitBtn.disabled = false;
+    }
+  });
+</script>

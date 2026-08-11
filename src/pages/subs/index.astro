@@ -1,0 +1,347 @@
+---
+import { env } from 'cloudflare:workers';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AddSubDialog from '../../components/subs/AddSubDialog.astro';
+import SubCard from '../../components/subs/SubCard.astro';
+import { lookupSession, readCookie } from '../../lib/auth';
+import { listSubs, CURRENCIES } from '../../lib/subs/store';
+import { formatMonthDay, formatPrice, nextCharge, totalsByCurrency } from '../../lib/subs/format';
+
+export const prerender = false;
+
+const sessionId = readCookie(Astro.request);
+const sess = sessionId ? await lookupSession(env.AUTH_DB, sessionId) : null;
+if (!sess) {
+  return Astro.redirect('/?next=' + encodeURIComponent('/subs'));
+}
+
+const items = await listSubs(env.AUTH_DB, sess.username);
+const totals = totalsByCurrency(items);
+const next = nextCharge(items);
+const activeCount = items.filter((s) => s.active).length;
+---
+
+<BaseLayout title="Suscripciones — AppHub">
+  <div class="mb-6 flex items-baseline justify-between gap-6">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Suscripciones</h1>
+      <p class="mt-2 text-sm text-zinc-500">Mis gastos mensuales de suscripciones.</p>
+    </div>
+    <span class="text-xs uppercase tracking-wider text-zinc-500">
+      {items.length} {items.length === 1 ? 'suscripción' : 'suscripciones'}
+      {activeCount > 0 && <span class="ml-1">· {activeCount} activa{activeCount === 1 ? '' : 's'}</span>}
+    </span>
+  </div>
+
+  <div
+    class="mb-6 flex flex-wrap items-end justify-between gap-x-6 gap-y-4 rounded-2xl border border-zinc-200 bg-white p-5 dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur"
+    data-summary
+  >
+    <div>
+      <p class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Total del mes</p>
+      <div class="mt-1.5 flex flex-wrap items-center gap-x-5 gap-y-1" data-total-row>
+        {CURRENCIES.map((c) => (
+          <span
+            data-total={c}
+            class={[
+              'text-2xl font-semibold tabular-nums text-zinc-900 dark:text-white',
+              items.some((s) => s.currency === c) ? '' : 'hidden',
+            ].join(' ')}
+          >
+            {formatPrice(totals[c] ?? 0, c)}
+          </span>
+        ))}
+      </div>
+    </div>
+
+    <div class="min-w-0">
+      <p class="text-[10px] font-medium uppercase tracking-wider text-zinc-500">Próximo cobro</p>
+      <p class="mt-1.5 truncate text-sm font-medium text-zinc-900 tabular-nums dark:text-white" data-next-charge>
+        {next
+          ? `${next.sub.name} · ${formatMonthDay(next.date)} · ${formatPrice(next.sub.priceCents, next.sub.currency)}`
+          : 'Sin cobros pendientes'}
+      </p>
+    </div>
+  </div>
+
+  <p
+    class={[
+      'rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10',
+      items.length > 0 ? 'hidden' : '',
+    ].join(' ')}
+    data-empty-state
+  >
+    No tenés suscripciones. Agregá la primera con el botón de abajo.
+  </p>
+  <div
+    class={[
+      'grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3',
+      items.length === 0 ? 'hidden' : '',
+    ].join(' ')}
+    data-subs-grid
+  >
+    {items.map((sub) => (
+      <SubCard sub={sub} />
+    ))}
+  </div>
+
+  <script is:inline define:vars={{ subsInitial: items }}>
+    const fmtCache = new Map();
+    function fmt(cents, currency) {
+      let f = fmtCache.get(currency);
+      if (!f) {
+        f = new Intl.NumberFormat('es-MX', {
+          style: 'currency',
+          currency,
+          minimumFractionDigits: 2,
+        });
+        fmtCache.set(currency, f);
+      }
+      return f.format(cents / 100);
+    }
+
+    function todayParts() {
+      const d = new Date();
+      return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
+    }
+    function daysInMonth(year, month) {
+      return new Date(year, month, 0).getDate();
+    }
+    function nextChargeDate(sub, today) {
+      const dim = daysInMonth(today.year, today.month);
+      const day = Math.min(sub.billingDay, dim);
+      if (day >= today.day) return { year: today.year, month: today.month, day };
+      const year = today.month === 12 ? today.year + 1 : today.year;
+      const month = today.month === 12 ? 1 : today.month + 1;
+      return { year, month, day: Math.min(sub.billingDay, daysInMonth(year, month)) };
+    }
+    const monthDayFmt = new Intl.DateTimeFormat('es-MX', { day: 'numeric', month: 'short' });
+    function formatMonthDay(date) {
+      return monthDayFmt.format(new Date(date.year, date.month - 1, date.day));
+    }
+    function dateSortKey(d) {
+      return d.year * 10000 + d.month * 100 + d.day;
+    }
+    function nextChargeOf(subs) {
+      const today = todayParts();
+      let best = null;
+      for (const sub of subs) {
+        if (!sub.active) continue;
+        const date = nextChargeDate(sub, today);
+        if (
+          !best ||
+          dateSortKey(date) < dateSortKey(best.date) ||
+          (dateSortKey(date) === dateSortKey(best.date) && sub.createdAt < best.sub.createdAt)
+        ) {
+          best = { sub, date };
+        }
+      }
+      return best;
+    }
+
+    const summaryRow = document.querySelector('[data-total-row]');
+    const nextChargeEl = document.querySelector('[data-next-charge]');
+
+    function renderSummary() {
+      const totals = {};
+      for (const sub of subs) {
+        if (!sub.active) continue;
+        totals[sub.currency] = (totals[sub.currency] ?? 0) + sub.priceCents;
+      }
+      summaryRow.querySelectorAll('[data-total]').forEach((el) => {
+        const c = el.dataset.total;
+        const hasCurrency = subs.some((s) => s.currency === c);
+        el.classList.toggle('hidden', !hasCurrency);
+        if (hasCurrency) el.textContent = fmt(totals[c] ?? 0, c);
+      });
+      const next = nextChargeOf(subs);
+      nextChargeEl.textContent = next
+        ? next.sub.name + ' · ' + formatMonthDay(next.date) + ' · ' + fmt(next.sub.priceCents, next.sub.currency)
+        : 'Sin cobros pendientes';
+    }
+
+    function buildSubCard(sub) {
+      const article = document.createElement('article');
+      article.dataset.subCard = '';
+      article.dataset.subId = sub.id;
+      article.className =
+        'flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-5 transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur';
+
+      const top = document.createElement('div');
+      top.className = 'flex items-start justify-between gap-3';
+
+      const info = document.createElement('div');
+      info.className = 'min-w-0 flex-1';
+      const nameEl = document.createElement('h3');
+      nameEl.className = 'truncate font-semibold text-zinc-900 dark:text-white';
+      nameEl.textContent = sub.name;
+      info.appendChild(nameEl);
+      const dayEl = document.createElement('p');
+      dayEl.className = 'mt-0.5 text-xs text-zinc-500 dark:text-zinc-500';
+      dayEl.textContent = 'Se cobra el día ' + sub.billingDay;
+      info.appendChild(dayEl);
+      top.appendChild(info);
+
+      const actions = document.createElement('div');
+      actions.className = 'flex shrink-0 items-center gap-2';
+
+      const priceEl = document.createElement('span');
+      priceEl.dataset.subPrice = '';
+      priceEl.className =
+        'text-lg font-semibold tabular-nums text-zinc-900 dark:text-white';
+      priceEl.textContent = fmt(sub.priceCents, sub.currency);
+      actions.appendChild(priceEl);
+
+      const editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.dataset.editSub = '';
+      editBtn.dataset.subId = sub.id;
+      editBtn.title = 'Editar suscripción';
+      editBtn.ariaLabel = 'Editar';
+      editBtn.className =
+        'grid h-7 w-7 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-white';
+      editBtn.textContent = '✎';
+      actions.appendChild(editBtn);
+
+      const removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.dataset.removeSub = '';
+      removeBtn.dataset.subId = sub.id;
+      removeBtn.title = 'Eliminar suscripción';
+      removeBtn.ariaLabel = 'Eliminar';
+      removeBtn.className =
+        'grid h-7 w-7 place-items-center rounded-full text-zinc-400 transition hover:bg-red-500/10 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400';
+      removeBtn.textContent = '×';
+      actions.appendChild(removeBtn);
+
+      top.appendChild(actions);
+      article.appendChild(top);
+
+      const meta = document.createElement('div');
+      meta.className = 'flex flex-wrap items-center gap-2';
+
+      const currencyChip = document.createElement('span');
+      currencyChip.className =
+        'rounded-full border border-zinc-200 px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-zinc-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200';
+      currencyChip.textContent = sub.currency;
+      meta.appendChild(currencyChip);
+
+      const toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.dataset.toggleActive = '';
+      toggleBtn.dataset.subId = sub.id;
+      toggleBtn.className =
+        'rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition ' +
+        (sub.active
+          ? 'border-transparent bg-zinc-900 text-white dark:bg-white dark:text-zinc-900'
+          : 'border-zinc-300 text-zinc-500 hover:border-zinc-400 dark:border-white/15 dark:text-zinc-400 dark:hover:border-white/30');
+      toggleBtn.textContent = sub.active ? 'Activa' : 'Pausada';
+      meta.appendChild(toggleBtn);
+
+      article.appendChild(meta);
+      return article;
+    }
+
+    let subs = subsInitial.map((s) => ({ ...s }));
+
+    const grid = document.querySelector('[data-subs-grid]');
+    const emptyState = document.querySelector('[data-empty-state]');
+
+    function syncEmpty() {
+      if (!grid || !emptyState) return;
+      const isEmpty = subs.length === 0;
+      grid.classList.toggle('hidden', isEmpty);
+      emptyState.classList.toggle('hidden', !isEmpty);
+    }
+
+    function findCard(id) {
+      return document.querySelector('[data-sub-card][data-sub-id="' + id + '"]');
+    }
+
+    grid?.addEventListener('click', async (e) => {
+      const toggleBtn = e.target.closest('[data-toggle-active]');
+      const removeBtn = e.target.closest('[data-remove-sub]');
+      const editBtn = e.target.closest('[data-edit-sub]');
+
+      if (editBtn) {
+        e.preventDefault();
+        const sub = subs.find((s) => s.id === editBtn.dataset.subId);
+        if (sub) {
+          window.dispatchEvent(new CustomEvent('subs:edit-sub', { detail: { sub } }));
+        }
+        return;
+      }
+
+      if (toggleBtn) {
+        e.preventDefault();
+        const id = toggleBtn.dataset.subId;
+        toggleBtn.disabled = true;
+        try {
+          const res = await fetch('/subs/api/toggle-active', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+          });
+          if (!res.ok) throw new Error('toggle');
+          const data = await res.json();
+          const sub = subs.find((s) => s.id === id);
+          if (sub) sub.active = data.active;
+          const card = findCard(id);
+          if (card && sub) card.replaceWith(buildSubCard(sub));
+          renderSummary();
+        } catch {
+          toggleBtn.disabled = false;
+        }
+        return;
+      }
+
+      if (removeBtn) {
+        e.preventDefault();
+        const id = removeBtn.dataset.subId;
+        const card = findCard(id);
+        if (!card) return;
+        card.style.transition = 'opacity 0.2s';
+        card.style.opacity = '0';
+        try {
+          const res = await fetch('/subs/api/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+          });
+          if (!res.ok && res.status !== 204) throw new Error('remove');
+        } catch {
+          card.style.opacity = '';
+          return;
+        }
+        setTimeout(() => {
+          subs = subs.filter((s) => s.id !== id);
+          card.remove();
+          renderSummary();
+          syncEmpty();
+        }, 200);
+      }
+    });
+
+    window.addEventListener('subs:subs-changed', (e) => {
+      const detail = e && e.detail;
+      if (!detail || !detail.sub) return;
+      const incoming = detail.sub;
+      const idx = subs.findIndex((s) => s.id === incoming.id);
+      if (idx >= 0) {
+        subs[idx] = { ...subs[idx], ...incoming };
+      } else {
+        subs.unshift(incoming);
+      }
+      const card = findCard(incoming.id);
+      if (card) {
+        card.replaceWith(buildSubCard(subs.find((s) => s.id === incoming.id)));
+      } else if (grid) {
+        grid.prepend(buildSubCard(subs.find((s) => s.id === incoming.id)));
+      }
+      renderSummary();
+      syncEmpty();
+    });
+  </script>
+
+  <AddSubDialog />
+</BaseLayout>

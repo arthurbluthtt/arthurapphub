@@ -11,6 +11,7 @@ URL: <https://arthurapphub.arthurbluthtt.workers.dev>
 - **Sub-app `/destiny`**: wishlist de armas de Destiny 2 con búsqueda desde el manifest oficial de Bungie, selección manual de perks (Cañón / Cargador / Rasgo 1 / Rasgo 2), iconos custom, filtros por estado y tipo de arma.
 - **Sub-app `/umamusume`**: wishlist de personajes de Umamusume: Pretty Derby con las cartas de soporte más recomendadas (game8.co). Cada personaje muestra sus mejores aptitudes de `Surface`, `Distance` y `Pace`, además de Main build + Budget + Alternates Speed/Power/Wit del scenario actual.
 - **Sub-app `/subs`**: control de gastos de suscripciones mensuales (MXN/USD). Total del mes por moneda + próxima suscripción por cobrar, con toggle activa/pausada.
+- **Sub-app `/games`**: game tracker con portada de Steam (buscada al agregar), año de salida y estado (Jugando / Dropeado / Por jugar / Terminado) editable desde cada card.
 
 ## Estado actual
 
@@ -56,6 +57,8 @@ src/
 │   └── subs/                            # componentes sub-app Suscripciones
 │       ├── AddSubDialog.astro           # chip FAB + dialog agregar/editar
 │       └── SubCard.astro                # card de suscripción (toggle activa)
+│   └── games/                           # componentes sub-app GameTracker
+│       └── AddGameDialog.astro          # chip FAB + dialog buscar juego en Steam
 ├── layouts/
 │   └── BaseLayout.astro
 ├── lib/
@@ -73,6 +76,8 @@ src/
 │       ├── store.ts                     # CRUD subs + CURRENCIES
 │       ├── validate.ts                  # parseSubInput (add/update)
 │       └── format.ts                    # formatPrice + nextCharge + totalsByCurrency
+│   └── games/
+│       └── store.ts                     # STATUSES + CRUD games
 ├── pages/
 │   ├── index.astro                     # login (sin sesión) o grid (con sesión)
 │   ├── signup.astro
@@ -107,6 +112,13 @@ src/
 │           ├── update.ts                # POST: editar suscripción
 │           ├── remove.ts                # POST: eliminar suscripción
 │           └── toggle-active.ts         # POST: toggle activa/pausada
+│   └── games/
+│       ├── index.astro                  # página /games (grid de juegos)
+│       └── api/
+│           ├── search.ts                # GET: buscar juegos en Steam (storesearch)
+│           ├── add.ts                   # POST: agregar (appdetails → name/cover/año)
+│           ├── set-status.ts            # POST: cambiar estado
+│           └── remove.ts                # POST: eliminar juego
 ├── styles/
 │   └── global.css                      # tokens + color-scheme
 └── env.d.ts
@@ -119,8 +131,9 @@ migrations/
 ├── 0005_drop_top_perk_hashes.sql
 ├── 0006_d2_perk_icons.sql
 ├── 0007_d2_perk_icons_category.sql
-└── 0008_uma_wishlist.sql
+├── 0008_uma_wishlist.sql
 └── 0009_subs.sql
+└── 0010_gametracker.sql
 
 data/d2/
 ├── weapons-index.json                  # generado por build:d2-manifest
@@ -212,6 +225,7 @@ Commit + push → redeploy automático.
 - **Sub-app `/destiny`** — wishlist de armas de Destiny 2.
 - **Sub-app `/umamusume`** — wishlist de personajes con cartas de soporte recomendadas.
 - **Sub-app `/subs`** — gastos mensuales de suscripciones con total y próximo cobro.
+- **Sub-app `/games`** — game tracker con portadas de Steam, año y estado.
 
 ## D2 Wishlist (sub-app interna)
 
@@ -312,5 +326,38 @@ Una página en `/subs` (login requerido) que mantiene el control de las suscripc
 - `POST /subs/api/update` `{id, ...}` → `{sub}` (404 si no existe).
 - `POST /subs/api/remove` `{id}` → 204.
 - `POST /subs/api/toggle-active` `{id}` → `{active}`.
+
+## GameTracker (sub-app interna)
+
+Una página en `/games` (login requerido) que mantiene la lista de juegos con su estado: **Jugando**, **Dropeado**, **Por jugar** o **Terminado**. Al agregar un juego se busca en **Steam** y la card muestra la portada, el título y el año de salida.
+
+### Datos (Steam, sin API key)
+
+- **Búsqueda**: el dialog usa `GET /games/api/search?q=` → proxy de `store.steampowered.com/api/storesearch/` (filtra `type === "app"`, excluye bundles/subs; top 8). Thumbnails (capsule 231x87) para elegir visualmente.
+- **Detalle al agregar**: `POST /games/api/add {appId}` → `appdetails?filters=basic,release_date` (una sola request) devuelve `type`, `name`, `header_image` (460x215) y `release_date` → se guardan cover + año ("20 Feb, 2024" → 2024).
+- **Solo juegos**: se rechaza con 400 lo que no sea `type === "game"` (DLCs, soundtracks, demos).
+- **Covers**: se sirven directo del CDN de Steam (URL estable, cacheada por Cloudflare). Sin proxy R2.
+
+### Estados
+
+| Key | Label |
+|---|---|
+| `backlog` | Por jugar (default) |
+| `playing` | Jugando |
+| `dropped` | Dropeado |
+| `finished` | Terminado |
+
+El estado se cambia desde un `<select>` en cada card. Filtros por estado con chips pill y conteo.
+
+### Storage
+
+- D1 tabla `games` (migración `0010`): `(username, id, app_id, name, cover_url, year, status, created_at, updated_at)` + UNIQUE `(username, app_id)` (409 en duplicado) + índice `(username, status, created_at DESC)`.
+
+### API
+
+- `GET /games/api/search?q=` → `{results: [{appId, name, tinyImage}]}`.
+- `POST /games/api/add` `{appId}` → 201 `{game}` (400 no-game, 404 no encontrado, 409 duplicado, 502 steam caído).
+- `POST /games/api/set-status` `{id, status}` → `{game}` (400 status inválido, 404 si no existe).
+- `POST /games/api/remove` `{id}` → 204.
 
 Ver `STATE.md` para el plan completo, próximos pasos y la historia del proyecto.

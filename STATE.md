@@ -1,7 +1,7 @@
 ﻿# STATE — ArthurAppHub
 
-Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de apps** + **sub-apps internas** (D2 Wishlist + Umamusume Cards).
-Última actualización: 2026-08-11.
+Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de apps** + **sub-apps internas** (D2 Wishlist + Umamusume Cards + Suscripciones + GameTracker).
+Última actualización: 2026-08-15.
 
 ## AppHub — deploy status
 
@@ -12,7 +12,6 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - ✅ Click en cards abre en la misma pestaña.
 - ✅ Container ancho escalado: `max-w-6xl` (default) → `max-w-[1760px]` en xl → `max-w-[2240px]` en 2xl. Header escalado progresivamente.
 - ✅ `apps.json` incluye D2 Wishlist y Umamusume Cards (sub-apps internas). Las apps externas con SSO se registran cuando se necesiten.
-
 ### Umamusume Cards (sub-app interna) — deploy status
 
 - ✅ Migración aplicada a D1 remota: `0008_uma_wishlist.sql` (tabla `uma_wishlist`).
@@ -65,6 +64,31 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - Pausada ≠ borrada: el toggle permite sacar una sub del total sin perderla.
 - Día de cobro elegido con **cuadrícula numérica** (7 columnas, 1-31) en vez de `<select>`; sin selección default, se valida al guardar. Patrón documentado en DESIGN.md.
 - Los controles del dialog usan prefijo propio `data-sub-dialog-*` para no colisionar con los data-attributes de las cards (`data-sub-price`, `data-sub-currency`), ya que `querySelector` toma el primer match en el DOM y las cards van antes que el dialog.
+
+### GameTracker (sub-app interna) — deploy status
+
+- ✅ Migración aplicada a D1 remota: `0010_gametracker.sql` (tabla `games`).
+- ✅ Página `/games` (login requerido): grid de juegos con portada de Steam (header_image 460x215), título, año de salida y estado actual.
+- ✅ Estados: `backlog` (Por jugar, default al agregar), `playing` (Jugando), `dropped` (Dropeado), `finished` (Terminado). Cambio de estado con `<select>` nativo en cada card.
+- ✅ Filtros por estado (chips pill con conteo, patrón D2/UMA): Todas + 4 estados.
+- ✅ Búsqueda de portadas en Steam **sin API key**:
+  - `GET /games/api/search?q=` — proxy a `store.steampowered.com/api/storesearch/` (filtra `type === "app"`, excluye bundles/subs; top 8).
+  - `POST /games/api/add {appId}` — `appdetails?filters=basic,release_date` (una sola request): valida `type === "game"` (rechaza DLC/OST/demo), guarda `name` + `header_image` + año (parseado de `release_date`, "20 Feb, 2024" → 2024). 409 si el appid ya está en la lista.
+- ✅ API:
+  - `GET /games/api/search?q=` — `{results: [{appId, name, tinyImage}]}`.
+  - `POST /games/api/add {appId}` — 201 `{game}` / 400 no-game / 404 no encontrado / 409 duplicado / 502 steam caído.
+  - `POST /games/api/set-status {id, status}` — `{game}` (404 si no existe).
+  - `POST /games/api/remove {id}` — 204.
+- ✅ Covers servidas directo del CDN de Steam (URL estable, cacheada por Cloudflare) — a diferencia de game8/Bungie no hace falta proxy R2.
+
+### Decisiones GameTracker
+
+- Búsqueda y detalle de Steam **runtime** (no snapshot estático): la API de Steam es keyless y estable; cada add hace una sola request a `appdetails`.
+- `type === "game"` obligatorio al agregar: filtra DLCs, soundtracks y demos que sí aparecen en storesearch (e.g. "Balatro Soundtrack").
+- `year` se extrae por regex `/(\d{4})/` del `release_date.date` (cubre "20 Feb, 2024" y "Q4 2025").
+- Duplicado = mismo `app_id` por usuario (UNIQUE index → 409).
+- Estado default al agregar: `backlog` (Por jugar).
+- Sin fallback manual de agregado por ahora (todo pasa por la búsqueda de Steam). Si un juego no aparece (no está en Steam), queda fuera del tracker.
 
 ## Identity Provider (SSO multi-app)
 
@@ -161,13 +185,15 @@ Script tarda ~2 min (96 requests secuenciales con rate limit 1.2s entre cada uno
 
 Pendiente en orden de prioridad:
 
-1. Smoke test E2E del Umamusume Cards en el browser (login → /umamusume → search Maruzensky → agregar → ver "Ver más" → toggle found → filter → remove).
-2. Agregar una segunda app al SSO (5-10 líneas en la nueva app + 2 entradas en el hub).
-3. Si se quiere extender más allá del círculo personal, mejorar el handler de errores en `/api/redir` cuando el hub está caído.
-4. **Eliminado**: la entrada de notes-app en `apps.json` y los `app_id` en `ALLOWED_APPS` / `KNOWN_APPS` (de momento vacíos). El worker `notes-app` en Cloudflare sigue corriendo con sus datos hasta que se borre manualmente.
-5. Umamusume: refresh de datos si game8 reorganiza o sale nuevo scenario.
-6. Umamusume: agregar las 5 páginas que quedaron sin recomendaciones (El Condor Pasa Kukulkan Warrior, Mayano Top Gun Sunlight Bouquet, Special Week Special Dreamer, Special Week Ruler of Japan, "564 Escapades" — esta última es un skill id mal clasificado como character).
-7. ~~Suscripciones: smoke test E2E en browser (login → /subs → agregar MXN + USD → ver total y próximo cobro → toggle pausada → editar → borrar)~~ — **hecho 2026-08-11**, incluye fix de colisión de data-attributes del dialog.
+1. Smoke test E2E del GameTracker en el browser (login → /games → search Balatro → agregar → ver año/portada → cambiar estado → filtrar → borrar).
+2. Smoke test E2E del Umamusume Cards en el browser (login → /umamusume → search Maruzensky → agregar → ver "Ver más" → toggle found → filter → remove).
+3. Agregar una segunda app al SSO (5-10 líneas en la nueva app + 2 entradas en el hub).
+4. Si se quiere extender más allá del círculo personal, mejorar el handler de errores en `/api/redir` cuando el hub está caído.
+5. **Eliminado**: la entrada de notes-app en `apps.json` y los `app_id` en `ALLOWED_APPS` / `KNOWN_APPS` (de momento vacíos). El worker `notes-app` en Cloudflare sigue corriendo con sus datos hasta que se borre manualmente.
+6. Umamusume: refresh de datos si game8 reorganiza o sale nuevo scenario.
+7. Umamusume: agregar las 5 páginas que quedaron sin recomendaciones (El Condor Pasa Kukulkan Warrior, Mayano Top Gun Sunlight Bouquet, Special Week Special Dreamer, Special Week Ruler of Japan, "564 Escapades" — esta última es un skill id mal clasificado como character).
+8. ~~Suscripciones: smoke test E2E en browser (login → /subs → agregar MXN + USD → ver total y próximo cobro → toggle pausada → editar → borrar)~~ — **hecho 2026-08-11**, incluye fix de colisión de data-attributes del dialog.
+9. GameTracker: si hace falta, fallback de agregado manual (sin Steam) para juegos que no aparecen en la búsqueda.
 
 ## Decisiones tomadas
 
@@ -210,7 +236,7 @@ Pendiente en orden de prioridad:
 | Repo | github.com/arthurbluthtt/arthurapphub |
 | Worker | arthurapphub |
 | URL producción | https://arthurapphub.arthurbluthtt.workers.dev |
-| D1 auth | arthurapphub-auth-db (id `09663bc8-89c0-422f-833f-de9f48b0a8ab`) — tablas: pin_credentials, sessions, auth_codes, d2_wishlist, d2_perk_icons, uma_wishlist, **subs** |
+| D1 auth | arthurapphub-auth-db (id `09663bc8-89c0-422f-833f-de9f48b0a8ab`) — tablas: pin_credentials, sessions, auth_codes, d2_wishlist, d2_perk_icons, uma_wishlist, subs, **games** |
 | R2 | arthurapphub-d2-assets (binding `D2_ASSETS`) — reusado por D2 y UMA con prefix `uma/` |
 | GH Secrets set | `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `INTERNAL_API_SECRET` |
 | Worker Secrets | `AUTH_PEPPER` (64 chars random en `~/.config/cloudflare-tokens/hub-pepper.txt`), `INTERNAL_API_SECRET` (en `~/.config/cloudflare-tokens/shared-secret.txt`), `BUNGIE_API_KEY` |

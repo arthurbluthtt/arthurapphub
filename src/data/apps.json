@@ -52,6 +52,18 @@
       "tags": ["subs", "gastos"],
       "featured": false,
       "sso": false
+    },
+    {
+      "id": "gametracker",
+      "name": "GameTracker",
+      "description": "Mis juegos con estado (jugando, por jugar, terminado…)",
+      "url": "https://arthurapphub.arthurbluthtt.workers.dev/games",
+      "redir": "/games",
+      "icon": "🎮",
+      "category": "gaming",
+      "tags": ["juegos", "steam", "backlog"],
+      "featured": false,
+      "sso": false
     }
   ]
 }

@@ -43,6 +43,8 @@ AppHub/
 │   │   └── subs/                           # Sub-app Suscripciones
 │   │       ├── AddSubDialog.astro          # Chip FAB + dialog agregar/editar
 │   │       └── SubCard.astro               # Card de suscripción (toggle activa)
+│   │   └── games/                          # Sub-app GameTracker
+│   │       └── AddGameDialog.astro         # Chip FAB + dialog buscar en Steam
 │   ├── layouts/
 │   │   └── BaseLayout.astro                # HTML shell + scripts de bootstrap
 │   ├── lib/
@@ -62,6 +64,8 @@ AppHub/
 │   │       ├── store.ts                    # CRUD subs + CURRENCIES + validación de tipos
 │   │       ├── validate.ts                 # parseSubInput (add/update)
 │   │       └── format.ts                   # formatPrice, nextCharge, totalsByCurrency
+│   │   └── games/                          # Lib GameTracker
+│   │       └── store.ts                    # STATUSES + CRUD games (D1)
 │   ├── pages/
 │   │   ├── index.astro                     # / → login (sin sesión) o grid (con sesión)
 │   │   ├── login.astro                     # /login → shim que redirige a /
@@ -102,6 +106,13 @@ AppHub/
 │   │           ├── update.ts            # POST /subs/api/update
 │   │           ├── remove.ts            # POST /subs/api/remove
 │   │           └── toggle-active.ts     # POST /subs/api/toggle-active
+│   │   └── games/                       # Sub-app GameTracker
+│   │       ├── index.astro              # /games → grid de juegos (portada + año + estado)
+│   │       └── api/
+│   │           ├── search.ts            # GET /games/api/search?q= (Steam storesearch)
+│   │           ├── add.ts               # POST /games/api/add (appdetails + tipo game)
+│   │           ├── set-status.ts        # POST /games/api/set-status
+│   │           └── remove.ts            # POST /games/api/remove
 │   ├── styles/
 │   │   └── global.css                      # Tokens CSS + color-scheme sync
 │   └── env.d.ts                            # Tipos del env (cloudflare:workers)
@@ -114,8 +125,9 @@ AppHub/
 │   ├── 0005_drop_top_perk_hashes.sql       # Drop columna top_perk_hashes (legacy)
 │   ├── 0006_d2_perk_icons.sql              # Tabla d2_perk_icons
 │   ├── 0007_d2_perk_icons_category.sql     # Agrega category a d2_perk_icons
-│   └── 0008_uma_wishlist.sql               # Tabla uma_wishlist
-│   └── 0009_subs.sql                       # Tabla subs (suscripciones)
+│   ├── 0008_uma_wishlist.sql               # Tabla uma_wishlist
+│   ├── 0009_subs.sql                       # Tabla subs (suscripciones)
+│   └── 0010_gametracker.sql                # Tabla games (gametracker)
 │
 ├── data/d2/                                # Generado por build:d2-manifest
 │   ├── weapons-index.json                  # 2058 armas con weaponType real
@@ -195,6 +207,17 @@ AppHub/
 | POST | `/subs/api/remove` | `{ id }` | 204 (404 si no existe) |
 | POST | `/subs/api/toggle-active` | `{ id }` | `{ active }` (404 si no existe) |
 
+## API — GameTracker (sub-app)
+
+| Method | Path | Body / Query | Respuesta |
+|---|---|---|---|
+| GET | `/games/api/search?q=` | — | `{ results: [{ appId, name, tinyImage }] }` (top 8, solo `type === "app"`) |
+| POST | `/games/api/add` | `{ appId }` | 201 `{ game }` (400 no-game, 404 no encontrado, 409 duplicado, 502 steam caído) |
+| POST | `/games/api/set-status` | `{ id, status }` | `{ game }` (404 si no existe, 400 status inválido) |
+| POST | `/games/api/remove` | `{ id }` | 204 |
+
+Los datos vienen de la API de Steam (sin key): `storesearch` para buscar y `appdetails?filters=basic,release_date` para name + header_image + año al agregar.
+
 ---
 
 ## Storage
@@ -225,6 +248,19 @@ AppHub/
 | Tabla | Schema |
 |---|---|
 | `subs` | `(username, id, name, price_cents, currency, billing_day, active, created_at)` + índice `(username, active, created_at DESC)` |
+
+### D1 — sub-app GameTracker (`arthurapphub-auth-db`)
+
+| Tabla | Schema |
+|---|---|
+| `games` | `(username, id, app_id, name, cover_url, year, status, created_at, updated_at)` + UNIQUE `(username, app_id)` + índice `(username, status, created_at DESC)` |
+
+| `status` | Label |
+|---|---|
+| `backlog` | Por jugar (default) |
+| `playing` | Jugando |
+| `dropped` | Dropeado |
+| `finished` | Terminado |
 
 ### R2 — `arthurapphub-d2-assets` (binding `D2_ASSETS`)
 

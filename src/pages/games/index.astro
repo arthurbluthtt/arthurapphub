@@ -100,17 +100,20 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
             <div class="flex items-start gap-3 p-4">
               <div class="min-w-0 flex-1">
                 <h3 class="truncate font-semibold text-zinc-900 dark:text-white">{g.name}</h3>
-                <select
-                  data-status-select
+                <button
+                  type="button"
+                  data-status-button
                   data-game-id={g.id}
-                  class="mt-2 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-xs font-medium text-zinc-700 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:focus:border-white/30"
+                  data-status={g.status}
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                  class="mt-2 flex w-full items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-white px-2.5 py-2 text-xs font-medium text-zinc-700 outline-none transition hover:border-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:focus:border-white/30"
                 >
-                  {STATUSES.map((s) => (
-                    <option value={s} selected={g.status === s}>
-                      {STATUS_LABELS[s]}
-                    </option>
-                  ))}
-                </select>
+                  <span data-status-label class="truncate">{STATUS_LABELS[g.status]}</span>
+                  <span aria-hidden="true" class="shrink-0 text-[10px] text-zinc-400 dark:text-zinc-500">
+                    ▾
+                  </span>
+                </button>
               </div>
               <button
                 type="button"
@@ -217,19 +220,29 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       nameEl.textContent = game.name || "";
       info.appendChild(nameEl);
 
-      const select = document.createElement("select");
-      select.dataset.statusSelect = "";
-      select.dataset.gameId = game.id;
-      select.className =
-        "mt-2 w-full cursor-pointer rounded-lg border border-zinc-300 bg-white px-2 py-1.5 text-xs font-medium text-zinc-700 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:focus:border-white/30";
-      for (const key of statusKeys) {
-        const opt = document.createElement("option");
-        opt.value = key;
-        opt.textContent = statusLabels[key] || key;
-        if (key === game.status) opt.selected = true;
-        select.appendChild(opt);
-      }
-      info.appendChild(select);
+      const statusBtn = document.createElement("button");
+      statusBtn.type = "button";
+      statusBtn.dataset.statusButton = "";
+      statusBtn.dataset.gameId = game.id;
+      statusBtn.dataset.status = game.status;
+      statusBtn.setAttribute("aria-haspopup", "listbox");
+      statusBtn.setAttribute("aria-expanded", "false");
+      statusBtn.className =
+        "mt-2 flex w-full items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-white px-2.5 py-2 text-xs font-medium text-zinc-700 outline-none transition hover:border-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:focus:border-white/30";
+
+      const labelEl = document.createElement("span");
+      labelEl.dataset.statusLabel = "";
+      labelEl.className = "truncate";
+      labelEl.textContent = statusLabels[game.status] || game.status;
+      statusBtn.appendChild(labelEl);
+
+      const caret = document.createElement("span");
+      caret.setAttribute("aria-hidden", "true");
+      caret.className = "shrink-0 text-[10px] text-zinc-400 dark:text-zinc-500";
+      caret.textContent = "▾";
+      statusBtn.appendChild(caret);
+
+      info.appendChild(statusBtn);
       body.appendChild(info);
 
       const removeBtn = document.createElement("button");
@@ -300,7 +313,138 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       applyFilter();
     });
 
+    // --- Status dropdown custom (patrón del perk dropdown de D2) ---
+    // El <select> nativo abría el popup con estilos del OS (texto gris sobre
+    // blanco en dark mode, y desalineado). Este dropdown es un singleton en
+    // <body> con position:fixed y atomic reveal: las coordenadas se aplican
+    // ANTES de quitar 'hidden' para que el navegador nunca lo vea con
+    // position:static.
+
+    let statusMenu = null;
+    let statusMenuBtn = null;
+
+    function ensureStatusMenu() {
+      if (statusMenu) return statusMenu;
+      statusMenu = document.createElement("div");
+      statusMenu.dataset.statusMenu = "";
+      statusMenu.className =
+        "fixed z-[9999] hidden overflow-hidden rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
+      statusMenu.setAttribute("role", "listbox");
+      document.body.appendChild(statusMenu);
+      statusMenu.addEventListener("click", async (e) => {
+        const opt = e.target.closest("[data-status-option]");
+        if (!opt || opt.disabled) return;
+        const id = opt.dataset.gameId;
+        const status = opt.dataset.statusOption;
+        opt.disabled = true;
+        try {
+          const res = await fetch("/games/api/set-status", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id, status }),
+          });
+          if (!res.ok) throw new Error("set-status");
+          const data = await res.json();
+          const game = games.find((g) => g.id === id);
+          if (game) game.status = data.game.status;
+          const card = findCard(id);
+          if (card) {
+            card.dataset.status = data.game.status;
+            const btn = card.querySelector("[data-status-button]");
+            if (btn) {
+              btn.dataset.status = data.game.status;
+              const labelEl = btn.querySelector("[data-status-label]");
+              if (labelEl) labelEl.textContent = statusLabels[data.game.status] || data.game.status;
+            }
+          }
+          renderCounts();
+          applyFilter();
+          closeStatusMenu();
+        } catch {
+          closeStatusMenu();
+        }
+      });
+      return statusMenu;
+    }
+
+    function closeStatusMenu() {
+      if (!statusMenu) return;
+      statusMenu.classList.add("hidden");
+      statusMenu.replaceChildren();
+      if (statusMenuBtn) {
+        statusMenuBtn.setAttribute("aria-expanded", "false");
+        statusMenuBtn = null;
+      }
+    }
+
+    function openStatusMenu(btn) {
+      const menu = ensureStatusMenu();
+      closeStatusMenu();
+      statusMenuBtn = btn;
+      btn.setAttribute("aria-expanded", "true");
+
+      for (const key of statusKeys) {
+        const opt = document.createElement("button");
+        opt.type = "button";
+        opt.dataset.statusOption = key;
+        opt.dataset.gameId = btn.dataset.gameId;
+        opt.setAttribute("role", "option");
+        opt.setAttribute("aria-selected", key === btn.dataset.status ? "true" : "false");
+        opt.className =
+          "flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium text-zinc-900 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-white/10";
+        const label = document.createElement("span");
+        label.textContent = statusLabels[key] || key;
+        opt.appendChild(label);
+        if (key === btn.dataset.status) {
+          const check = document.createElement("span");
+          check.className = "shrink-0 text-zinc-400 dark:text-zinc-500";
+          check.textContent = "✓";
+          opt.appendChild(check);
+        }
+        menu.appendChild(opt);
+      }
+
+      // Atomic reveal: posicionar antes de revelar.
+      const rect = btn.getBoundingClientRect();
+      const gap = 4;
+      const menuH = statusKeys.length * 30 + 8;
+      const spaceBelow = window.innerHeight - rect.bottom - gap - 8;
+      const useAbove = spaceBelow < menuH && rect.top > spaceBelow;
+      const width = Math.max(120, Math.min(rect.width, window.innerWidth - 16));
+      const left = Math.max(8, Math.min(window.innerWidth - width - 8, rect.left));
+      menu.style.width = width + "px";
+      menu.style.left = left + "px";
+      menu.style.top = useAbove ? Math.max(8, rect.top - gap - menuH) + "px" : rect.bottom + gap + "px";
+      menu.classList.remove("hidden");
+    }
+
+    document.addEventListener("click", (e) => {
+      if (!statusMenu || statusMenu.classList.contains("hidden")) return;
+      if (statusMenu.contains(e.target)) return;
+      if (e.target.closest("[data-status-button]")) return;
+      closeStatusMenu();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeStatusMenu();
+    });
+    window.addEventListener("scroll", closeStatusMenu, true);
+    window.addEventListener("resize", closeStatusMenu);
+
     grid?.addEventListener("click", async (e) => {
+      const statusBtn = e.target.closest("[data-status-button]");
+      if (statusBtn) {
+        e.preventDefault();
+        if (
+          statusMenuBtn === statusBtn &&
+          statusMenu &&
+          !statusMenu.classList.contains("hidden")
+        ) {
+          closeStatusMenu();
+        } else {
+          openStatusMenu(statusBtn);
+        }
+        return;
+      }
       const removeBtn = e.target.closest("[data-remove-game]");
       if (!removeBtn) return;
       e.preventDefault();
@@ -327,33 +471,6 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
         syncVisibility();
         applyFilter();
       }, 200);
-    });
-
-    grid?.addEventListener("change", async (e) => {
-      const select = e.target.closest("[data-status-select]");
-      if (!select || select.disabled) return;
-      const id = select.dataset.gameId;
-      const prevValue = select.value;
-      select.disabled = true;
-      try {
-        const res = await fetch("/games/api/set-status", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id, status: select.value }),
-        });
-        if (!res.ok) throw new Error("set-status");
-        const data = await res.json();
-        const game = games.find((g) => g.id === id);
-        if (game) game.status = data.game.status;
-        const card = findCard(id);
-        if (card) card.dataset.status = data.game.status;
-        renderCounts();
-        applyFilter();
-      } catch {
-        select.value = prevValue;
-      } finally {
-        select.disabled = false;
-      }
     });
 
     window.addEventListener("games:game-added", (e) => {

@@ -5,17 +5,15 @@
  * `appId` es el appid de Steam. `status` es uno de STATUSES:
  *   backlog  → Por jugar (default al agregar)
  *   playing  → Jugando
- *   dropped  → Dropeado
  *   finished → Terminado
  */
 
-export const STATUSES = ['backlog', 'playing', 'dropped', 'finished'] as const;
+export const STATUSES = ['backlog', 'playing', 'finished'] as const;
 export type GameStatus = (typeof STATUSES)[number];
 
 export const STATUS_LABELS: Record<GameStatus, string> = {
   backlog: 'Por jugar',
   playing: 'Jugando',
-  dropped: 'Dropeado',
   finished: 'Terminado',
 };
 

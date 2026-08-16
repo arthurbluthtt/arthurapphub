@@ -69,7 +69,7 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 
 - ✅ Migración aplicada a D1 remota: `0010_gametracker.sql` (tabla `games`).
 - ✅ Página `/games` (login requerido): grid de juegos con portada de Steam (header_image 460x215), título, año de salida y estado actual.
-- ✅ Estados: `backlog` (Por jugar, default al agregar), `playing` (Jugando), `dropped` (Dropeado), `finished` (Terminado). Cambio de estado con `<select>` nativo en cada card.
+- ✅ Estados: `backlog` (Por jugar, default al agregar), `playing` (Jugando), `finished` (Terminado). Cambio de estado con dropdown custom (patrón del perk dropdown de D2) — el `<select>` nativo abría el popup con estilos del OS (texto gris sobre blanco en dark mode, y desalineado).
 - ✅ Filtros por estado (chips pill con conteo, patrón D2/UMA): Todas + 4 estados.
 - ✅ Búsqueda de portadas en Steam **sin API key**:
   - `GET /games/api/search?q=` — proxy a `store.steampowered.com/api/storesearch/` (filtra `type === "app"`, excluye bundles/subs; top 8).

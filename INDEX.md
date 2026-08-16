@@ -259,7 +259,6 @@ Los datos vienen de la API de Steam (sin key): `storesearch` para buscar y `appd
 |---|---|
 | `backlog` | Por jugar (default) |
 | `playing` | Jugando |
-| `dropped` | Dropeado |
 | `finished` | Terminado |
 
 ### R2 — `arthurapphub-d2-assets` (binding `D2_ASSETS`)

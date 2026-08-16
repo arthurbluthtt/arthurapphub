@@ -1,6 +1,6 @@
 /**
  * POST /games/api/set-status {id, status} — cambia el estado de un juego.
- * status ∈ backlog | playing | dropped | finished. 404 si el juego no existe.
+ * status ∈ backlog | playing | finished. 404 si el juego no existe.
  */
 
 import type { APIRoute } from 'astro';

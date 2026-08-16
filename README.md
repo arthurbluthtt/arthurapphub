@@ -11,7 +11,7 @@ URL: <https://arthurapphub.arthurbluthtt.workers.dev>
 - **Sub-app `/destiny`**: wishlist de armas de Destiny 2 con búsqueda desde el manifest oficial de Bungie, selección manual de perks (Cañón / Cargador / Rasgo 1 / Rasgo 2), iconos custom, filtros por estado y tipo de arma.
 - **Sub-app `/umamusume`**: wishlist de personajes de Umamusume: Pretty Derby con las cartas de soporte más recomendadas (game8.co). Cada personaje muestra sus mejores aptitudes de `Surface`, `Distance` y `Pace`, además de Main build + Budget + Alternates Speed/Power/Wit del scenario actual.
 - **Sub-app `/subs`**: control de gastos de suscripciones mensuales (MXN/USD). Total del mes por moneda + próxima suscripción por cobrar, con toggle activa/pausada.
-- **Sub-app `/games`**: game tracker con portada de Steam (buscada al agregar), año de salida y estado (Jugando / Dropeado / Por jugar / Terminado) editable desde cada card.
+- **Sub-app `/games`**: game tracker con portada de Steam (buscada al agregar), año de salida y estado (Jugando / Por jugar / Terminado) editable desde cada card.
 
 ## Estado actual
 
@@ -329,7 +329,7 @@ Una página en `/subs` (login requerido) que mantiene el control de las suscripc
 
 ## GameTracker (sub-app interna)
 
-Una página en `/games` (login requerido) que mantiene la lista de juegos con su estado: **Jugando**, **Dropeado**, **Por jugar** o **Terminado**. Al agregar un juego se busca en **Steam** y la card muestra la portada, el título y el año de salida.
+Una página en `/games` (login requerido) que mantiene la lista de juegos con su estado: **Jugando**, **Por jugar** o **Terminado**. Al agregar un juego se busca en **Steam** y la card muestra la portada, el título y el año de salida.
 
 ### Datos (Steam, sin API key)
 
@@ -344,10 +344,9 @@ Una página en `/games` (login requerido) que mantiene la lista de juegos con su
 |---|---|
 | `backlog` | Por jugar (default) |
 | `playing` | Jugando |
-| `dropped` | Dropeado |
 | `finished` | Terminado |
 
-El estado se cambia desde un `<select>` en cada card. Filtros por estado con chips pill y conteo.
+El estado se cambia desde un dropdown custom en cada card (patrón del perk dropdown de D2; el `<select>` nativo abría el popup con estilos del OS, ilegible en dark mode). Filtros por estado con chips pill y conteo.
 
 ### Storage
 

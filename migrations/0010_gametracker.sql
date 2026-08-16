@@ -3,7 +3,7 @@
 -- `app_id` es el appid de Steam (INTEGER). `cover_url` apunta al header_image de
 -- Steam (460x215, CDN estable). `year` se extrae de release_date en el add.
 -- `status` es uno de: backlog (Por jugar, default) | playing (Jugando) |
--- dropped (Dropeado) | finished (Terminado).
+-- finished (Terminado).
 -- La UNIQUE (username, app_id) da 409 en duplicados.
 
 CREATE TABLE IF NOT EXISTS games (

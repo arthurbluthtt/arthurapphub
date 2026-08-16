@@ -117,6 +117,7 @@ src/
 │       └── api/
 │           ├── search.ts                # GET: buscar juegos en Steam (storesearch)
 │           ├── add.ts                   # POST: agregar (appdetails → name/cover/año)
+│           ├── add-manual.ts            # POST: agregar manual (fuera de Steam)
 │           ├── set-status.ts            # POST: cambiar estado
 │           └── remove.ts                # POST: eliminar juego
 ├── styles/
@@ -132,8 +133,9 @@ migrations/
 ├── 0006_d2_perk_icons.sql
 ├── 0007_d2_perk_icons_category.sql
 ├── 0008_uma_wishlist.sql
-└── 0009_subs.sql
-└── 0010_gametracker.sql
+├── 0009_subs.sql
+├── 0010_gametracker.sql
+└── 0011_gametracker_manual.sql
 
 data/d2/
 ├── weapons-index.json                  # generado por build:d2-manifest
@@ -329,13 +331,14 @@ Una página en `/subs` (login requerido) que mantiene el control de las suscripc
 
 ## GameTracker (sub-app interna)
 
-Una página en `/games` (login requerido) que mantiene la lista de juegos con su estado: **Jugando**, **Por jugar** o **Terminado**. Al agregar un juego se busca en **Steam** y la card muestra la portada, el título y el año de salida.
+Una página en `/games` (login requerido) que mantiene la lista de juegos con su estado: **Jugando**, **Por jugar** o **Terminado**. Al agregar un juego se busca en **Steam** (portada + año automáticos); si no está en Steam (juegos móviles, gacha, etc.), se agrega **manual** con nombre, año y URL de portada opcionales.
 
 ### Datos (Steam, sin API key)
 
 - **Búsqueda**: el dialog usa `GET /games/api/search?q=` → proxy de `store.steampowered.com/api/storesearch/` (filtra `type === "app"`, excluye bundles/subs; top 8). Thumbnails (capsule 231x87) para elegir visualmente.
 - **Detalle al agregar**: `POST /games/api/add {appId}` → `appdetails?filters=basic,release_date` (una sola request) devuelve `type`, `name`, `header_image` (460x215) y `release_date` → se guardan cover + año ("20 Feb, 2024" → 2024).
 - **Solo juegos**: se rechaza con 400 lo que no sea `type === "game"` (DLCs, soundtracks, demos).
+- **Fuera de Steam**: el dialog tiene tabs "Buscar en Steam" / "Agregar manual". El manual guarda `app_id NULL` (nombre 1-80 obligatorio, año 1900-2100 y URL de portada http(s) opcionales); sin portada la card muestra un placeholder con las iniciales del nombre. Duplicado manual por nombre case-insensitive → 409.
 - **Covers**: se sirven directo del CDN de Steam (URL estable, cacheada por Cloudflare). Sin proxy R2.
 
 ### Estados
@@ -350,12 +353,13 @@ El estado se cambia desde un dropdown custom en cada card (patrón del perk drop
 
 ### Storage
 
-- D1 tabla `games` (migración `0010`): `(username, id, app_id, name, cover_url, year, status, created_at, updated_at)` + UNIQUE `(username, app_id)` (409 en duplicado) + índice `(username, status, created_at DESC)`.
+- D1 tabla `games` (migraciones `0010` + `0011`): `(username, id, app_id NULL, name, cover_url NULL, year, status, created_at, updated_at)` + UNIQUE parcial `(username, app_id) WHERE app_id IS NOT NULL` (409 en duplicado de Steam) + índice `(username, status, created_at DESC)`. `app_id NULL` = juego agregado manualmente.
 
 ### API
 
 - `GET /games/api/search?q=` → `{results: [{appId, name, tinyImage}]}`.
 - `POST /games/api/add` `{appId}` → 201 `{game}` (400 no-game, 404 no encontrado, 409 duplicado, 502 steam caído).
+- `POST /games/api/add-manual` `{name, year?, coverUrl?}` → 201 `{game}` (400 inválido, 409 duplicado por nombre).
 - `POST /games/api/set-status` `{id, status}` → `{game}` (400 status inválido, 404 si no existe).
 - `POST /games/api/remove` `{id}` → 204.
 

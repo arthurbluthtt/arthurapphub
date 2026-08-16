@@ -74,9 +74,11 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - ✅ Búsqueda de portadas en Steam **sin API key**:
   - `GET /games/api/search?q=` — proxy a `store.steampowered.com/api/storesearch/` (filtra `type === "app"`, excluye bundles/subs; top 8).
   - `POST /games/api/add {appId}` — `appdetails?filters=basic,release_date` (una sola request): valida `type === "game"` (rechaza DLC/OST/demo), guarda `name` + `header_image` + año (parseado de `release_date`, "20 Feb, 2024" → 2024). 409 si el appid ya está en la lista.
+- ✅ **Juegos fuera de Steam** (migración `0011`): `app_id` y `cover_url` nullable + índice UNIQUE **parcial** (`WHERE app_id IS NOT NULL`) → los manuales no colisionan entre sí ni con el duplicado de Steam. El dialog tiene tabs "Buscar en Steam" / "Agregar manual" (nombre obligatorio 1-80, año 1900-2100 opcional, URL de portada http(s) opcional). Sin portada → placeholder con iniciales. Duplicado manual por nombre case-insensitive → 409.
 - ✅ API:
   - `GET /games/api/search?q=` — `{results: [{appId, name, tinyImage}]}`.
   - `POST /games/api/add {appId}` — 201 `{game}` / 400 no-game / 404 no encontrado / 409 duplicado / 502 steam caído.
+  - `POST /games/api/add-manual {name, year?, coverUrl?}` — 201 `{game}` / 400 inválido / 409 duplicado por nombre.
   - `POST /games/api/set-status {id, status}` — `{game}` (404 si no existe).
   - `POST /games/api/remove {id}` — 204.
 - ✅ Covers servidas directo del CDN de Steam (URL estable, cacheada por Cloudflare) — a diferencia de game8/Bungie no hace falta proxy R2.
@@ -86,9 +88,9 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - Búsqueda y detalle de Steam **runtime** (no snapshot estático): la API de Steam es keyless y estable; cada add hace una sola request a `appdetails`.
 - `type === "game"` obligatorio al agregar: filtra DLCs, soundtracks y demos que sí aparecen en storesearch (e.g. "Balatro Soundtrack").
 - `year` se extrae por regex `/(\d{4})/` del `release_date.date` (cubre "20 Feb, 2024" y "Q4 2025").
-- Duplicado = mismo `app_id` por usuario (UNIQUE index → 409).
+- Duplicado Steam = mismo `app_id` por usuario (UNIQUE parcial → 409); duplicado manual = nombre case-insensitive (`isDuplicateName`).
+- Juegos fuera de Steam se agregan **manualmente** (nombre + año + URL de portada opcionales). Sin portada → placeholder con iniciales del nombre. Sin badge de distinción en la card.
 - Estado default al agregar: `backlog` (Por jugar).
-- Sin fallback manual de agregado por ahora (todo pasa por la búsqueda de Steam). Si un juego no aparece (no está en Steam), queda fuera del tracker.
 
 ## Identity Provider (SSO multi-app)
 
@@ -193,7 +195,7 @@ Pendiente en orden de prioridad:
 6. Umamusume: refresh de datos si game8 reorganiza o sale nuevo scenario.
 7. Umamusume: agregar las 5 páginas que quedaron sin recomendaciones (El Condor Pasa Kukulkan Warrior, Mayano Top Gun Sunlight Bouquet, Special Week Special Dreamer, Special Week Ruler of Japan, "564 Escapades" — esta última es un skill id mal clasificado como character).
 8. ~~Suscripciones: smoke test E2E en browser (login → /subs → agregar MXN + USD → ver total y próximo cobro → toggle pausada → editar → borrar)~~ — **hecho 2026-08-11**, incluye fix de colisión de data-attributes del dialog.
-9. GameTracker: si hace falta, fallback de agregado manual (sin Steam) para juegos que no aparecen en la búsqueda.
+9. ~~GameTracker: fallback de agregado manual (sin Steam)~~ — **hecho 2026-08-15** (migración `0011`, dialog con tabs Steam/Manual).
 
 ## Decisiones tomadas
 

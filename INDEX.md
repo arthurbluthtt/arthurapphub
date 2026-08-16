@@ -111,6 +111,7 @@ AppHub/
 │   │       └── api/
 │   │           ├── search.ts            # GET /games/api/search?q= (Steam storesearch)
 │   │           ├── add.ts               # POST /games/api/add (appdetails + tipo game)
+│   │           ├── add-manual.ts        # POST /games/api/add-manual (fuera de Steam)
 │   │           ├── set-status.ts        # POST /games/api/set-status
 │   │           └── remove.ts            # POST /games/api/remove
 │   ├── styles/
@@ -127,7 +128,8 @@ AppHub/
 │   ├── 0007_d2_perk_icons_category.sql     # Agrega category a d2_perk_icons
 │   ├── 0008_uma_wishlist.sql               # Tabla uma_wishlist
 │   ├── 0009_subs.sql                       # Tabla subs (suscripciones)
-│   └── 0010_gametracker.sql                # Tabla games (gametracker)
+│   ├── 0010_gametracker.sql                # Tabla games (gametracker)
+│   └── 0011_gametracker_manual.sql         # games: app_id/cover_url nullable + UNIQUE parcial
 │
 ├── data/d2/                                # Generado por build:d2-manifest
 │   ├── weapons-index.json                  # 2058 armas con weaponType real
@@ -213,10 +215,11 @@ AppHub/
 |---|---|---|---|
 | GET | `/games/api/search?q=` | — | `{ results: [{ appId, name, tinyImage }] }` (top 8, solo `type === "app"`) |
 | POST | `/games/api/add` | `{ appId }` | 201 `{ game }` (400 no-game, 404 no encontrado, 409 duplicado, 502 steam caído) |
+| POST | `/games/api/add-manual` | `{ name, year?, coverUrl? }` | 201 `{ game }` (400 inválido, 409 duplicado por nombre) |
 | POST | `/games/api/set-status` | `{ id, status }` | `{ game }` (404 si no existe, 400 status inválido) |
 | POST | `/games/api/remove` | `{ id }` | 204 |
 
-Los datos vienen de la API de Steam (sin key): `storesearch` para buscar y `appdetails?filters=basic,release_date` para name + header_image + año al agregar.
+Los datos de Steam vienen de la API de Steam (sin key): `storesearch` para buscar y `appdetails?filters=basic,release_date` para name + header_image + año al agregar. Los juegos fuera de Steam se agregan con `add-manual` (app_id NULL, portada opcional → placeholder con iniciales).
 
 ---
 
@@ -253,7 +256,7 @@ Los datos vienen de la API de Steam (sin key): `storesearch` para buscar y `appd
 
 | Tabla | Schema |
 |---|---|
-| `games` | `(username, id, app_id, name, cover_url, year, status, created_at, updated_at)` + UNIQUE `(username, app_id)` + índice `(username, status, created_at DESC)` |
+| `games` | `(username, id, app_id NULL, name, cover_url NULL, year, status, created_at, updated_at)` + UNIQUE parcial `(username, app_id) WHERE app_id IS NOT NULL` + índice `(username, status, created_at DESC)` |
 
 | `status` | Label |
 |---|---|

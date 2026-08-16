@@ -21,9 +21,9 @@ export const DEFAULT_STATUS: GameStatus = 'backlog';
 
 export interface GameRow {
   id: string;
-  appId: number;
+  appId: number | null;
   name: string;
-  coverUrl: string;
+  coverUrl: string | null;
   year: number | null;
   status: GameStatus;
   createdAt: number;
@@ -31,17 +31,17 @@ export interface GameRow {
 }
 
 export interface GameInput {
-  appId: number;
+  appId: number | null;
   name: string;
-  coverUrl: string;
+  coverUrl: string | null;
   year: number | null;
 }
 
 interface D1Row {
   id: string;
-  app_id: number;
+  app_id: number | null;
   name: string;
-  cover_url: string;
+  cover_url: string | null;
   year: number | null;
   status: string;
   created_at: number;
@@ -76,6 +76,18 @@ export async function listGames(db: D1Database, username: string): Promise<GameR
     .bind(username)
     .all<D1Row>();
   return (res.results ?? []).map(toRow);
+}
+
+export async function isDuplicateName(
+  db: D1Database,
+  username: string,
+  name: string
+): Promise<boolean> {
+  const row = await db
+    .prepare('SELECT 1 AS x FROM games WHERE username = ? AND lower(name) = lower(?) LIMIT 1')
+    .bind(username, name)
+    .first();
+  return row !== null;
 }
 
 export async function addGame(

@@ -85,12 +85,23 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
             class="overflow-hidden rounded-2xl border border-zinc-200 bg-white transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur"
           >
             <div class="relative aspect-[460/215] overflow-hidden bg-zinc-100 dark:bg-white/[0.04]">
-              <img
-                src={g.coverUrl}
-                alt={g.name}
-                loading="lazy"
-                class="h-full w-full object-cover"
-              />
+              {g.coverUrl ? (
+                <img
+                  src={g.coverUrl}
+                  alt={g.name}
+                  loading="lazy"
+                  class="h-full w-full object-cover"
+                />
+              ) : (
+                <div
+                  class="grid h-full w-full place-items-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-white/[0.04] dark:to-white/[0.06]"
+                  aria-hidden="true"
+                >
+                  <span class="text-3xl font-bold tracking-wide text-zinc-300 dark:text-zinc-600">
+                    {g.name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? '').join('').toUpperCase()}
+                  </span>
+                </div>
+              )}
               {g.year && (
                 <span class="absolute left-2 top-2 rounded-full bg-zinc-950/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white backdrop-blur">
                   {g.year}
@@ -192,16 +203,33 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       const coverWrap = document.createElement("div");
       coverWrap.className =
         "relative aspect-[460/215] overflow-hidden bg-zinc-100 dark:bg-white/[0.04]";
-      const img = document.createElement("img");
-      img.src = game.coverUrl || "";
-      img.alt = game.name || "";
-      img.loading = "lazy";
-      img.className = "h-full w-full object-cover";
-      img.onerror = () => {
-        img.onerror = null;
-        img.src = emptyDataUrl;
-      };
-      coverWrap.appendChild(img);
+      if (game.coverUrl) {
+        const img = document.createElement("img");
+        img.src = game.coverUrl;
+        img.alt = game.name || "";
+        img.loading = "lazy";
+        img.className = "h-full w-full object-cover";
+        img.onerror = () => {
+          img.onerror = null;
+          img.src = emptyDataUrl;
+        };
+        coverWrap.appendChild(img);
+      } else {
+        const ph = document.createElement("div");
+        ph.setAttribute("aria-hidden", "true");
+        ph.className =
+          "grid h-full w-full place-items-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-white/[0.04] dark:to-white/[0.06]";
+        const initials = document.createElement("span");
+        initials.className = "text-3xl font-bold tracking-wide text-zinc-300 dark:text-zinc-600";
+        initials.textContent = String(game.name || "")
+          .split(/\s+/)
+          .slice(0, 2)
+          .map((w) => w[0] || "")
+          .join("")
+          .toUpperCase();
+        ph.appendChild(initials);
+        coverWrap.appendChild(ph);
+      }
       if (game.year) {
         const badge = document.createElement("span");
         badge.className =

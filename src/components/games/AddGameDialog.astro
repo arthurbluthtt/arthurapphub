@@ -18,7 +18,7 @@
   <header class="flex items-center gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
     <div class="min-w-0 flex-1">
       <h2 class="truncate font-semibold">Agregar juego</h2>
-      <p class="text-xs uppercase tracking-wider text-zinc-500">Buscá en Steam por nombre</p>
+      <p class="text-xs uppercase tracking-wider text-zinc-500">Desde Steam o manual</p>
     </div>
     <button
       type="button"
@@ -31,29 +31,110 @@
   </header>
 
   <div class="p-4">
-    <input
-      type="text"
-      placeholder="Buscar juego (ej. Balatro, Elden Ring…)"
-      autocomplete="off"
-      spellcheck="false"
-      autocapitalize="off"
-      autocorrect="off"
-      class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
-      data-add-input
-    />
-
     <div
-      class="mt-3 hidden max-h-[60vh] overflow-y-auto overscroll-contain rounded-lg border border-zinc-200 dark:border-white/10"
-      data-add-results
-      role="listbox"
-    ></div>
-
-    <p
-      class="mt-3 hidden rounded-lg border border-dashed border-zinc-300 p-3 text-center text-sm text-zinc-500 dark:border-white/10"
-      data-add-empty
+      class="mb-3 inline-flex rounded-lg border border-zinc-200 p-1 dark:border-white/10"
+      data-mode-tabs
+      role="tablist"
+      aria-label="Cómo agregar el juego"
     >
-      Sin coincidencias en Steam. Probá con otro nombre.
-    </p>
+      <button
+        type="button"
+        role="tab"
+        aria-selected="true"
+        data-mode-tab="steam"
+        class="rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition"
+      >
+        Buscar en Steam
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected="false"
+        data-mode-tab="manual"
+        class="rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition"
+      >
+        Agregar manual
+      </button>
+    </div>
+
+    <div data-panel="steam">
+      <input
+        type="text"
+        placeholder="Buscar juego (ej. Balatro, Elden Ring…)"
+        autocomplete="off"
+        spellcheck="false"
+        autocapitalize="off"
+        autocorrect="off"
+        class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+        data-add-input
+      />
+
+      <div
+        class="mt-3 hidden max-h-[60vh] overflow-y-auto overscroll-contain rounded-lg border border-zinc-200 dark:border-white/10"
+        data-add-results
+        role="listbox"
+      ></div>
+
+      <p
+        class="mt-3 hidden rounded-lg border border-dashed border-zinc-300 p-3 text-center text-sm text-zinc-500 dark:border-white/10"
+        data-add-empty
+      >
+        Sin coincidencias en Steam. Probá con otro nombre o usá "Agregar manual".
+      </p>
+    </div>
+
+    <form class="hidden flex-col gap-3" data-manual-form data-panel="manual" novalidate>
+      <label class="block">
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Nombre</span>
+        <input
+          type="text"
+          name="name"
+          placeholder="Ej. Stella Sora"
+          autocomplete="off"
+          spellcheck="false"
+          required
+          maxlength="80"
+          class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+          data-manual-name
+        />
+      </label>
+
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Año (opcional)</span>
+          <input
+            type="number"
+            name="year"
+            inputmode="numeric"
+            min="1900"
+            max="2100"
+            placeholder="2024"
+            class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+            data-manual-year
+          />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Portada URL (opcional)</span>
+          <input
+            type="url"
+            name="coverUrl"
+            placeholder="https://…"
+            autocomplete="off"
+            spellcheck="false"
+            class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+            data-manual-cover
+          />
+        </label>
+      </div>
+
+      <button
+        type="submit"
+        class="mt-1 w-full rounded-lg bg-zinc-900 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+        data-manual-submit
+      >
+        Agregar juego
+      </button>
+    </form>
 
     <p
       class="mt-3 hidden rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-center text-sm text-emerald-700 dark:text-emerald-400"
@@ -82,7 +163,32 @@
   const errorEl = document.querySelector("[data-add-error]");
   const closeBtn = document.querySelector("[data-add-close]");
 
+  const modeTabs = document.querySelector("[data-mode-tabs]");
+  const panels = document.querySelectorAll("[data-panel]");
+  const manualForm = document.querySelector("[data-manual-form]");
+  const manualName = document.querySelector("[data-manual-name]");
+  const manualYear = document.querySelector("[data-manual-year]");
+  const manualCover = document.querySelector("[data-manual-cover]");
+  const manualSubmit = document.querySelector("[data-manual-submit]");
+
+  const TAB_ACTIVE = [
+    "border-transparent",
+    "bg-zinc-900",
+    "text-white",
+    "dark:bg-white",
+    "dark:text-zinc-900",
+  ];
+  const TAB_INACTIVE = [
+    "text-zinc-500",
+    "hover:text-zinc-900",
+    "dark:text-zinc-500",
+    "dark:hover:text-white",
+  ];
+
   let bodyLocked = false;
+  let submitting = false;
+  let currentMode = "steam";
+
   function lockBodyScroll() {
     if (bodyLocked) return;
     bodyLocked = true;
@@ -97,17 +203,50 @@
     document.body.style.paddingRight = "";
   }
 
-  function openDialog() {
-    if (!dialog) return;
+  function setMode(mode) {
+    currentMode = mode;
+    if (modeTabs) {
+      modeTabs.querySelectorAll("[data-mode-tab]").forEach((tab) => {
+        const active = tab.dataset.modeTab === mode;
+        tab.setAttribute("aria-selected", active ? "true" : "false");
+        for (const c of TAB_ACTIVE) tab.classList.toggle(c, active);
+        for (const c of TAB_INACTIVE) tab.classList.toggle(c, !active);
+      });
+    }
+    panels.forEach((panel) => {
+      const show = panel.dataset.panel === mode;
+      panel.classList.toggle("hidden", !show);
+      if (mode === "manual" && show) {
+        panel.classList.remove("hidden");
+        panel.classList.add("flex");
+      }
+    });
+    if (mode === "steam") setTimeout(() => input?.focus(), 0);
+    if (mode === "manual") setTimeout(() => manualName?.focus(), 0);
+  }
+
+  function showError(msg) {
+    errorEl.textContent = msg;
+    errorEl.classList.remove("hidden");
+  }
+  function hideStatus() {
     successEl.classList.add("hidden");
     errorEl.classList.add("hidden");
+  }
+
+  function openDialog() {
+    if (!dialog) return;
+    hideStatus();
     input.value = "";
     resultsEl.replaceChildren();
     resultsEl.classList.add("hidden");
     emptyEl.classList.add("hidden");
+    manualName.value = "";
+    manualYear.value = "";
+    manualCover.value = "";
+    setMode(currentMode);
     lockBodyScroll();
     dialog.showModal();
-    setTimeout(() => input.focus(), 0);
   }
 
   function closeDialog() {
@@ -123,6 +262,13 @@
   });
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && dialog?.open) closeDialog();
+  });
+  modeTabs?.addEventListener("click", (e) => {
+    const tab = e.target.closest("[data-mode-tab]");
+    if (tab && tab.dataset.modeTab !== currentMode) {
+      hideStatus();
+      setMode(tab.dataset.modeTab);
+    }
   });
 
   function buildResultButton(r) {
@@ -207,8 +353,7 @@
     if (!appId) return;
     btn.disabled = true;
     btn.classList.add("opacity-50", "pointer-events-none");
-    successEl.classList.add("hidden");
-    errorEl.classList.add("hidden");
+    hideStatus();
     try {
       const res = await fetch("/games/api/add", {
         method: "POST",
@@ -216,8 +361,7 @@
         body: JSON.stringify({ appId }),
       });
       if (res.status === 409) {
-        errorEl.textContent = "Ese juego ya está en tu lista";
-        errorEl.classList.remove("hidden");
+        showError("Ese juego ya está en tu lista");
         btn.disabled = false;
         btn.classList.remove("opacity-50", "pointer-events-none");
         return;
@@ -228,8 +372,7 @@
           const body = await res.json();
           if (body && body.error) msg = "Error " + res.status + ": " + body.error;
         } catch {}
-        errorEl.textContent = msg;
-        errorEl.classList.remove("hidden");
+        showError(msg);
         btn.disabled = false;
         btn.classList.remove("opacity-50", "pointer-events-none");
         return;
@@ -241,10 +384,73 @@
         new CustomEvent("games:game-added", { detail: { game: data.game } })
       );
     } catch (err) {
-      errorEl.textContent = "Error de red";
-      errorEl.classList.remove("hidden");
+      showError("Error de red");
       btn.disabled = false;
       btn.classList.remove("opacity-50", "pointer-events-none");
+    }
+  });
+
+  manualForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (submitting) return;
+    hideStatus();
+
+    const name = manualName.value.trim();
+    if (!name) {
+      showError("Poné un nombre");
+      manualName.focus();
+      return;
+    }
+    const yearRaw = manualYear.value.trim();
+    const year = yearRaw ? Number(yearRaw) : null;
+    if (year !== null && (!Number.isInteger(year) || year < 1900 || year > 2100)) {
+      showError("Año inválido (1900-2100)");
+      manualYear.focus();
+      return;
+    }
+    const coverUrl = manualCover.value.trim() || null;
+    if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
+      showError("URL de portada inválida (debe empezar con http:// o https://)");
+      manualCover.focus();
+      return;
+    }
+
+    submitting = true;
+    manualSubmit.disabled = true;
+    try {
+      const res = await fetch("/games/api/add-manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, year, coverUrl }),
+      });
+      if (res.status === 409) {
+        showError("Ese juego ya está en tu lista");
+        submitting = false;
+        manualSubmit.disabled = false;
+        return;
+      }
+      if (!res.ok) {
+        let msg = "Error " + res.status;
+        try {
+          const body = await res.json();
+          if (body && body.error) msg = "Error " + res.status + ": " + body.error;
+        } catch {}
+        showError(msg);
+        submitting = false;
+        manualSubmit.disabled = false;
+        return;
+      }
+      const data = await res.json();
+      successEl.classList.remove("hidden");
+      setTimeout(() => closeDialog(), 350);
+      window.dispatchEvent(
+        new CustomEvent("games:game-added", { detail: { game: data.game } })
+      );
+    } catch (err) {
+      showError("Error de red");
+    } finally {
+      submitting = false;
+      manualSubmit.disabled = false;
     }
   });
 </script>

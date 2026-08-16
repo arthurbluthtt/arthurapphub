@@ -67,10 +67,10 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 
 ### GameTracker (sub-app interna) — deploy status
 
-- ✅ Migración aplicada a D1 remota: `0010_gametracker.sql` (tabla `games`).
+- ✅ Migraciones aplicadas a D1 remota: `0010_gametracker.sql` (tabla `games`) + `0011_gametracker_manual.sql` (app_id/cover_url nullable + UNIQUE parcial).
 - ✅ Página `/games` (login requerido): grid de juegos con portada de Steam (header_image 460x215), título, año de salida y estado actual.
 - ✅ Estados: `backlog` (Por jugar, default al agregar), `playing` (Jugando), `finished` (Terminado). Cambio de estado con dropdown custom (patrón del perk dropdown de D2) — el `<select>` nativo abría el popup con estilos del OS (texto gris sobre blanco en dark mode, y desalineado).
-- ✅ Filtros por estado (chips pill con conteo, patrón D2/UMA): Todas + 4 estados.
+- ✅ Filtros por estado (chips pill con conteo, patrón D2/UMA): Todas + 3 estados.
 - ✅ Búsqueda de portadas en Steam **sin API key**:
   - `GET /games/api/search?q=` — proxy a `store.steampowered.com/api/storesearch/` (filtra `type === "app"`, excluye bundles/subs; top 8).
   - `POST /games/api/add {appId}` — `appdetails?filters=basic,release_date` (una sola request): valida `type === "game"` (rechaza DLC/OST/demo), guarda `name` + `header_image` + año (parseado de `release_date`, "20 Feb, 2024" → 2024). 409 si el appid ya está en la lista.
@@ -187,7 +187,7 @@ Script tarda ~2 min (96 requests secuenciales con rate limit 1.2s entre cada uno
 
 Pendiente en orden de prioridad:
 
-1. Smoke test E2E del GameTracker en el browser (login → /games → search Balatro → agregar → ver año/portada → cambiar estado → filtrar → borrar).
+1. Smoke test E2E del GameTracker en el browser (login → /games → search Balatro → agregar → agregar manual (Stella Sora) → cambiar estado con el dropdown custom → filtrar → borrar).
 2. Smoke test E2E del Umamusume Cards en el browser (login → /umamusume → search Maruzensky → agregar → ver "Ver más" → toggle found → filter → remove).
 3. Agregar una segunda app al SSO (5-10 líneas en la nueva app + 2 entradas en el hub).
 4. Si se quiere extender más allá del círculo personal, mejorar el handler de errores en `/api/redir` cuando el hub está caído.

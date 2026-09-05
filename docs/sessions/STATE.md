@@ -13,6 +13,7 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - ✅ Status dots online/offline (HEAD a cada `app.url`, cache 5 min).
 - ✅ Click en cards abre en la misma pestaña.
 - ✅ `apps.json` incluye D2 Wishlist, Umamusume Cards, Suscripciones, GameTracker, **MediaTracker**, **MangaTracker**, **BookTracker**, **AnimeTracker** y **ZZZ 🌀** (9 sub-apps internas). Categorías: `gaming`, `finanzas`, `media`. Las apps externas con SSO se registran cuando se necesiten.
+- ✅ **Archivo personal de apps**: la portada permite archivar/restaurar apps sin eliminarlas ni alterar sus rutas. `migrations/0020_app_archive.sql` guarda solo las apps archivadas por `username`; el resto permanece activo por defecto. La sección `Apps archivadas` conserva el acceso a D2, Uma o cualquier otra app.
 
 ### ZZZ (sub-app interna) — deploy status — **BASE FINAL 2026-08-31**
 

@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import AppGrid from '../components/AppGrid.astro';
 import { getAllApps } from '../lib/apps';
+import { listArchivedAppIds } from '../lib/app-archives';
 import {
   COOKIE_NAME_CONST,
   SESSION_TTL_MS_CONST,
@@ -23,6 +24,10 @@ const next = safeNextPath(Astro.url.searchParams.get('next'));
 
 const sessionId = readCookie(Astro.request);
 const sess = sessionId ? await lookupSession(env.AUTH_DB, sessionId) : null;
+const allApps = getAllApps();
+const archivedIds = sess ? await listArchivedAppIds(env.AUTH_DB, sess.username) : new Set<string>();
+const activeApps = allApps.filter((app) => !archivedIds.has(app.id));
+const archivedApps = allApps.filter((app) => archivedIds.has(app.id));
 
 let error: string | null = null;
 
@@ -72,11 +77,32 @@ if (!sess && Astro.request.method === 'POST') {
 
 <BaseLayout title={sess ? 'AppHub — Hub personal de apps' : 'Entrar — AppHub'} contentMaxWidth="max-w-6xl xl:max-w-[1760px] 2xl:max-w-[2240px]">
   {sess ? (
-    <div class="mb-8">
-      <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Mis apps</h1>
-      <p class="mt-2 text-zinc-500 dark:text-zinc-500">Lanzador rápido a todas mis herramientas web.</p>
-    </div>
-    <AppGrid apps={getAllApps()} />
+    <>
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Mis apps</h1>
+        <p class="mt-2 text-zinc-500 dark:text-zinc-500">Lanzador rápido a todas mis herramientas web.</p>
+      </div>
+      <section aria-labelledby="active-apps-heading">
+        <h2 id="active-apps-heading" class="sr-only">Apps activas</h2>
+        <AppGrid apps={activeApps} />
+      </section>
+      <section
+        data-archived-apps-section
+        aria-labelledby="archived-apps-heading"
+        class={`mt-10 ${archivedApps.length ? '' : 'hidden'}`}
+      >
+        <div class="mb-4 flex items-center justify-between gap-4">
+          <div>
+            <h2 id="archived-apps-heading" class="text-xl font-semibold text-zinc-900 dark:text-white">
+              Apps archivadas <span data-archived-count class="text-sm font-normal text-zinc-500">({archivedApps.length})</span>
+            </h2>
+            <p class="mt-1 text-sm text-zinc-500">Siguen disponibles, pero no aparecen en el lanzador principal.</p>
+          </div>
+        </div>
+        <AppGrid apps={archivedApps} archived />
+      </section>
+      <p data-archive-status role="status" class="mt-6 min-h-5 text-sm text-red-600 dark:text-red-400" aria-live="polite"></p>
+    </>
   ) : (
     <div class="mx-auto max-w-sm">
       <div class="rounded-2xl border border-zinc-200 bg-white p-6 dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur">
@@ -132,3 +158,62 @@ if (!sess && Astro.request.method === 'POST') {
     </div>
   )}
 </BaseLayout>
+
+{sess && (
+  <script>
+    const activeGrid = document.querySelector('[data-app-grid="active"]');
+    const archivedSection = document.querySelector('[data-archived-apps-section]');
+    const archivedGrid = document.querySelector('[data-app-grid="archived"]');
+    const status = document.querySelector('[data-archive-status]');
+
+    function updateArchivedSection() {
+      if (!archivedSection || !archivedGrid) return;
+      const activeCards = activeGrid?.querySelectorAll('[data-app-card]') ?? [];
+      const archivedCards = archivedGrid.querySelectorAll('[data-app-card]');
+      const count = archivedSection.querySelector('[data-archived-count]');
+      if (count) count.textContent = `(${archivedCards.length})`;
+      archivedSection.classList.toggle('hidden', archivedCards.length === 0);
+      const archivedEmpty = archivedGrid.querySelector('[data-app-empty]');
+      if (archivedEmpty) archivedEmpty.classList.toggle('hidden', archivedCards.length !== 0);
+      const activeEmpty = activeGrid?.querySelector('[data-app-empty]');
+      if (activeEmpty) activeEmpty.classList.toggle('hidden', activeCards.length !== 0);
+    }
+
+    document.addEventListener('click', async (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const button = target.closest('[data-app-archive-button]');
+      if (!(button instanceof HTMLButtonElement) || button.disabled) return;
+
+      const card = button.closest('[data-app-card]');
+      const appId = button.dataset.appId;
+      const appName = button.dataset.appName || appId;
+      const wasArchived = button.dataset.archived === 'true';
+      if (!card || !appId) return;
+
+      button.disabled = true;
+      if (status) status.textContent = '';
+      try {
+        const response = await fetch('/api/apps/archive', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ appId, archived: !wasArchived }),
+        });
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload || payload.archived !== !wasArchived) {
+          throw new Error(payload?.error || 'No se pudo actualizar la app.');
+        }
+
+        button.dataset.archived = String(payload.archived);
+        button.textContent = payload.archived ? 'Restaurar' : 'Archivar';
+        button.setAttribute('aria-label', `${payload.archived ? 'Restaurar' : 'Archivar'} ${appName}`);
+        (payload.archived ? archivedGrid : activeGrid)?.append(card);
+        updateArchivedSection();
+      } catch (error) {
+        if (status) status.textContent = error instanceof Error ? error.message : 'No se pudo actualizar la app.';
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+)}

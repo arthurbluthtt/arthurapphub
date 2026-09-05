@@ -5,24 +5,42 @@ import StatusDot from './StatusDot.astro';
 
 interface Props {
   app: App;
+  archived?: boolean;
 }
 
-const { app } = Astro.props;
+const { app, archived = false } = Astro.props;
 const category = getCategory(app.category);
 ---
 
-<a
-  href={app.redir ?? `/api/redir?app=${app.id}`}
+<article
+  data-app-card
+  data-app-id={app.id}
   class="group relative flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-5 transition hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-lg dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur dark:hover:border-white/25 dark:hover:bg-white/[0.04]"
 >
   <div class="flex items-start justify-between">
     <span class="text-4xl leading-none">{app.icon}</span>
-    <StatusDot appId={app.id} />
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        data-app-archive-button
+        data-archived={archived ? 'true' : 'false'}
+        data-app-id={app.id}
+        data-app-name={app.name}
+        class="rounded-md px-2 py-1 text-xs font-medium text-zinc-500 transition hover:bg-zinc-100 hover:text-zinc-900 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-zinc-400 md:opacity-0 md:group-hover:opacity-100 dark:text-zinc-400 dark:hover:bg-white/10 dark:hover:text-white"
+        aria-label={archived ? `Restaurar ${app.name}` : `Archivar ${app.name}`}
+      >
+        {archived ? 'Restaurar' : 'Archivar'}
+      </button>
+      <StatusDot appId={app.id} />
+    </div>
   </div>
-  <div class="flex-1">
+  <a
+    href={app.redir ?? `/api/redir?app=${app.id}`}
+    class="flex flex-1 flex-col rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+  >
     <h3 class="font-semibold text-zinc-900 dark:text-white">{app.name}</h3>
     <p class="mt-1 text-sm text-zinc-500 dark:text-zinc-500">{app.description}</p>
-  </div>
+  </a>
   {
     category && (
       <div class="mt-auto flex items-center gap-1.5">
@@ -33,4 +51,4 @@ const category = getCategory(app.category);
       </div>
     )
   }
-</a>
+</article>

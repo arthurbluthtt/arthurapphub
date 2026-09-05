@@ -4,15 +4,21 @@ import AppCard from './AppCard.astro';
 
 interface Props {
   apps: App[];
+  archived?: boolean;
 }
 
-const { apps } = Astro.props;
+const { apps, archived = false } = Astro.props;
 ---
 
-{apps.length === 0 ? (
-  <p class="text-center text-slate-500 dark:text-slate-400">No hay apps todavía.</p>
-) : (
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-    {apps.map((app) => <AppCard app={app} />)}
-  </div>
-)}
+<div data-app-grid={archived ? 'archived' : 'active'} class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+  <p
+    data-app-empty
+    class:list={[
+      'col-span-full text-center text-slate-500 dark:text-slate-400',
+      apps.length ? 'hidden' : '',
+    ]}
+  >
+    No hay apps aquí todavía.
+  </p>
+  {apps.map((app) => <AppCard app={app} archived={archived} />)}
+</div>

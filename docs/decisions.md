@@ -29,6 +29,7 @@ Registro de decisiones vigentes. Para el contexto completo de cada sub-app, ver 
 - **Listeners delegados**: un solo listener en `document` para `[data-status-button]` / `[data-remove-button]` / `[data-edit-button]` — cubre SSR + runtime (`*:added` / `*:edited`).
 - **Filtros**: chips pill con conteo, `aria-pressed`, clases `FILTER_ACTIVE` / `FILTER_INACTIVE`. `applyFilters()` combina `statusOk && typeOk && qOk`.
 - **Dialogs**: `<dialog>` nativo con `showModal()`, shell `m-auto max-h-[90vh] w-[min(...,calc(100vw-2rem))]`, `lockBodyScroll()` con compensación de scrollbar, flag `bodyLocked` para evitar doble-lock.
+- **Archivo personal del hub**: `apps.json` sigue siendo el registro único y las apps nunca se eliminan por archivar. `app_archives(username, app_id, archived_at)` solo guarda excepciones archivadas; la ausencia de una fila significa activa. La portada carga la preferencia desde D1, separa `Apps archivadas` y permite restaurar mediante `POST /api/apps/archive {appId, archived}` autenticado.
 
 ## Por sub-app
 

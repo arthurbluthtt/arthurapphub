@@ -525,7 +525,7 @@ esta auditoría es el smoke test E2E en browser indicado en `STATE.md`.
 - [x] `npx tsc --noEmit`: cero errores dentro de `src/pages/zzz/**` y `src/lib/zzz/**`; queda únicamente el error baseline preexistente de `src/pages/games/api/add.ts(62,17)`.
 - [x] `astro build`: correcto (`ASTRO_BUILD_EXIT=0`).
 - [x] Smoke desplegado sin sesión: `/zzz` exige login y conserva `next=/zzz`; `GET /zzz/api/search?...` responde `401` sin cookie y no expone datos.
-- [ ] Publicar esta versión y repetir el smoke de contrato: el Worker desplegado aún devuelve `401 text/plain` (`Unauthorized`), mientras la fuente corregida devuelve el JSON uniforme `{error: "unauthorized"}`.
+- [x] Publicada la versión `508e1aa` en `main` y repetido el smoke de contrato: el Worker devuelve `401`, `Content-Type: application/json` y `{error: "unauthorized"}` sin cookie.
 - [ ] Smoke autenticado E2E de búsqueda, altas, duplicado, estado, filtros y borrado: pendiente por falta de una sesión/credenciales de prueba autorizadas; no se automatizó el login.
 
 ## Cierre global
@@ -549,5 +549,5 @@ esta auditoría es el smoke test E2E en browser indicado en `STATE.md`.
 - [x] MangaTracker revisado y corregido (H1 y H2 completados).
 - [x] BookTracker revisado y corregido (H1 y H2 completados).
 - [x] AnimeTracker revisado y corregido (H1 y H2 completados).
-- [ ] ZZZ revisado y corregido (H1-H4 y verificación técnica H5 completados; smoke autenticado pendiente).
+- [ ] ZZZ revisado y corregido (H1-H4 y H5 de documentación/verificación pública completados; smoke autenticado pendiente).
 - [ ] Consistencia global cerrada.

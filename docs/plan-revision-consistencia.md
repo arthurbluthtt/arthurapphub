@@ -429,7 +429,7 @@ esta auditoría es el smoke test E2E en browser indicado en `STATE.md`.
 - [x] Documentación actualizada en `docs/sub-apps/trackers.md`, `docs/sessions/STATE.md` y `docs/decisions.md`; no se tocaron `Mavis_*`.
 - [x] Verificación técnica: build, TypeScript del alcance MediaTracker y contrato `401` JSON sin sesión.
 - [x] Baseline documentado: el `tsc` global aún reporta 6 guards de AnimeTracker, 4 guards de ZZZ y 1 nullable de GameTracker, todos fuera del alcance de MediaTracker.
-- [ ] Smoke test autenticado pendiente: el preview local redirige correctamente a login, pero no hay una sesión/credenciales de prueba disponibles para continuar sin automatizar autenticación no proporcionada.
+- [x] Smoke test autenticado completado: búsqueda TMDB (película y serie), alta desde TMDB, duplicado, alta manual sin portada, cambio de estado, filtros combinados, estado sin coincidencias y persistencia tras recarga. Los datos temporales fueron eliminados manualmente al cierre.
 
 ### 7. MangaTracker
 
@@ -518,7 +518,7 @@ esta auditoría es el smoke test E2E en browser indicado en `STATE.md`.
 - [x] Reordenamiento desktop y móvil conserva la permutación completa, deshabilita drag mientras hay búsqueda y restaura el orden anterior si la API falla.
 - [x] El gesto móvil cancela el long-press cuando el usuario empieza a desplazarse; el orden usa el mismo flujo de persistencia en ambos dispositivos.
 
-#### H5 — Documentación y verificación — cierre técnico de fuente 2026-09-04
+#### H5 — Documentación y verificación — completado 2026-09-04
 
 - [x] Documentación actualizada en `docs/sub-apps/zzz.md`, `docs/sessions/STATE.md` y `docs/decisions.md`; no se crearon migraciones ni se tocaron `Mavis_*`.
 - [x] Catálogos verificados: 7 agentes, 95 W-Engines y 39 Disc Sets; sin IDs/nombres duplicados y con especialidades conocidas.
@@ -526,7 +526,7 @@ esta auditoría es el smoke test E2E en browser indicado en `STATE.md`.
 - [x] `astro build`: correcto (`ASTRO_BUILD_EXIT=0`).
 - [x] Smoke desplegado sin sesión: `/zzz` exige login y conserva `next=/zzz`; `GET /zzz/api/search?...` responde `401` sin cookie y no expone datos.
 - [x] Publicada la versión `508e1aa` en `main` y repetido el smoke de contrato: el Worker devuelve `401`, `Content-Type: application/json` y `{error: "unauthorized"}` sin cookie.
-- [ ] Smoke autenticado E2E de búsqueda, altas, duplicado, estado, filtros y borrado: pendiente por falta de una sesión/credenciales de prueba autorizadas; no se automatizó el login.
+- [x] Smoke autenticado E2E: búsqueda y picker por especialidad, alta con sets/stats, duplicado, búsqueda sin coincidencias y persistencia tras recarga. El drag fue validado manualmente en Edge y los datos temporales se eliminaron manualmente al cierre.
 
 ## Cierre global
 
@@ -549,5 +549,5 @@ esta auditoría es el smoke test E2E en browser indicado en `STATE.md`.
 - [x] MangaTracker revisado y corregido (H1 y H2 completados).
 - [x] BookTracker revisado y corregido (H1 y H2 completados).
 - [x] AnimeTracker revisado y corregido (H1 y H2 completados).
-- [ ] ZZZ revisado y corregido (H1-H4 y H5 de documentación/verificación pública completados; smoke autenticado pendiente).
-- [ ] Consistencia global cerrada.
+- [x] ZZZ revisado y corregido (H1-H5 completados).
+- [x] Consistencia global cerrada (las mejoras futuras fuera de la auditoría permanecen en `STATE.md`).

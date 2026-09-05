@@ -3,7 +3,7 @@
 > Fuente de verdad operativa del proyecto. `Mavis_STATE.md` y `Mavis_CHANGELOG.md` son históricos de otro agente y no deben usarse para decidir el estado actual.
 
 Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de apps** + **sub-apps internas** (D2 Wishlist + Umamusume Cards + Suscripciones + GameTracker + MediaTracker + MangaTracker + BookTracker + AnimeTracker + ZZZ — **base final**).
-Última actualización: 2026-09-04 (revisión de consistencia hasta ZZZ Builds H5 de Fase 10; solo smoke autenticado pendiente).
+Última actualización: 2026-09-04 (revisión de consistencia global cerrada; Fase 10 ZZZ Builds H1-H5 completada).
 
 ## AppHub — deploy status
 
@@ -32,7 +32,7 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - ✅ APIs: `GET /zzz/api/search` (filtrado specialty), `POST /zzz/api/add` 201/409/400 (`statValues` con `isStatValue`), `POST /zzz/api/edit` patch `statValues/displayStats` legacy, `POST /zzz/api/remove` 204, `GET /zzz/api/icon?type=wengine|disc|agent&id=` R2 `zzz/` `public, max-age=2592000, immutable` + placeholder SVG `+ User-Agent arthurapphub/1.0` + `put` fire-and-forget (fix `type=disc` rama faltante).
 - ✅ Drag handle 0 deps + `position` persistente: `migrations/0019_zzz_position.sql` `position INTEGER` + `idx_zzz_user_position` + `listZzz ORDER BY COALESCE(position,9999)` + `addZzz MAX+1` + `reorderZzz()` + `POST /zzz/api/reorder {orderedIds}` valida permutación; `src/pages/zzz/index.astro` `mousedown` handle → `canDrag` + `dragstart` solo si `canDrag` y `!currentSearch`, `dragover` `getClosestCard(x,y)` 2D (distancia a `cx,cy`, `before = y<cy || (|y-cy|<h/3 && x<cx)`) + `insertBefore`/`nextSibling`, móvil `touchstart 180ms` mantener pulsado `touchmove` 2D + `touchend` persiste, `persistOrder()` `builds.sort` + `fetch reorder` debounce, `currentSearch` oculta handle y `draggable=false` (`updateDragDisabled`); `buildCard` incluye handle `⋮⋮` + `draggable`; fix Y-only que solo permitía 1º puesto (`b1fdebb5`).
 - ✅ Deploy verificación: `GET /zzz` 302 `/?next=/zzz`; la búsqueda de `wengine` con `specialty=anomaly` conserva 19 coincidencias de catálogo y entrega máximo 8 resultados; `disc` 39 sin prefijo; card `w-full` `grid 1→2→3→4` `62/38` `text-lg` `h-7/h-6` + reorden `position` (`1422b92b`).
-- ✅ **H5 documentación/verificación**: catálogos sin duplicados, `astro build` correcto y cero errores TypeScript dentro de ZZZ; el smoke desplegado sin sesión confirmó el login gate en `/zzz` y el `401` JSON del API sin datos. Publicado `508e1aa` en `main`; `GET /zzz/api/search?...` devuelve `Content-Type: application/json` y `{error:"unauthorized"}`. El E2E autenticado queda pendiente por falta de sesión/credenciales de prueba autorizadas.
+- ✅ **H5 documentación/verificación**: catálogos sin duplicados, `astro build` correcto y cero errores TypeScript dentro de ZZZ; el smoke desplegado sin sesión confirmó el login gate en `/zzz` y el `401` JSON del API sin datos. Publicado `508e1aa` en `main`; `GET /zzz/api/search?...` devuelve `Content-Type: application/json` y `{error:"unauthorized"}`. El E2E autenticado confirmó picker/búsqueda, alta, duplicado, búsqueda sin coincidencias y persistencia; el drag fue validado manualmente en Edge y los datos temporales se eliminaron al cierre.
 ### Umamusume Cards (sub-app interna) — deploy status
 
 - ✅ Migración aplicada a D1 remota: `0008_uma_wishlist.sql` (tabla `uma_wishlist`).
@@ -170,7 +170,7 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
 - ✅ **Estado runtime**: conteos de estado/tipo representan toda la lista, y los estados vacío/sin coincidencias se recalculan con las cards vivas después de cada alta, cambio de estado, edición o borrado. SSR y runtime comparten el fallback `data-media-cover-image`.
 - ✅ **Verificación Fase 6**: `npm run build` pasa fuera del sandbox; `npx tsc --noEmit` no reporta errores dentro de MediaTracker; el preview local redirige `/media` a login y `/media/api/search` sin sesión devuelve `401 {error: unauthorized}`.
 - ⚠️ Baseline global de `tsc` al cierre de Fase 9: 4 guards de ZZZ y `bodyRecord` nullable en `src/pages/games/api/add.ts`; AnimeTracker ya no aporta errores TypeScript.
-- ⚠️ El smoke E2E autenticado queda pendiente porque no hay una sesión/credenciales de prueba disponibles; no se automatizó el login.
+- ✅ Smoke E2E autenticado: TMDB devolvió película y serie; se verificaron alta desde TMDB, rechazo de duplicado, alta manual sin portada, cambio de estado, filtros combinados, estado sin coincidencias y persistencia tras recarga. Los datos temporales se eliminaron manualmente al cierre.
 
 ### Decisiones MediaTracker
 

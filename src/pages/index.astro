@@ -94,12 +94,23 @@ if (!sess && Astro.request.method === 'POST') {
         <div class="mb-4 flex items-center justify-between gap-4">
           <div>
             <h2 id="archived-apps-heading" class="text-xl font-semibold text-zinc-900 dark:text-white">
-              Apps archivadas <span data-archived-count class="text-sm font-normal text-zinc-500">({archivedApps.length})</span>
+              <button
+                type="button"
+                data-archive-toggle
+                aria-controls="archived-apps-grid"
+                aria-expanded="true"
+                class="inline-flex items-center gap-2 rounded-lg text-left outline-none transition hover:text-zinc-600 focus-visible:ring-2 focus-visible:ring-zinc-400 dark:hover:text-zinc-300"
+              >
+                <span>Apps archivadas <span data-archived-count class="text-sm font-normal text-zinc-500">({archivedApps.length})</span></span>
+                <span data-archive-chevron aria-hidden="true" class="text-sm">⌃</span>
+              </button>
             </h2>
             <p class="mt-1 text-sm text-zinc-500">Siguen disponibles, pero no aparecen en el lanzador principal.</p>
           </div>
         </div>
-        <AppGrid apps={archivedApps} archived />
+        <div id="archived-apps-grid" data-archived-apps-content>
+          <AppGrid apps={archivedApps} archived />
+        </div>
       </section>
       <p data-archive-status role="status" class="mt-6 min-h-5 text-sm text-red-600 dark:text-red-400" aria-live="polite"></p>
     </>
@@ -163,6 +174,7 @@ if (!sess && Astro.request.method === 'POST') {
   <script>
     const activeGrid = document.querySelector('[data-app-grid="active"]');
     const archivedSection = document.querySelector('[data-archived-apps-section]');
+    const archivedContent = document.querySelector('[data-archived-apps-content]');
     const archivedGrid = document.querySelector('[data-app-grid="archived"]');
     const status = document.querySelector('[data-archive-status]');
 
@@ -182,6 +194,17 @@ if (!sess && Astro.request.method === 'POST') {
     document.addEventListener('click', async (event) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
+
+      const toggle = target.closest('[data-archive-toggle]');
+      if (toggle instanceof HTMLButtonElement) {
+        const expanded = toggle.getAttribute('aria-expanded') === 'true';
+        toggle.setAttribute('aria-expanded', String(!expanded));
+        archivedContent?.classList.toggle('hidden', expanded);
+        const chevron = toggle.querySelector('[data-archive-chevron]');
+        if (chevron) chevron.textContent = expanded ? '⌄' : '⌃';
+        return;
+      }
+
       const button = target.closest('[data-app-archive-button]');
       if (!(button instanceof HTMLButtonElement) || button.disabled) return;
 

@@ -255,13 +255,13 @@ const EMPTY_DATA_URL =
         btn.classList.remove("opacity-50", "pointer-events-none");
         return;
       }
-      successEl.classList.remove("hidden");
-      setTimeout(() => closeDialog(), 350);
       window.dispatchEvent(
         new CustomEvent("umamusume:character-added", {
           detail: { characterId, characterName },
         })
       );
+      successEl.classList.remove("hidden");
+      setTimeout(() => closeDialog(), 350);
     } catch (err) {
       errorEl.textContent = "Error de red";
       errorEl.classList.remove("hidden");

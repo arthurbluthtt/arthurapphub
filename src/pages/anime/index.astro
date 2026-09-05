@@ -1,0 +1,587 @@
+---
+import { env } from 'cloudflare:workers';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AddAnimeDialog from '../../components/anime/AddAnimeDialog.astro';
+import EditAnimeDialog from '../../components/anime/EditAnimeDialog.astro';
+import SearchBar from '../../components/SearchBar.astro';
+import AnimeCard from '../../components/anime/AnimeCard.astro';
+import { lookupSession, readCookie } from '../../lib/auth';
+import {
+  listAnime,
+  STATUSES,
+  STATUS_LABELS,
+  ANIME_TYPES,
+  ANIME_TYPE_LABELS,
+  ANIME_TYPE_ICONS,
+  type AnimeRow,
+  type AnimeStatus,
+  type AnimeType,
+} from '../../lib/anime/store';
+
+export const prerender = false;
+
+const sessionId = readCookie(Astro.request);
+const sess = sessionId ? await lookupSession(env.AUTH_DB, sessionId) : null;
+if (!sess) {
+  return Astro.redirect('/?next=' + encodeURIComponent('/anime'));
+}
+
+const items = await listAnime(env.AUTH_DB, sess.username);
+const totalCount = items.length;
+
+const counts: Record<AnimeStatus, number> = { backlog: 0, watching: 0, finished: 0 };
+const typeCounts: Record<AnimeType, number> = { movie: 0, tv: 0 };
+for (const it of items) {
+  counts[it.status]++;
+  typeCounts[it.animeType]++;
+}
+
+const FILTER_STATUS_TABS = ['all', ...STATUSES] as const;
+const FILTER_TYPE_TABS = ['all', ...ANIME_TYPES] as const;
+---
+
+<BaseLayout title="AnimeTracker — AppHub" contentMaxWidth="max-w-[1760px] 2xl:max-w-[2240px]">
+  <div class="mb-6 flex items-baseline justify-between gap-6">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl xl:text-5xl dark:text-white">
+        AnimeTracker
+      </h1>
+      <p class="mt-2 text-sm text-zinc-500 xl:text-base">
+        Mis animes con estado: portada, año y progreso — serie o peli.
+      </p>
+    </div>
+    <span class="text-xs uppercase tracking-wider text-zinc-500 xl:text-sm" data-anime-count>
+      {totalCount} {totalCount === 1 ? 'item' : 'items'}
+    </span>
+  </div>
+
+  <SearchBar placeholder="Buscar..." />
+  <div class="mb-4 flex flex-wrap items-center gap-2" data-filter-group>
+    {FILTER_STATUS_TABS.map((tab) => {
+      const label = tab === 'all' ? 'Todas' : STATUS_LABELS[tab];
+      const n = tab === 'all' ? totalCount : counts[tab];
+      const isActive = tab === 'all';
+      return (
+        <button
+          type="button"
+          data-status-filter={tab}
+          aria-pressed={isActive ? 'true' : 'false'}
+          class:list={[
+            'rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition',
+            isActive
+              ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900'
+              : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:hover:text-white',
+          ]}
+        >
+          {label} <span data-filter-count class="ml-1.5 text-zinc-500">{n}</span>
+        </button>
+      );
+    })}
+  </div>
+
+  <div class="mb-4 flex flex-wrap items-center gap-2" data-type-filter-group>
+    {FILTER_TYPE_TABS.map((tab) => {
+      const label = tab === 'all' ? 'Todos' : ANIME_TYPE_LABELS[tab];
+      const icon = tab === 'all' ? '📚' : ANIME_TYPE_ICONS[tab];
+      const n = tab === 'all' ? totalCount : typeCounts[tab];
+      const isActive = tab === 'all';
+      return (
+        <button
+          type="button"
+          data-type-filter={tab}
+          aria-pressed={isActive ? 'true' : 'false'}
+          class:list={[
+            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition',
+            isActive
+              ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900'
+              : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:hover:text-white',
+          ]}
+        >
+          <span aria-hidden="true">{icon}</span>
+          <span>{label}</span>
+          <span data-filter-count class="ml-1.5 text-zinc-500">{n}</span>
+        </button>
+      );
+    })}
+  </div>
+
+  <div
+    class="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8"
+    data-anime-grid
+  >
+    {items.map((it) => <AnimeCard item={it} />)}
+  </div>
+
+  <p
+    class="hidden rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500"
+    data-empty-state
+  >
+    No tenés items en AnimeTracker. Hacé click en "+ Agregar" para empezar.
+  </p>
+
+  <p
+    class="hidden rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500"
+    data-filtered-empty
+  >
+    No hay items que coincidan con el filtro.
+  </p>
+
+  <AddAnimeDialog />
+  <EditAnimeDialog />
+</BaseLayout>
+
+<script
+  is:inline
+  define:vars={{
+    statusKeys: STATUSES,
+    statusLabels: STATUS_LABELS,
+    typeKeys: ANIME_TYPES,
+  }}
+>
+  const grid = document.querySelector("[data-anime-grid]");
+  const emptyState = document.querySelector("[data-empty-state]");
+  const filteredEmpty = document.querySelector("[data-filtered-empty]");
+  const animeCount = document.querySelector("[data-anime-count]");
+  const filterGroup = document.querySelector("[data-filter-group]");
+  const typeFilterGroup = document.querySelector("[data-type-filter-group]");
+
+  const FILTER_ACTIVE = [
+    "border-zinc-900", "bg-zinc-900", "text-white",
+    "dark:border-white", "dark:bg-white", "dark:text-zinc-900",
+  ];
+  const FILTER_INACTIVE = [
+    "border-zinc-200", "text-zinc-700", "hover:border-zinc-400", "hover:text-zinc-900",
+    "dark:border-white/10", "dark:text-zinc-200", "dark:hover:border-white/30", "dark:hover:text-white",
+  ];
+  const FILTER_INACTIVE_CLEAN = FILTER_INACTIVE.filter((c) => !c.startsWith("dark:"));
+  const FILTER_INACTIVE_DARK = FILTER_INACTIVE.filter((c) => c.startsWith("dark:"));
+
+  let currentStatus = "all";
+  let currentType = "all";
+  let currentSearch = "";
+
+  function findCard(id) {
+    const wanted = String(id);
+    return Array.from(grid?.querySelectorAll("[data-anime-card]") || [])
+      .find((card) => card.dataset.animeId === wanted) || null;
+  }
+
+  function makeBadge(text) {
+    const sp = document.createElement("span");
+    sp.className = "ml-1.5 text-zinc-500";
+    sp.textContent = text;
+    return sp;
+  }
+
+  function setStatusFilter(tab) {
+    currentStatus = tab;
+    if (!filterGroup) return;
+    const btns = filterGroup.querySelectorAll("[data-status-filter]");
+    btns.forEach((b) => {
+      const active = b.dataset.statusFilter === tab;
+      b.setAttribute("aria-pressed", active ? "true" : "false");
+      b.classList.remove(...FILTER_ACTIVE, ...FILTER_INACTIVE);
+      if (active) {
+        b.classList.add("border-zinc-900", "bg-zinc-900", "text-white");
+        b.classList.add("dark:border-white", "dark:bg-white", "dark:text-zinc-900");
+      } else {
+        b.classList.add(...FILTER_INACTIVE_CLEAN);
+        b.classList.add(...FILTER_INACTIVE_DARK);
+      }
+    });
+    applyFilters();
+  }
+  function setTypeFilter(tab) {
+    currentType = tab;
+    if (!typeFilterGroup) return;
+    const btns = typeFilterGroup.querySelectorAll("[data-type-filter]");
+    btns.forEach((b) => {
+      const active = b.dataset.typeFilter === tab;
+      b.setAttribute("aria-pressed", active ? "true" : "false");
+      b.classList.remove(...FILTER_ACTIVE, ...FILTER_INACTIVE);
+      if (active) {
+        b.classList.add("border-zinc-900", "bg-zinc-900", "text-white");
+        b.classList.add("dark:border-white", "dark:bg-white", "dark:text-zinc-900");
+      } else {
+        b.classList.add(...FILTER_INACTIVE_CLEAN);
+        b.classList.add(...FILTER_INACTIVE_DARK);
+      }
+    });
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const cards = grid?.querySelectorAll("[data-anime-card]") || [];
+    let visible = 0;
+    cards.forEach((c) => {
+      const okStatus = currentStatus === "all" || c.dataset.status === currentStatus;
+      const okType = currentType === "all" || c.dataset.animeType === currentType;
+      const qOk = !currentSearch || (c.dataset.search || "").includes(currentSearch);
+      const show = okStatus && okType && qOk;
+      c.classList.toggle("hidden", !show);
+      if (show) visible++;
+    });
+    const total = cards.length;
+    if (emptyState) emptyState.classList.toggle("hidden", total > 0);
+    if (filteredEmpty) filteredEmpty.classList.toggle("hidden", visible !== 0 || total === 0);
+  }
+
+  filterGroup?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-status-filter]");
+    if (btn) setStatusFilter(btn.dataset.statusFilter);
+  });
+  typeFilterGroup?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-type-filter]");
+    if (btn) setTypeFilter(btn.dataset.typeFilter);
+  });
+  const searchInput = document.querySelector('[data-search-input]');
+  const searchClear = document.querySelector('[data-search-clear]');
+  let searchTimer = null;
+  function toggleClear(){ if(searchClear) searchClear.classList.toggle('hidden', !searchInput || !searchInput.value); }
+  searchInput?.addEventListener('input', () => {
+    if(searchTimer) clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { currentSearch = (searchInput.value || '').trim().toLowerCase(); toggleClear(); applyFilters(); }, 200);
+  });
+  searchClear?.addEventListener('click', () => { if(searchInput){ searchInput.value=''; currentSearch=''; toggleClear(); applyFilters(); searchInput.focus(); } });
+
+  function placeholder(title) {
+    const ph = document.createElement("div");
+    ph.className =
+      "grid h-full w-full place-items-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-white/[0.04] dark:to-white/[0.06]";
+    const sp = document.createElement("span");
+    sp.className = "text-xl font-bold tracking-wide text-zinc-300 dark:text-zinc-600";
+    sp.textContent = String(title || "?")
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((w) => w[0] || "")
+      .join("")
+      .toUpperCase();
+    ph.appendChild(sp);
+    return ph;
+  }
+
+  function wireCoverImage(img, title) {
+    img.dataset.animeCoverImage = "";
+    img.onerror = () => {
+      img.onerror = null;
+      img.replaceWith(placeholder(title));
+    };
+  }
+
+  grid?.querySelectorAll("[data-anime-cover-image]").forEach((img) => {
+    wireCoverImage(img, img.alt);
+  });
+
+  function buildAnimeCard(anime) {
+    const article = document.createElement("article");
+    article.dataset.animeCard = "";
+    article.dataset.animeId = anime.id;
+    article.dataset.status = anime.status;
+    article.dataset.animeType = anime.animeType;
+    article.dataset.search = (anime.title || "").toLowerCase();
+    article.className =
+      "w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur";
+
+    // Cover (vertical 2:3, poster)
+    const coverWrap = document.createElement("div");
+    coverWrap.className = "relative aspect-[4/5] overflow-hidden bg-zinc-100 dark:bg-zinc-800";
+    if (anime.coverUrl) {
+      const img = document.createElement("img");
+      img.src = anime.coverUrl;
+      img.alt = anime.title || "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.className = "h-full w-full object-cover";
+      wireCoverImage(img, anime.title);
+      coverWrap.appendChild(img);
+    } else {
+      coverWrap.appendChild(placeholder(anime.title));
+    }
+    // Type chip (top-left)
+    const typeChip = document.createElement("span");
+    typeChip.className =
+      "absolute left-1.5 top-1.5 rounded-full bg-zinc-950/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white backdrop-blur";
+    typeChip.textContent = anime.animeType === "tv" ? "📺 Serie" : "🎬 Peli";
+    coverWrap.appendChild(typeChip);
+    // Year (top-right)
+    if (anime.year) {
+      const yb = document.createElement("span");
+      yb.className =
+        "absolute right-1.5 top-1.5 rounded-full bg-zinc-950/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white backdrop-blur";
+      yb.textContent = String(anime.year);
+      coverWrap.appendChild(yb);
+    }
+    article.appendChild(coverWrap);
+
+    // Body
+    const body = document.createElement("div");
+    body.className = "flex flex-col gap-1 p-1.5";
+
+    const titleEl = document.createElement("h3");
+    titleEl.className = "truncate font-semibold text-zinc-900 dark:text-white";
+    titleEl.textContent = anime.title || "";
+    body.appendChild(titleEl);
+
+    // Actions row: status dropdown + remove
+    const actionsRow = document.createElement("div");
+    actionsRow.className = "flex items-center gap-1.5";
+
+    // Status button
+    const statusBtn = document.createElement("button");
+    statusBtn.type = "button";
+    statusBtn.dataset.statusButton = "";
+    statusBtn.dataset.animeId = anime.id;
+    statusBtn.dataset.status = anime.status;
+    statusBtn.setAttribute("aria-haspopup", "listbox");
+    statusBtn.setAttribute("aria-expanded", "false");
+    statusBtn.className =
+      "flex flex-1 items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 outline-none transition hover:border-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:focus:border-white/30";
+    const labelEl = document.createElement("span");
+    labelEl.dataset.statusLabel = "";
+    labelEl.className = "truncate";
+    labelEl.textContent = statusLabels[anime.status] || anime.status;
+    statusBtn.appendChild(labelEl);
+    const caret = document.createElement("span");
+    caret.setAttribute("aria-hidden", "true");
+    caret.className = "shrink-0 text-[10px] text-zinc-400 dark:text-zinc-500";
+    caret.textContent = "▾";
+    statusBtn.appendChild(caret);
+    // Los listeners se manejan por delegación en el document (ver más abajo),
+    // así funcionan tanto para cards del SSR como para cards creadas en runtime.
+    actionsRow.appendChild(statusBtn);
+
+    // Remove button
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.dataset.removeButton = "";
+    removeBtn.dataset.animeId = anime.id;
+    removeBtn.setAttribute("aria-label", "Eliminar");
+    removeBtn.title = "Eliminar";
+    removeBtn.className =
+      "grid h-6 w-6 shrink-0 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-200 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-red-400";
+    const removeIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    removeIcon.setAttribute("viewBox", "0 0 16 16");
+    removeIcon.setAttribute("class", "h-3 w-3");
+    removeIcon.setAttribute("fill", "none");
+    removeIcon.setAttribute("stroke", "currentColor");
+    removeIcon.setAttribute("stroke-width", "1.5");
+    removeIcon.setAttribute("stroke-linecap", "round");
+    const removePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    removePath.setAttribute("d", "M3 4h10M6 4V2.5h4V4M5 4l1 9h4l1-9");
+    removeIcon.appendChild(removePath);
+    removeBtn.appendChild(removeIcon);
+    actionsRow.appendChild(removeBtn);
+
+    body.appendChild(actionsRow);
+    article.appendChild(body);
+    return article;
+  }
+
+  // Status dropdown menu (singleton)
+  let statusMenu = null;
+
+  // Delegated listeners: capturan clicks en [data-status-button] y
+  // [data-remove-button] para cards que vienen del SSR Y para cards creadas
+  // en runtime. Funcionan aunque el elemento no esté en el DOM al momento
+  // de registrar el listener.
+  document.addEventListener("click", (e) => {
+    const statusBtn = e.target.closest && e.target.closest("[data-status-button]");
+    if (statusBtn) {
+      e.stopPropagation();
+      const id = statusBtn.dataset.animeId;
+      const currentStatus = statusBtn.dataset.status;
+      openStatusMenu(statusBtn, id, currentStatus);
+      return;
+    }
+    const removeBtn = e.target.closest && e.target.closest("[data-remove-button]");
+    if (removeBtn) {
+      e.stopPropagation();
+      const id = removeBtn.dataset.animeId;
+      removeAnime(id);
+      return;
+    }
+  });
+
+  // Outside-close: listener único en capture phase. Cierra el menú si el
+  // click NO fue dentro del menú NI sobre un status-button.
+  document.addEventListener("click", (e) => {
+    if (!statusMenu || statusMenu.classList.contains("hidden")) return;
+    if (statusMenu.contains(e.target)) return;
+    if (e.target.closest && e.target.closest("[data-status-button]")) return;
+    closeStatusMenu();
+  }, true);
+  function ensureStatusMenu() {
+    if (statusMenu) return statusMenu;
+    statusMenu = document.createElement("div");
+    statusMenu.dataset.statusMenu = "";
+    statusMenu.className =
+      "fixed z-[9999] hidden rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
+    statusMenu.setAttribute("role", "listbox");
+    document.body.appendChild(statusMenu);
+    statusMenu.addEventListener("click", async (e) => {
+      const opt = e.target.closest("[data-status-option]");
+      if (!opt) return;
+      const id = opt.dataset.animeId;
+      const status = opt.dataset.status;
+      closeStatusMenu();
+      await setStatus(id, status);
+    });
+    return statusMenu;
+  }
+  function openStatusMenu(anchor, id, currentStatusValue) {
+    const m = ensureStatusMenu();
+    closeStatusMenu();
+    m.replaceChildren();
+    for (const s of statusKeys) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.dataset.statusOption = "";
+      btn.dataset.animeId = id;
+      btn.dataset.status = s;
+      btn.setAttribute("role", "option");
+      const isCurrent = s === currentStatusValue;
+      btn.setAttribute("aria-selected", isCurrent ? "true" : "false");
+      btn.className =
+        "flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium text-zinc-900 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-white/10";
+      const label = document.createElement("span");
+      label.textContent = statusLabels[s] || s;
+      btn.appendChild(label);
+      if (isCurrent) {
+        const check = document.createElement("span");
+        check.className = "shrink-0 text-zinc-400 dark:text-zinc-500";
+        check.textContent = "✓";
+        btn.appendChild(check);
+      }
+      m.appendChild(btn);
+    }
+    const rect = anchor.getBoundingClientRect();
+    const gap = 4;
+    const menuH = statusKeys.length * 32 + 8;
+    const spaceBelow = window.innerHeight - rect.bottom - gap - 8;
+    const top = spaceBelow >= menuH ? rect.bottom + gap : Math.max(8, rect.top - menuH - gap);
+    const menuW = Math.max(rect.width, 160);
+    const maxLeft = window.innerWidth - menuW - 8;
+    const left = Math.min(Math.max(8, rect.left), maxLeft);
+    m.style.top = top + "px";
+    m.style.left = left + "px";
+    m.style.minWidth = menuW + "px";
+    m.classList.remove("hidden");
+    anchor.setAttribute("aria-expanded", "true");
+    // El listener global de outside-close ya está registrado (capture phase,
+    // una sola vez al cargar el script). No hace falta re-registrarlo.
+  }
+  function closeStatusMenu() {
+    if (!statusMenu) return;
+    statusMenu.classList.add("hidden");
+    statusMenu.replaceChildren();
+    document.querySelectorAll("[data-status-button][aria-expanded=true]").forEach((b) => {
+      b.setAttribute("aria-expanded", "false");
+    });
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeStatusMenu();
+  });
+  window.addEventListener("resize", closeStatusMenu);
+  window.addEventListener("scroll", (e) => {
+    if (!statusMenu || statusMenu.classList.contains("hidden")) return;
+    if (statusMenu.contains(e.target)) return;
+    closeStatusMenu();
+  }, true);
+
+  async function setStatus(id, status) {
+    try {
+      const res = await fetch("/anime/api/set-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      if (!res.ok) throw new Error("set-status failed");
+      const data = await res.json();
+      // Update card in place
+      const card = findCard(id);
+      if (card) {
+        card.dataset.status = data.anime.status;
+        const btn = card.querySelector("[data-status-button]");
+        if (btn) btn.dataset.status = data.anime.status;
+        const lbl = card.querySelector("[data-status-label]");
+        if (lbl) lbl.textContent = statusLabels[data.anime.status] || data.anime.status;
+      }
+      updateCounts();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function removeAnime(id) {
+    if (!confirm("¿Eliminar este item?")) return;
+    try {
+      const res = await fetch("/anime/api/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error("remove failed");
+      const card = findCard(id);
+      if (card) card.remove();
+      updateCounts();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function updateCounts() {
+    const cards = grid?.querySelectorAll("[data-anime-card]") || [];
+    const newCounts = { backlog: 0, watching: 0, finished: 0, movie: 0, tv: 0, total: 0 };
+    cards.forEach((c) => {
+      newCounts[c.dataset.status]++;
+      newCounts[c.dataset.animeType]++;
+      newCounts.total++;
+    });
+    // Update header count
+    if (animeCount) {
+      const n = cards.length;
+      animeCount.textContent = `${n} ${n === 1 ? "item" : "items"}`;
+    }
+    // Update filter chip counts
+    if (filterGroup) {
+      filterGroup.querySelectorAll("[data-status-filter]").forEach((btn) => {
+        const t = btn.dataset.statusFilter;
+        const counter = btn.querySelector("[data-filter-count]");
+        if (counter) {
+          counter.textContent = t === "all" ? cards.length : newCounts[t] || 0;
+        }
+      });
+    }
+    if (typeFilterGroup) {
+      typeFilterGroup.querySelectorAll("[data-type-filter]").forEach((btn) => {
+        const t = btn.dataset.typeFilter;
+        const counter = btn.querySelector("[data-filter-count]");
+        if (counter) {
+          counter.textContent = t === "all" ? cards.length : newCounts[t] || 0;
+        }
+      });
+    }
+    if (emptyState) emptyState.classList.toggle("hidden", cards.length > 0);
+    applyFilters();
+  }
+
+  // Listen for events from dialogs
+  window.addEventListener("anime:added", (e) => {
+    const m = e.detail.anime;
+    const card = buildAnimeCard(m);
+    grid?.prepend(card);
+    updateCounts();
+  });
+  window.addEventListener("anime:edited", (e) => {
+    const m = e.detail.anime;
+    const old = findCard(m.id);
+    if (old) {
+      const fresh = buildAnimeCard(m);
+      old.replaceWith(fresh);
+    }
+    updateCounts();
+  });
+
+  // Initial state
+  updateCounts();
+</script>

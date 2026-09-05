@@ -9,10 +9,11 @@ declare namespace App {
   }
 }
 
-declare module 'cloudflare:workers' {
-  interface Env extends WorkerConfig.Env {
+declare namespace Cloudflare {
+  interface Env {
     AUTH_PEPPER: string;
     INTERNAL_API_SECRET: string;
     BUNGIE_API_KEY: string;
+    TMDB_API_KEY?: string;
   }
 }

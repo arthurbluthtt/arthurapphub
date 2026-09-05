@@ -115,6 +115,7 @@ export const POST: APIRoute = async ({ request }) => {
       itemHash: weapon.hash,
       name: weapon.name,
       iconPath: weapon.icon,
+      tier: weapon.tier,
       perks: {
         barrel: perks.barrel,
         magazine: perks.magazine,

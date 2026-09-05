@@ -1,45 +1,22 @@
 import data from '../data/apps.json';
-import type { Category, App } from './types';
+import type { App, AppsData, Category } from './types';
 
-interface AppData {
-  id: string;
-  name: string;
-  description: string;
-  url: string;
-  redir?: string;
-  icon: string;
-  category: string;
-  tags?: string[];
-  featured?: boolean;
-  /**
-   * Si true, la app participa del flujo SSO del hub (exchange code + session
-   * token + pin_hash derivable). Si false (u omitido), la app es interna y se
-   * accede directamente con la cookie `hub_sess` (no requiere exchange).
-   */
-  sso?: boolean;
-}
-
-interface AppsFile {
-  categories: Category[];
-  apps: AppData[];
-}
-
-const appsFile = data as AppsFile;
+const appsFile = data as AppsData;
 
 export const categories: Category[] = appsFile.categories ?? [];
-export const apps: App[] = (appsFile.apps ?? []) as App[];
+export const apps: App[] = appsFile.apps ?? [];
 
 /** Todas las apps registradas (internas + externas con SSO). */
-export function getAllApps(): AppData[] {
+export function getAllApps(): App[] {
   return appsFile.apps ?? [];
 }
 
 /** Solo apps que participan del flujo SSO (sso: true explícito). */
-export function getSsoApps(): AppData[] {
+export function getSsoApps(): App[] {
   return (appsFile.apps ?? []).filter((a) => a.sso === true);
 }
 
-export function findApp(id: string): AppData | undefined {
+export function findApp(id: string): App | undefined {
   return (appsFile.apps ?? []).find((a) => a.id === id);
 }
 

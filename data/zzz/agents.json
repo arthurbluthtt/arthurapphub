@@ -1,0 +1,65 @@
+[
+  {
+    "id": "miyabi",
+    "game8Id": "436881",
+    "name": "Miyabi",
+    "specialty": "anomaly",
+    "attribute": "frost",
+    "rarity": "S",
+    "icon": null
+  },
+  {
+    "id": "ellen-joe",
+    "game8Id": "436884",
+    "name": "Ellen Joe",
+    "specialty": "attack",
+    "attribute": "ice",
+    "rarity": "S",
+    "icon": null
+  },
+  {
+    "id": "anby",
+    "game8Id": "436705",
+    "name": "Anby",
+    "specialty": "stun",
+    "attribute": "electric",
+    "rarity": "S",
+    "icon": null
+  },
+  {
+    "id": "soukaku",
+    "game8Id": "436880",
+    "name": "Soukaku",
+    "specialty": "support",
+    "attribute": "ice",
+    "rarity": "S",
+    "icon": null
+  },
+  {
+    "id": "rina",
+    "game8Id": "436876",
+    "name": "Rina",
+    "specialty": "support",
+    "attribute": "electric",
+    "rarity": "S",
+    "icon": null
+  },
+  {
+    "id": "claret",
+    "game8Id": "597662",
+    "name": "Claret",
+    "specialty": "attack",
+    "attribute": "fire",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4580187/42db3ab20014620a68068c2528b420d7.png/show"
+  },
+  {
+    "id": "roxy",
+    "game8Id": "597672",
+    "name": "Roxy",
+    "specialty": "defense",
+    "attribute": "electric",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4581329/c9fee2449e9b410858a668b62438f01f.png/show"
+  }
+]

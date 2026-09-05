@@ -1,6 +1,6 @@
 ---
 import { env } from 'cloudflare:workers';
-import { lookupSession, readCookie } from '../lib/auth';
+import { lookupSession, readCookie, safeNextPath } from '../lib/auth';
 
 export const prerender = false;
 
@@ -11,6 +11,6 @@ if (sess) {
   return Astro.redirect('/');
 }
 
-const next = Astro.url.searchParams.get('next');
-return Astro.redirect(next ? `/?next=${encodeURIComponent(next)}` : '/');
+const next = safeNextPath(Astro.url.searchParams.get('next'));
+return Astro.redirect(next !== '/' ? `/?next=${encodeURIComponent(next)}` : '/');
 ---

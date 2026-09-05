@@ -1,5 +1,7 @@
 # Design system — ArthurAppHub
 
+> Ver también: [INDEX.md](INDEX.md) (mapa), [docs/architecture.md](docs/architecture.md) (stack), [docs/decisions.md](docs/decisions.md) (decisiones).
+
 Este es el **diseño canónico** de ArthurAppHub. Cualquier cambio de colores / tipografía / spacing debe venir acá primero, después propagarse al código.
 
 La línea base la define el **lanzador de apps** (grid + header + theme toggle). La sub-app **D2 Wishlist** la **extiende** con un set de patrones más rico (modales, dropdowns, chips flotantes, filtros) que se convierten en el **estándar** para cualquier futura app vinculada al hub. Si vas a agregar una app nueva, seguí esta guía completa.
@@ -66,8 +68,11 @@ La línea base la define el **lanzador de apps** (grid + header + theme toggle).
 - **Botones / chips**: `rounded-lg` (8px)
 - **Chips pequeños** (filtros, iconos): `rounded-full` (pill) + `px-3 py-1.5 text-xs`
 - **Indicador de estado**: `h-2 w-2 rounded-full`
-- **Container**: `max-w-6xl mx-auto px-4` (default). `max-w-[1760px]` en xl, `max-w-[2240px]` en 2xl para sub-apps con grids densos.
-- **Gap entre cards**: `gap-4` (16px). `gap-6` para grids más amplios.
+- **Container**: `max-w-6xl mx-auto px-4` (default). `max-w-[1760px]` en xl, `max-w-[2240px]` en 2xl para hub (6 por fila en `AppGrid`) y sub-apps con grids densos (`games xl:6`, `destiny xl:6`, `zzz` fluido `1→2→3→4`, `subs` `1→2→3→4→5` 5 por fila fix hueco).
+- **Gap entre cards**: `gap-4` (16px) estándar. `gap-3` (12px) para grids fluidos con cards anchas. `gap-6` para grids más amplios.
+- **Hub grid**: `grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6` en `AppGrid.astro`. Ver `STATE.md` hub deploy.
+- **Grid fluido para cards anchas (ZZZ estándar)**: usar cuando la card es ancha (>300px) o split interno (ej. ZZZ `w-[62%]/38%` `aspect-[1/2]`). Patrón: `grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4` + card `flex w-full` (nunca `w-[500px]` fijo). El `1fr` distribuye el sobrante y elimina el hueco a la derecha (`flex flex-wrap justify-start` con ancho fijo dejaba ~150px: `3*588+24=1788 > 1760` no entraba la 4ª). Interno `w-[62%] imagen aspect-[1/2] 1080×2160` + `w-[38%] info` escala con la celda. Requiere `BaseLayout contentMaxWidth="max-w-[1760px] 2xl:max-w-[2240px]"`. Usar también en `buildCard()` JS (`a.className='flex w-full ...'`). Ver `STATE.md` ZZZ deploy `d7c33f38` (4 por fila en 2xl sin hueco).
+- **Grid fluido portrait para cards angostas (media/manga/book/anime)**: `grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8` + card `w-full` (antes `flex flex-wrap justify-start gap-3` + `w-[120→220]` dejaba hueco a derecha en `1760/2240`). `aspect-[2/3]` (manga/book) / `aspect-[4/5]` (media/anime) se mantiene. `games` usa variante `gap-4 grid-cols-1 sm:2 md:3 lg:5 xl:6 2xl:7` por cover `460/215` más ancha.
 - **Padding de página**: `py-10` arriba del main
 
 ## Componentes — línea base (lanzador de apps)
@@ -80,9 +85,10 @@ La línea base la define el **lanzador de apps** (grid + header + theme toggle).
 - Username (si logueado): `text-sm text-zinc-500` (visible solo si hay cookie `hub_user`, leída via JS).
 - Salir: chip pequeño `rounded-full border border-zinc-200 dark:border-white/10` con hover.
 
-### `AppCard.astro`
+### `AppGrid.astro` / `AppCard.astro`
 
-- Card de cristal: `dark:bg-white/[0.025]` sobre `bg-zinc-200`/`dark:border-white/10`.
+- **Grid**: `grid-cols-1 sm:2 md:3 lg:4 xl:6` + `gap-4` + `contentMaxWidth max-w-6xl xl:max-w-[1760px] 2xl:max-w-[2240px]` en `index.astro` (hub 6 por fila en xl, 9 apps → 6+3).
+- **Card** de cristal: `dark:bg-white/[0.025]` sobre `bg-zinc-200`/`dark:border-white/10`.
 - Hover sutil: border más opaco (`white/25`) + lift de 2px + bg ligeramente más opaco.
 - Nombre del app: `text-zinc-900 dark:text-white font-semibold`.
 - Descripción: `text-zinc-500` (idéntica en ambos modos).
@@ -214,6 +220,23 @@ Para filtros pill con conteo:
 - **Chip base**: `rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium uppercase tracking-wider text-zinc-700 hover:bg-zinc-100 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:bg-white/10`.
 - **Chip activo**: `bg-zinc-900 text-white dark:bg-white dark:text-zinc-900` (invertido, alto contraste).
 - **Conteo**: agregar `<span class="ml-1.5 text-zinc-500">12</span>` (sin fondo propio, hereda color del chip).
+
+### Buscador (SearchBar)
+Para listas con muchas tarjetas (D2, Uma, trackers, ZZZ, Subs). Patrón `src/components/SearchBar.astro` `Buscar...`:
+- **Input**: `rounded-lg border border-zinc-300 bg-white py-2 pl-9 pr-9 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white` con icono `⌕` `absolute left-3` y clear `×` `absolute right-2` `data-search-clear hidden` hasta tener valor.
+- **Dataset**: cada `<article>` lleva `data-search={name.toLowerCase()}` (D2 solo `name`, Uma `name+" "+version`, Games `name+" "+saga`, Media/Manga/Book/Anime `title`, ZZZ `characterName`, Subs `name`). `w-full` + `grid` fluido ya registrado.
+- **JS**: `let currentSearch=""` + debounce 200ms `setTimeout 200` sobre `input` → `currentSearch=(value).trim().toLowerCase()` + `toggleClear()` + `applyFilters()` / `applySearch()`. Clear button `click` → resetea y `focus()`. Sin URL (`history.replaceState`), solo memoria — combina con `statusOk && typeOk && qOk` en `applyFilters`. En ZZZ `currentSearch` deshabilita drag (handle oculto, `draggable=false`) — limpiar `Buscar...` para reordenar.
+- **Construcción runtime**: `build*Card()` setea `article.dataset.search = (title/name).toLowerCase()` para que el filtro aplique a cards creadas tras `added`/`edited`.
+
+### Reordenar ZZZ (drag handle, 0 deps, fix 2D)
+Para ordenar por importancia. Patrón handle `⋮⋮` `src/components/zzz/ZzzCard.astro` + `src/pages/zzz/index.astro`:
+- **Handle**: `<button data-drag-handle aria-label="Arrastrar" title="Arrastrar para ordenar (mantener pulsado en móvil)" class="absolute left-1 top-1 z-10 grid h-7 w-7 place-items-center rounded bg-zinc-950/60 text-white backdrop-blur cursor-grab active:cursor-grabbing touch-manipulation opacity-80 md:opacity-0 md:group-hover:opacity-100">⋮⋮</button>` siempre visible en móvil (`opacity-80`), hover en desktop. Se oculta si `Buscar...` tiene texto (`currentSearch` → `draggable=false` + `display:none` + `title "Limpia la búsqueda para reordenar"`).
+- **Card**: `group draggable="true"` + `data-zzz-card data-zzz-id data-search`. `grid gap-3 grid-cols-1 md:2 xl:3 2xl:4` mantiene layout. Solo se permite drag si `mousedown` vino del handle (`canDrag` + `pendingHandleCard`), no de toda la card (evita conflicto con ✎/×).
+- **JS 0 deps — desktop**: `mousedown` sobre handle → `canDrag=true` + `pendingHandleCard`; `dragstart` valida `canDrag && pendingHandleCard && !currentSearch` → `dragId/dragEl` + `dragging opacity-50 ring-2`. `dragover` `preventDefault` + `getClosestCard(x,y)` 2D (distancia a `cx = left+width/2, cy = top+height/2`, excluye `.dragging` y `.hidden`, `before = y<cy || (|y-cy|<h/3 && x<cx)`) → `insertBefore(dragEl, closest)` o `closest.nextSibling` / `appendChild`. `drop/dragend` limpia y `persistOrder()`.
+- **JS 0 deps — móvil**: `touchstart` sobre handle + `setTimeout 180ms` (mantener aplastado) activa `dragging`, `touchmove` con `clientX/clientY` → mismo `getClosestCard(x,y)` 2D, `touchend` persiste. Sin este fix Y-only (`y < top+height/2`) siempre insertaba en el 1º puesto en grid 2D.
+- **Persistencia**: `persistOrder() → orderedIds=[...grid.querySelectorAll('[data-zzz-card]')].map(el=>el.dataset.zzzId)` → `builds.sort` local + `POST /zzz/api/reorder {orderedIds}`.
+- **API**: `POST /zzz/api/reorder` valida permutación exacta `reorderZzz()` (`position 0..n`, `batch UPDATE position`, `idx_zzz_user_position`).
+- **Store**: `migrations/0019_zzz_position.sql` `position INTEGER` + `idx_zzz_user_position`, `listZzz ORDER BY COALESCE(position,9999), created_at ASC`, `addZzz MAX(position)+1`.
 
 ### Cards de armas (D2 Wishlist)
 

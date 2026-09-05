@@ -1,0 +1,500 @@
+---
+import { MEDIA_TYPES, MEDIA_TYPE_LABELS } from '../../lib/media/store';
+---
+
+<button
+  type="button"
+  data-add-media-chip
+  class="fixed bottom-4 right-4 z-30 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 shadow-md transition hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-zinc-800 dark:text-white"
+  aria-haspopup="dialog"
+>
+  <span aria-hidden="true">+</span>
+  <span>Agregar</span>
+</button>
+
+<dialog
+  data-add-media-dialog
+  class="backdrop:bg-zinc-900/95 dark:backdrop:bg-zinc-950/95 m-auto max-h-[90vh] w-[min(560px,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+>
+  <div class="flex items-center justify-between gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
+    <div>
+      <h2 class="text-base font-semibold">Agregar a MediaTracker</h2>
+      <p class="text-xs uppercase tracking-wider text-zinc-500">Busca en TMDB o agregá manual</p>
+    </div>
+    <button
+      type="button"
+      data-add-media-close
+      aria-label="Cerrar"
+      class="grid h-8 w-8 place-items-center rounded-full hover:bg-zinc-100 dark:hover:bg-white/10"
+    >
+      <span aria-hidden="true" class="text-lg leading-none">×</span>
+    </button>
+  </div>
+
+  <div class="flex border-b border-zinc-200 dark:border-white/10" data-add-media-tabs>
+    <button
+      type="button"
+      data-add-media-tab="search"
+      class="flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-white/10"
+      aria-selected="true"
+    >
+      Buscar en TMDB
+    </button>
+    <button
+      type="button"
+      data-add-media-tab="manual"
+      class="flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-white/10"
+      aria-selected="false"
+    >
+      Agregar manual
+    </button>
+  </div>
+
+  <div data-add-media-pane="search" class="p-4">
+    <input
+      type="search"
+      placeholder="Buscar peli o serie..."
+      data-add-media-input
+      autocomplete="off"
+      spellcheck="false"
+      class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+    />
+    <p
+      data-add-media-empty
+      class="hidden mt-3 text-center text-xs text-zinc-500"
+    >
+      Escribí el nombre y elegí un resultado.
+    </p>
+    <p
+      data-add-media-no-tmdb
+      class="hidden mt-3 text-center text-xs text-amber-600 dark:text-amber-400"
+    >
+      TMDB no está configurado en el worker. Usá "Agregar manual" para escribir el item a mano.
+    </p>
+    <div
+      data-add-media-results
+      class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4"
+    >
+    </div>
+  </div>
+
+  <div data-add-media-pane="manual" class="hidden p-4">
+    <form data-add-media-manual-form class="flex flex-col gap-3">
+      <div>
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Tipo</span>
+          <select
+            data-add-manual-type
+            class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30 [&>option]:bg-white dark:[&>option]:bg-zinc-800"
+          >
+            {MEDIA_TYPES.map((t) => (
+              <option value={t}>{MEDIA_TYPE_LABELS[t]}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <label class="block">
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Título *</span>
+        <input
+          type="text"
+          name="title"
+          data-add-manual-title
+          maxlength="120"
+          required
+          autocomplete="off"
+          class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+        />
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Año (opcional)</span>
+          <input
+            type="number"
+            name="year"
+            data-add-manual-year
+            min="1888"
+            max="2100"
+            class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+          />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Director/Creador (opcional)</span>
+          <input
+            type="text"
+            name="director"
+            data-add-manual-director
+            maxlength="120"
+            autocomplete="off"
+            class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+          />
+        </label>
+      </div>
+      <label class="block">
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">URL de portada (opcional)</span>
+        <input
+          type="url"
+          name="coverUrl"
+          data-add-manual-cover
+          autocomplete="off"
+          spellcheck="false"
+          class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+        />
+      </label>
+      <div class="flex items-center justify-end gap-2 border-t border-zinc-200 pt-3 dark:border-white/10">
+        <button
+          type="submit"
+          data-add-manual-submit
+          class="rounded-lg bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+        >
+          Agregar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <p
+    data-add-media-status
+    class="hidden m-0 border-t border-zinc-200 px-4 py-2 text-center text-xs text-zinc-500 dark:border-white/10"
+  >
+  </p>
+</dialog>
+
+<script>
+  (() => {
+    if (window.__addMediaDialogInit) return;
+    window.__addMediaDialogInit = true;
+
+    const dialog = document.querySelector('[data-add-media-dialog]');
+    const chip = document.querySelector('[data-add-media-chip]');
+    const closeBtn = document.querySelector('[data-add-media-close]');
+    const tabs = document.querySelectorAll('[data-add-media-tab]');
+    const panes = {
+      search: document.querySelector('[data-add-media-pane="search"]'),
+      manual: document.querySelector('[data-add-media-pane="manual"]'),
+    };
+    const input = document.querySelector('[data-add-media-input]');
+    const resultsEl = document.querySelector('[data-add-media-results]');
+    const emptyEl = document.querySelector('[data-add-media-empty]');
+    const noTmdbEl = document.querySelector('[data-add-media-no-tmdb]');
+    const statusEl = document.querySelector('[data-add-media-status]');
+
+    const manualForm = document.querySelector('[data-add-media-manual-form]');
+    const manualType = document.querySelector('[data-add-manual-type]');
+    const manualTitle = document.querySelector('[data-add-manual-title]');
+    const manualYear = document.querySelector('[data-add-manual-year]');
+    const manualDirector = document.querySelector('[data-add-manual-director]');
+    const manualCover = document.querySelector('[data-add-manual-cover]');
+    const manualSubmit = document.querySelector('[data-add-manual-submit]');
+
+    let currentTab = 'search';
+    let debounce = 0;
+    let bodyLocked = false;
+    let lastResults = [];
+
+    function lockBodyScroll() {
+      if (bodyLocked) return;
+      bodyLocked = true;
+      const sbw = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
+    }
+    function unlockBodyScroll() {
+      if (!bodyLocked) return;
+      bodyLocked = false;
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+    function showStatus(text, isError) {
+      if (!statusEl) return;
+      statusEl.textContent = text;
+      statusEl.classList.remove('hidden', 'text-red-500', 'dark:text-red-400');
+      if (isError) {
+        statusEl.classList.add('text-red-500', 'dark:text-red-400');
+      }
+    }
+    function hideStatus() {
+      if (!statusEl) return;
+      statusEl.classList.add('hidden');
+      statusEl.textContent = '';
+    }
+
+    async function readErrorCode(res) {
+      try {
+        const data = await res.clone().json();
+        return typeof data?.error === 'string' ? data.error : '';
+      } catch {
+        return '';
+      }
+    }
+
+    function showApiError(code, fallback) {
+      const messages = {
+        unauthorized: 'Tu sesión venció. Volvé a iniciar sesión.',
+        duplicate: 'Ya está en tu lista.',
+        tmdb_not_configured: 'TMDB no está configurado. Usá Agregar manual.',
+        tmdb_failed: 'TMDB no responde correctamente. Probá de nuevo.',
+        tmdb_not_found: 'No encontrado en TMDB.',
+        invalid_body: 'Datos inválidos.',
+        invalid_year: 'El año debe ser un entero entre 1888 y 2100.',
+        invalid_cover_url: 'URL de portada inválida.',
+      };
+      showStatus(messages[code] || fallback, true);
+    }
+
+    function setTab(name) {
+      currentTab = name;
+      tabs.forEach((t) => {
+        const active = t.dataset.addMediaTab === name;
+        t.setAttribute('aria-selected', active ? 'true' : 'false');
+        t.classList.toggle('text-zinc-700', active);
+        t.classList.toggle('dark:text-zinc-200', active);
+        t.classList.toggle('text-zinc-500', !active);
+        t.classList.toggle('dark:text-zinc-400', !active);
+      });
+      panes.search?.classList.toggle('hidden', name !== 'search');
+      panes.manual?.classList.toggle('hidden', name !== 'manual');
+    }
+
+    function openDialog() {
+      clearTimeout(debounce);
+      seq++;
+      input.value = '';
+      resultsEl.replaceChildren();
+      resultsEl.classList.add('hidden');
+      emptyEl.classList.remove('hidden');
+      noTmdbEl.classList.add('hidden');
+      lastResults = [];
+      manualForm?.reset();
+      setTab('search');
+      hideStatus();
+      lockBodyScroll();
+      dialog?.showModal();
+      setTimeout(() => input?.focus(), 0);
+    }
+    function closeDialog() {
+      dialog?.close();
+      unlockBodyScroll();
+    }
+
+    chip?.addEventListener('click', openDialog);
+    closeBtn?.addEventListener('click', closeDialog);
+    dialog?.addEventListener('click', (e) => {
+      if (e.target === dialog) closeDialog();
+    });
+    dialog?.addEventListener('close', unlockBodyScroll);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dialog?.open) closeDialog();
+    });
+
+    tabs.forEach((t) => {
+      t.addEventListener('click', () => setTab(t.dataset.addMediaTab));
+    });
+
+    // Search debounced
+    let seq = 0;
+    async function runSearch(q) {
+      if (!q) {
+        seq++;
+        resultsEl.replaceChildren();
+        resultsEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        noTmdbEl.classList.add('hidden');
+        hideStatus();
+        return;
+      }
+      const mySeq = ++seq;
+      emptyEl.classList.add('hidden');
+      noTmdbEl.classList.add('hidden');
+      hideStatus();
+      try {
+        const res = await fetch(`/media/api/search?q=${encodeURIComponent(q)}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (res.status === 503) {
+          noTmdbEl.classList.remove('hidden');
+          resultsEl.replaceChildren();
+          resultsEl.classList.add('hidden');
+          return;
+        }
+        if (res.status === 401) {
+          showApiError('unauthorized', 'No autorizado para buscar.');
+          return;
+        }
+        if (res.status === 502) {
+          showApiError('tmdb_failed', 'TMDB no responde correctamente.');
+          return;
+        }
+        if (!res.ok) {
+          showApiError(await readErrorCode(res), 'Error al buscar.');
+          return;
+        }
+        const data = await res.json();
+        if (mySeq !== seq) return; // stale
+        renderResults(Array.isArray(data.results) ? data.results : []);
+      } catch (err) {
+        if (mySeq !== seq) return;
+        resultsEl.replaceChildren();
+        resultsEl.classList.add('hidden');
+        showStatus('Error de red al buscar en TMDB.', true);
+      }
+    }
+    function renderResults(results) {
+      lastResults = results;
+      resultsEl.replaceChildren();
+      if (results.length === 0) {
+        resultsEl.classList.add('hidden');
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+      resultsEl.classList.remove('hidden');
+      emptyEl.classList.add('hidden');
+      noTmdbEl.classList.add('hidden');
+      for (const r of results) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className =
+          'group flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white text-left transition hover:border-zinc-400 dark:border-white/10 dark:bg-white/[0.025] dark:hover:border-white/30';
+        const imgWrap = document.createElement('div');
+        imgWrap.className =
+          'relative aspect-[2/3] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800';
+        if (r.coverUrl) {
+          const img = document.createElement('img');
+          img.src = r.coverUrl;
+          img.alt = r.title;
+          img.loading = 'lazy';
+          img.decoding = 'async';
+          img.className = 'h-full w-full object-cover';
+          img.onerror = () => {
+            img.replaceWith(placeholder(r.title));
+          };
+          imgWrap.appendChild(img);
+        } else {
+          imgWrap.appendChild(placeholder(r.title));
+        }
+        function placeholder(title) {
+          const ph = document.createElement('div');
+          ph.className =
+            'grid h-full w-full place-items-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-white/[0.04] dark:to-white/[0.06]';
+          const sp = document.createElement('span');
+          sp.className = 'text-base font-semibold text-zinc-400 dark:text-zinc-500';
+          sp.textContent = String(title || '?')
+            .split(/\s+/)
+            .slice(0, 2)
+            .map((w) => w[0] || '')
+            .join('')
+            .toUpperCase();
+          ph.appendChild(sp);
+          return ph;
+        }
+        btn.appendChild(imgWrap);
+        const info = document.createElement('div');
+        info.className = 'flex flex-col gap-0.5 p-1.5';
+        const titleEl = document.createElement('span');
+        titleEl.className = 'truncate text-xs font-semibold';
+        titleEl.textContent = r.title;
+        info.appendChild(titleEl);
+        const meta = document.createElement('span');
+        meta.className = 'truncate text-[10px] uppercase tracking-wider text-zinc-500';
+        meta.textContent = `${r.mediaType === 'tv' ? '📺 Serie' : '🎬 Peli'}${r.year ? ' · ' + r.year : ''}`;
+        info.appendChild(meta);
+        btn.appendChild(info);
+        btn.addEventListener('click', () => addFromResult(r));
+        resultsEl.appendChild(btn);
+      }
+    }
+    input?.addEventListener('input', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => runSearch(input.value.trim()), 250);
+    });
+
+    async function addFromResult(r) {
+      if (manualSubmit) manualSubmit.disabled = true;
+      showStatus('Agregando...', false);
+      try {
+        const res = await fetch('/media/api/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ tmdbId: r.tmdbId, mediaType: r.mediaType }),
+        });
+        if (res.status === 201) {
+          const data = await res.json();
+          showStatus('Agregado.', false);
+          window.dispatchEvent(new CustomEvent('media:added', { detail: { media: data.media } }));
+          setTimeout(closeDialog, 200);
+        } else if (res.status === 409) {
+          showApiError('duplicate', 'Ya está en tu lista.');
+        } else if (res.status === 404) {
+          showApiError('tmdb_not_found', 'No encontrado en TMDB.');
+        } else if (res.status === 503) {
+          showApiError('tmdb_not_configured', 'TMDB no configurado. Usá Agregar manual.');
+        } else if (res.status === 502) {
+          showApiError('tmdb_failed', 'TMDB no responde correctamente.');
+        } else if (res.status === 401) {
+          showApiError('unauthorized', 'No autorizado para agregar.');
+        } else {
+          showApiError(await readErrorCode(res), 'Error al agregar.');
+        }
+      } catch (err) {
+        showStatus('Error de red', true);
+      } finally {
+        if (manualSubmit) manualSubmit.disabled = false;
+      }
+    }
+
+    manualForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideStatus();
+      const title = manualTitle.value.trim();
+      if (!title) {
+        showStatus('Título requerido', true);
+        manualTitle.focus();
+        return;
+      }
+      const coverUrl = manualCover.value.trim() || null;
+      if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
+        showStatus('URL de portada inválida', true);
+        manualCover.focus();
+        return;
+      }
+      const yearText = manualYear.value.trim();
+      const year = yearText ? Number(yearText) : null;
+      if (year !== null && (!Number.isSafeInteger(year) || year < 1888 || year > 2100)) {
+        showStatus('El año debe ser un entero entre 1888 y 2100.', true);
+        manualYear.focus();
+        return;
+      }
+      manualSubmit.disabled = true;
+      showStatus('Agregando...', false);
+      try {
+        const body = {
+          mediaType: manualType.value,
+          title,
+          year,
+          director: manualDirector.value.trim() || null,
+          coverUrl,
+        };
+        const res = await fetch('/media/api/add-manual', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.status === 201) {
+          const data = await res.json();
+          showStatus('Agregado.', false);
+          window.dispatchEvent(new CustomEvent('media:added', { detail: { media: data.media } }));
+          setTimeout(closeDialog, 200);
+        } else if (res.status === 409) {
+          showApiError('duplicate', 'Ya está en tu lista.');
+        } else if (res.status === 401) {
+          showApiError('unauthorized', 'No autorizado para agregar.');
+        } else {
+          showApiError(await readErrorCode(res), 'Error al agregar.');
+        }
+      } catch (err) {
+        showStatus('Error de red', true);
+      } finally {
+        manualSubmit.disabled = false;
+      }
+    });
+  })();
+</script>

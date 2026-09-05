@@ -14,6 +14,11 @@
       "id": "finanzas",
       "label": "Finanzas",
       "color": "#fafafa"
+    },
+    {
+      "id": "media",
+      "label": "Media",
+      "color": "#fafafa"
     }
   ],
   "apps": [
@@ -62,6 +67,66 @@
       "icon": "🎮",
       "category": "gaming",
       "tags": ["juegos", "steam", "backlog"],
+      "featured": false,
+      "sso": false
+    },
+    {
+      "id": "mediatracker",
+      "name": "MediaTracker",
+      "description": "Mis series y películas con estado (mirando, por ver, terminada…)",
+      "url": "https://arthurapphub.arthurbluthtt.workers.dev/media",
+      "redir": "/media",
+      "icon": "🎬",
+      "category": "media",
+      "tags": ["series", "peliculas", "tmdb", "backlog"],
+      "featured": false,
+      "sso": false
+    },
+    {
+      "id": "mangatracker",
+      "name": "MangaTracker",
+      "description": "Mis mangas con estado (leyendo, por leer, terminado…)",
+      "url": "https://arthurapphub.arthurbluthtt.workers.dev/manga",
+      "redir": "/manga",
+      "icon": "📚",
+      "category": "media",
+      "tags": ["manga", "manhwa", "kitsu", "backlog"],
+      "featured": false,
+      "sso": false
+    },
+    {
+      "id": "booktracker",
+      "name": "BookTracker",
+      "description": "Mis libros con estado (leyendo, por leer, terminado…)",
+      "url": "https://arthurapphub.arthurbluthtt.workers.dev/books",
+      "redir": "/books",
+      "icon": "📖",
+      "category": "media",
+      "tags": ["libros", "books", "openlibrary", "backlog"],
+      "featured": false,
+      "sso": false
+    },
+    {
+      "id": "animetracker",
+      "name": "AnimeTracker",
+      "description": "Mis animes con estado (mirando, por ver, terminado…)",
+      "url": "https://arthurapphub.arthurbluthtt.workers.dev/anime",
+      "redir": "/anime",
+      "icon": "🌸",
+      "category": "media",
+      "tags": ["anime", "kitsu", "backlog"],
+      "featured": false,
+      "sso": false
+    },
+    {
+      "id": "zzz",
+      "name": "ZZZ",
+      "description": "Mis builds de Zenless Zone Zero (W-Engine, discos 4+2 y stats)",
+      "url": "https://arthurapphub.arthurbluthtt.workers.dev/zzz",
+      "redir": "/zzz",
+      "icon": "🌀",
+      "category": "gaming",
+      "tags": ["zzz", "builds"],
       "featured": false,
       "sso": false
     }

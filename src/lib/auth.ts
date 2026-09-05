@@ -22,6 +22,33 @@ export function normalizeUsername(s: string): string {
   return s.trim().toLowerCase();
 }
 
+/**
+ * Conserva únicamente destinos relativos al mismo origen del hub.
+ * Rechaza URLs absolutas y rutas scheme-relative (`//host`) para evitar
+ * open redirects después del login o registro.
+ */
+export function safeNextPath(value: string | null | undefined): string {
+  const candidate = value?.trim() ?? '';
+  if (
+    !candidate ||
+    !candidate.startsWith('/') ||
+    candidate.startsWith('//') ||
+    candidate.includes('\\') ||
+    /[\u0000-\u001f\u007f]/.test(candidate)
+  ) {
+    return '/';
+  }
+
+  try {
+    const parsed = new URL(candidate, 'https://arthurapphub.invalid');
+    if (parsed.origin !== 'https://arthurapphub.invalid') return '/';
+  } catch {
+    return '/';
+  }
+
+  return candidate;
+}
+
 export function isValidUsername(username: string): boolean {
   return USERNAME_RE.test(username);
 }
@@ -104,20 +131,38 @@ export async function createSession(
   return { sessionId, expiresAt };
 }
 
+const LOOKUP_CACHE_TTL_MS = 30_000;
+const sessionLookupCache = new Map<string, { expiresAt: number; result: { username: string; expiresAt: number } | null }>();
+
 export async function lookupSession(
   db: D1Database,
   sessionId: string
 ): Promise<{ username: string; expiresAt: number } | null> {
+  const now = Date.now();
+  // Cache en memoria: si ya consultamos este sessionId hace <30s, reusar.
+  // En Cloudflare Workers cada request es una isolate nueva, así que el cache
+  // vive solo dentro de la misma request (evita races).
+  if (sessionLookupCache.has(sessionId)) {
+    const entry = sessionLookupCache.get(sessionId)!;
+    if (entry.expiresAt > now) return entry.result;
+  }
+
   const row = await db
     .prepare('SELECT user_id, expires_at FROM sessions WHERE session_id = ?')
     .bind(sessionId)
     .first<{ user_id: string; expires_at: number }>();
-  if (!row) return null;
-  if (row.expires_at < Date.now()) {
-    await db.prepare('DELETE FROM sessions WHERE session_id = ?').bind(sessionId).run();
-    return null;
+
+  let result: { username: string; expiresAt: number } | null = null;
+  if (row) {
+    if (row.expires_at < now) {
+      await db.prepare('DELETE FROM sessions WHERE session_id = ?').bind(sessionId).run();
+    } else {
+      result = { username: row.user_id, expiresAt: row.expires_at };
+    }
   }
-  return { username: row.user_id, expiresAt: row.expires_at };
+
+  sessionLookupCache.set(sessionId, { expiresAt: now + LOOKUP_CACHE_TTL_MS, result });
+  return result;
 }
 
 export async function destroySession(db: D1Database, sessionId: string): Promise<void> {

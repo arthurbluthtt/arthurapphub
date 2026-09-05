@@ -1,0 +1,203 @@
+---
+import { BOOK_TYPES, BOOK_TYPE_LABELS } from '../../lib/books/store';
+---
+
+<dialog
+  data-edit-book-dialog
+  class="backdrop:bg-zinc-900/95 dark:backdrop:bg-zinc-950/95 m-auto max-h-[90vh] w-[min(560px,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+>
+  <div class="flex items-center justify-between gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
+    <div>
+      <h2 class="text-base font-semibold">Editar libro</h2>
+      <p class="text-xs uppercase tracking-wider text-zinc-500">Modificá los campos y guardá</p>
+    </div>
+    <button
+      type="button"
+      data-edit-book-close
+      aria-label="Cerrar"
+      class="grid h-8 w-8 place-items-center rounded-full hover:bg-zinc-100 dark:hover:bg-white/10"
+    >
+      <span aria-hidden="true" class="text-lg leading-none">×</span>
+    </button>
+  </div>
+
+  <form data-edit-book-form class="flex flex-col gap-3 p-4">
+    <label class="block">
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Tipo</span>
+      <select
+        data-edit-book-type
+        class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30 [&>option]:bg-white dark:[&>option]:bg-zinc-800"
+      >
+        {BOOK_TYPES.map((t) => (
+          <option value={t}>{BOOK_TYPE_LABELS[t]}</option>
+        ))}
+      </select>
+    </label>
+    <label class="block">
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Título *</span>
+      <input
+        type="text"
+        data-edit-book-title
+        maxlength="120"
+        required
+        autocomplete="off"
+        class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+      />
+    </label>
+    <label class="block">
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">URL de portada (opcional)</span>
+      <input
+        type="url"
+        data-edit-book-cover
+        autocomplete="off"
+        spellcheck="false"
+        class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+      />
+    </label>
+    <div class="flex items-center justify-end gap-2 border-t border-zinc-200 pt-3 dark:border-white/10">
+      <button
+        type="submit"
+        data-edit-book-submit
+        class="rounded-lg bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+      >
+        Guardar
+      </button>
+    </div>
+  </form>
+
+  <p
+    data-edit-book-status
+    class="hidden m-0 border-t border-zinc-200 px-4 py-2 text-center text-xs text-zinc-500 dark:border-white/10"
+  >
+  </p>
+</dialog>
+
+<script>
+  (() => {
+    if (window.__editBookDialogInit) return;
+    window.__editBookDialogInit = true;
+
+    const dialog = document.querySelector('[data-edit-book-dialog]');
+    const form = document.querySelector('[data-edit-book-form]');
+    const typeEl = document.querySelector('[data-edit-book-type]');
+    const titleEl = document.querySelector('[data-edit-book-title]');
+    const coverEl = document.querySelector('[data-edit-book-cover]');
+    const submitBtn = document.querySelector('[data-edit-book-submit]');
+    const closeBtn = document.querySelector('[data-edit-book-close]');
+    const statusEl = document.querySelector('[data-edit-book-status]');
+
+    let currentId = null;
+    let bodyLocked = false;
+
+    function lockBodyScroll() {
+      if (bodyLocked) return;
+      bodyLocked = true;
+      const sbw = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
+    }
+    function unlockBodyScroll() {
+      if (!bodyLocked) return;
+      bodyLocked = false;
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+    function showStatus(text, isError) {
+      if (!statusEl) return;
+      statusEl.textContent = text;
+      statusEl.classList.remove('hidden', 'text-red-500', 'dark:text-red-400');
+      if (isError) statusEl.classList.add('text-red-500', 'dark:text-red-400');
+    }
+    function hideStatus() {
+      if (!statusEl) return;
+      statusEl.classList.add('hidden');
+      statusEl.textContent = '';
+    }
+    async function readApiPayload(res) {
+      try {
+        return await res.json();
+      } catch {
+        return null;
+      }
+    }
+    function apiErrorMessage(status, code) {
+      if (status === 401 || code === 'unauthorized') return 'Sesión no válida. Recargá la página.';
+      if (status === 409 || code === 'duplicate') return 'Ya existe otro libro con ese título';
+      if (status === 404 || code === 'not_found') return 'No encontrado';
+      if (status === 400) return 'Datos inválidos. Revisá los campos e intentá de nuevo.';
+      return 'Error al guardar';
+    }
+    function openDialog(book) {
+      if (!dialog) return;
+      currentId = book.id;
+      typeEl.value = book.bookType;
+      titleEl.value = book.title || '';
+      coverEl.value = book.coverUrl || '';
+      hideStatus();
+      lockBodyScroll();
+      dialog.showModal();
+      setTimeout(() => titleEl.focus(), 0);
+    }
+    function closeDialog() {
+      dialog?.close();
+      unlockBodyScroll();
+    }
+
+    closeBtn?.addEventListener('click', closeDialog);
+    dialog?.addEventListener('click', (e) => {
+      if (e.target === dialog) closeDialog();
+    });
+    dialog?.addEventListener('close', unlockBodyScroll);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dialog?.open) closeDialog();
+    });
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentId) return;
+      hideStatus();
+      const title = titleEl.value.trim();
+      if (!title) {
+        showStatus('Título requerido', true);
+        titleEl.focus();
+        return;
+      }
+      const coverUrl = coverEl.value.trim() || null;
+      if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
+        showStatus('URL de portada inválida', true);
+        coverEl.focus();
+        return;
+      }
+      submitBtn.disabled = true;
+      showStatus('Guardando...', false);
+      try {
+        const body = {
+          id: currentId,
+          bookType: typeEl.value,
+          title,
+          coverUrl,
+        };
+        const res = await fetch('/books/api/edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          showStatus('Guardado.', false);
+          window.dispatchEvent(new CustomEvent('books:edited', { detail: { book: data.book } }));
+          setTimeout(closeDialog, 200);
+        } else {
+          const data = await readApiPayload(res);
+          showStatus(apiErrorMessage(res.status, data?.error), true);
+        }
+      } catch (err) {
+        showStatus('No se pudo conectar con AppHub', true);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    window.__openEditBookDialog = openDialog;
+  })();
+</script>

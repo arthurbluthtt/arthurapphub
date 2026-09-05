@@ -1,366 +1,80 @@
 # ArthurAppHub
 
-Hub personal de apps **y** **Identity Provider (SSO)** para todas las apps vinculadas. Construido con [Astro](https://astro.build), [Tailwind CSS 4](https://tailwindcss.com/) y desplegado como [Cloudflare Worker](https://workers.cloudflare.com/).
+Hub personal de apps **+ Identity Provider (SSO)** para todas las apps vinculadas. Astro 7 + Tailwind CSS 4 + Cloudflare Workers.
 
-URL: <https://arthurapphub.arthurbluthtt.workers.dev>
+**URL**: https://arthurapphub.arthurbluthtt.workers.dev
 
-## Qué hace
+## Qué es
 
 - **Lanzador de apps**: grid responsivo de tarjetas (ícono + nombre + descripción + link), tema dark/light persistente, indicador online/offline por app.
-- **Identity Provider (SSO)**: el hub maneja la auth (username + PIN de 4 dígitos). Las apps vinculadas consumen identidad vía exchange code. Una vez que el usuario entra su PIN en el hub, queda autenticado en todas las apps.
-- **Sub-app `/destiny`**: wishlist de armas de Destiny 2 con búsqueda desde el manifest oficial de Bungie, selección manual de perks (Cañón / Cargador / Rasgo 1 / Rasgo 2), iconos custom, filtros por estado y tipo de arma.
-- **Sub-app `/umamusume`**: wishlist de personajes de Umamusume: Pretty Derby con las cartas de soporte más recomendadas (game8.co). Cada personaje muestra sus mejores aptitudes de `Surface`, `Distance` y `Pace`, además de Main build + Budget + Alternates Speed/Power/Wit del scenario actual.
-- **Sub-app `/subs`**: control de gastos de suscripciones mensuales (MXN/USD). Total del mes por moneda + próxima suscripción por cobrar, con toggle activa/pausada.
-- **Sub-app `/games`**: game tracker con portada de Steam (buscada al agregar), año de salida y estado (Jugando / Por jugar / Terminado) editable desde cada card.
+- **Identity Provider**: el hub maneja la auth (username + PIN de 4 dígitos). Las apps vinculadas consumen identidad vía exchange code. Una vez que el usuario entra su PIN en el hub, queda autenticado en todas las apps.
+- **9 sub-apps internas** (todas con login, acceso por cookie `hub_sess`):
 
-## Estado actual
+| Sub-app | Ruta | Qué guarda |
+|---|---|---|
+| D2 Wishlist | `/destiny` | Armas de Destiny 2 + 4 perks manuales |
+| Uma Cards | `/umamusume` | Personajes de Umamusume + cartas recomendadas |
+| Suscripciones | `/subs` | Gastos mensuales MXN/USD |
+| GameTracker | `/games` | Juegos (Steam + manual, con sagas) |
+| MediaTracker | `/media` | Pelis/series no-anime (TMDB) |
+| MangaTracker | `/manga` | Mangas (Kitsu) |
+| BookTracker | `/books` | Libros (Open Library) |
+| AnimeTracker | `/anime` | Animes (Kitsu) |
+| ZZZ Builds | `/zzz` | Builds de Zenless Zone Zero |
 
-- Grid responsivo de tarjetas (`src/data/apps.json`).
-- Toggle dark/light persistente (`localStorage`, respeta `prefers-color-scheme`).
-- `color-scheme: light/dark` sincronizado en `<html>` para que form controls nativos (options de `<select>`, scrollbars) respeten el tema.
-- Indicador online/offline por app (HEAD al endpoint `/api/health`, cache 5 min).
-- Static assets servidos por el worker.
-- Click en cada tarjeta abre en la **misma pestaña**.
-- Auto-deploy en cada `push` a `main` vía GitHub Action (~30 s).
+Ver detalle de cada una en `docs/sub-apps/`.
 
-### Auth (Identity Provider)
+## Requisitos
 
-- **Login en el home** (`/`): si no hay sesión, el mismo home muestra el form de username + PIN. Con sesión, muestra el grid de apps. `/login` queda como shim que redirige a `/`.
-- **Multi-usuario**: cada usuario tiene su propio `username` (normalizado lowercase, `[a-z0-9_-]{3,20}`) y su propio PIN. El username entra al input del PBKDF2, así dos usuarios con el mismo PIN no colisionan.
-- **Mismo error** para "usuario no existe" y "PIN incorrecto" — evita enumeración.
-- **Algoritmo PIN**: `PBKDF2-SHA256(pin + ":" + username + ":" + AUTH_PEPPER, salt="arthurapphub-auth-v1", 100k iter)`.
-- **Per-app partition key**: `pin_hash = sha256(pin_hash_hub + ":" + app_id + ":" + pepper)`. El hub calcula, la app solo guarda.
-- **Sesión**: cookie `hub_sess` HttpOnly + cookie companion `hub_user` (no-HttpOnly, para mostrar username en el header).
-- **Códigos de exchange**: 60 s TTL, single-use. La app los consume vía `POST /api/auth/exchange` con Bearer `INTERNAL_API_SECRET`.
+Node 22.12+.
 
-## Estructura
-
-```
-src/
-├── data/
-│   └── apps.json                       # lista editable de apps
-├── components/
-│   ├── Header.astro
-│   ├── ThemeToggle.astro
-│   ├── StatusDot.astro
-│   ├── AppCard.astro
-│   ├── AppGrid.astro
-│   └── d2/                             # componentes sub-app D2
-│       ├── AddWeaponDialog.astro       # modal: search arma + 4 inputs perk
-│       ├── CustomPerkIconDialog.astro  # modal: pool de iconos custom
-│       ├── PerkSuggestionDropdown...   # (legacy, integrado en AddWeaponDialog)
-│       ├── WeaponCard.astro            # card de arma en wishlist
-│       └── WeaponFilters.astro         # chips de filtro
-│   └── uma/                             # componentes sub-app Umamusume
-│       ├── AddCharacterDialog.astro     # modal: buscar y agregar personaje
-│       └── SupportCardList.astro        # lista de cartas recomendadas
-│   └── subs/                            # componentes sub-app Suscripciones
-│       ├── AddSubDialog.astro           # chip FAB + dialog agregar/editar
-│       └── SubCard.astro                # card de suscripción (toggle activa)
-│   └── games/                           # componentes sub-app GameTracker
-│       └── AddGameDialog.astro          # chip FAB + dialog buscar juego en Steam
-├── layouts/
-│   └── BaseLayout.astro
-├── lib/
-│   ├── auth.ts                         # hashPin, sesiones, codes, deriveAppPinHash
-│   ├── internal.ts                     # verifyInternal, helpers JSON
-│   └── d2/
-│       ├── manifest.ts                 # lookup de armas y perks
-│       ├── wishlist.ts                 # CRUD de d2_wishlist
-│       ├── perkIcons.ts                # CRUD de d2_perk_icons
-│       └── resolver.ts                 # resolveWishlistRow(row)
-│   └── uma/
-│       ├── data.ts                      # characters/cards/recommendations + aptitudes
-│       └── wishlist.ts                  # CRUD de uma_wishlist
-│   └── subs/
-│       ├── store.ts                     # CRUD subs + CURRENCIES
-│       ├── validate.ts                  # parseSubInput (add/update)
-│       └── format.ts                    # formatPrice + nextCharge + totalsByCurrency
-│   └── games/
-│       └── store.ts                     # STATUSES + CRUD games
-├── pages/
-│   ├── index.astro                     # login (sin sesión) o grid (con sesión)
-│   ├── signup.astro
-│   ├── login.astro                     # shim → /
-│   ├── api/
-│   │   ├── health.ts                   # status por app (HEAD)
-│   │   ├── redir.ts                    # genera code + redirige a la app
-│   │   └── auth/
-│   │       ├── issue.ts                # cookie → code
-│   │       ├── exchange.ts             # code → {session_token, pin_hash, expires_at}
-│   │       ├── logout.ts               # destruye sesión hub
-│   │       └── logout-all.ts           # stub simétrico (no-op hoy)
-│   └── destiny/
-│       ├── index.astro                 # página /destiny (wishlist)
-│       └── api/
-│           ├── search.ts               # autocomplete armas
-│           ├── add.ts                  # POST: agregar arma
-│           ├── update.ts               # POST: editar perks
-│           ├── remove.ts               # POST: eliminar
-│           ├── toggle-found.ts         # POST: toggle found
-│           ├── icon.ts                 # proxy R2 con fallback Bungie
-│           ├── perk-icon.ts            # GET/POST: pool de iconos custom
-│           └── perks/
-│               └── match.ts            # GET: perks elegibles por slot
-│   └── umamusume/
-│       ├── index.astro                  # página /umamusume (wishlist + aptitudes)
-│       └── api/                         # search, add, remove, found, icon y character
-│   └── subs/
-│       ├── index.astro                  # página /subs (total del mes + próximo cobro)
-│       └── api/
-│           ├── add.ts                   # POST: agregar suscripción
-│           ├── update.ts                # POST: editar suscripción
-│           ├── remove.ts                # POST: eliminar suscripción
-│           └── toggle-active.ts         # POST: toggle activa/pausada
-│   └── games/
-│       ├── index.astro                  # página /games (grid de juegos)
-│       └── api/
-│           ├── search.ts                # GET: buscar juegos en Steam (storesearch)
-│           ├── add.ts                   # POST: agregar (appdetails → name/cover/año)
-│           ├── add-manual.ts            # POST: agregar manual (fuera de Steam)
-│           ├── set-status.ts            # POST: cambiar estado
-│           └── remove.ts                # POST: eliminar juego
-├── styles/
-│   └── global.css                      # tokens + color-scheme
-└── env.d.ts
-
-migrations/
-├── 0001_auth_init.sql
-├── 0002_username.sql
-├── 0003_d2_wishlist.sql
-├── 0004_d2_wishlist_perks_json.sql
-├── 0005_drop_top_perk_hashes.sql
-├── 0006_d2_perk_icons.sql
-├── 0007_d2_perk_icons_category.sql
-├── 0008_uma_wishlist.sql
-├── 0009_subs.sql
-├── 0010_gametracker.sql
-└── 0011_gametracker_manual.sql
-
-data/d2/
-├── weapons-index.json                  # generado por build:d2-manifest
-└── perks.json                          # generado por build:d2-manifest
-
-data/uma/
-├── characters.json                      # 96 personajes + aptitudes
-├── cards.json                           # 106 cartas
-└── recommendations.json                 # builds recomendadas por personaje
-
-DESIGN.md                               # sistema de diseño (single source of truth)
-STATE.md                                # estado + próximos pasos + recap credenciales
-astro.config.mjs                        # adapter Cloudflare (Workers), Tailwind 4
-.github/workflows/deploy.yml            # auto-deploy a Cloudflare Workers en cada push a main
-```
-
-## Local
+## Quickstart
 
 ```bash
 npm install
 npm run dev                # http://localhost:4321
 npm run build              # genera dist/
-npx wrangler dev           # simula el worker localmente (con bindings remotos)
+npx wrangler dev           # simula el worker (con bindings remotos)
 ```
 
-Requisitos: Node 22.12+.
+Al iniciar el dev server, usar background mode (`astro dev --background`). Ver `AGENTS.md`.
 
 ## Deploy
 
-Push a `main` en GitHub dispara `.github/workflows/deploy.yml`:
-
-1. `npm ci` + `npm run build`
-2. `wrangler deploy` con `CLOUDFLARE_API_TOKEN` + `CLOUDFLARE_ACCOUNT_ID` en el repo (GitHub → Settings → Secrets and variables → Actions).
+Push a `main` dispara `.github/workflows/deploy.yml` (`npm ci` → `npm run build` → `wrangler deploy`, ~30 s). Requiere `CLOUDFLARE_API_TOKEN` y `CLOUDFLARE_ACCOUNT_ID` en GitHub Secrets.
 
 ## Agregar una app nueva
 
-El registro vive en un solo lugar: `src/data/apps.json`. Solo se modifica **un archivo** + la app externa implementa su endpoint `/api/auth/exchange` (si es app externa con SSO).
+El registro vive en `src/data/apps.json` — solo ese archivo + la app externa implementa `POST /api/auth/exchange` si es con SSO.
 
-### App interna (sin SSO — accede con cookie `hub_sess` directa)
-
-```json
-{
-  "id": "mi-app-interna",
-  "name": "Mi App",
-  "description": "Una línea explicando qué hace",
-  "url": "/mi-app",
-  "redir": "/mi-app",
-  "icon": "🚀",
-  "category": "productividad",
-  "tags": ["tag1"],
-  "featured": false,
-  "sso": false
-}
-```
-
-Si `sso` se omite o es `false`, la app es interna. La card del grid navega directo a `redir`. Si se accede manualmente y no hay sesión, la app redirige a `/?next=...` y maneja su propio gate.
-
-### App externa (con SSO — flujo exchange code)
+**Interna** (`sso: false`, acceso por cookie directa):
 
 ```json
-{
-  "id": "mi-app",
-  "name": "Mi App",
-  "description": "Una línea explicando qué hace",
-  "url": "https://app.example.com",
-  "redir": "/api/redir?app=mi-app",
-  "icon": "🚀",
-  "category": "productividad",
-  "tags": ["tag1"],
-  "featured": false,
-  "sso": true
-}
+{ "id": "mi-app", "name": "Mi App", "description": "...", "url": "/mi-app", "redir": "/mi-app", "icon": "🚀", "category": "productividad", "sso": false }
 ```
 
-Con `sso: true`, el hub autoriza a la app a pedir codes (`/api/auth/issue`), consumirlos (`/api/auth/exchange`) y notificar sign-outs (`/api/auth/logout-all`). La app debe implementar `GET|POST /api/auth/exchange?code=...` que llame a `${HUB_URL}/api/auth/exchange` con `Authorization: Bearer ${INTERNAL_API_SECRET}` y body `{code, app: 'mi-app'}`. Recibirá `{session_token, pin_hash, expires_at}` y deberá almacenar la sesión + setear su propia cookie.
+**Externa** (`sso: true`, flujo exchange code):
 
-La lista de apps con SSO se deriva automáticamente desde `apps.json` vía `lib/apps.ts → isSsoApp(id)`. No hay que tocar handlers ni sets hardcoded.
-
-Commit + push → redeploy automático.
-
-## Features
-
-- Grid responsive de tarjetas con ícono, nombre, descripción y link.
-- Toggle dark/light persistente + `color-scheme` sincronizado (form controls nativos respetan el tema).
-- Indicador online/offline por app.
-- Identity Provider multi-usuario con username + PIN.
-- SSO vía exchange code hacia apps vinculadas.
-- Header con username del usuario logueado + botón "Salir".
-- **Sub-app `/destiny`** — wishlist de armas de Destiny 2.
-- **Sub-app `/umamusume`** — wishlist de personajes con cartas de soporte recomendadas.
-- **Sub-app `/subs`** — gastos mensuales de suscripciones con total y próximo cobro.
-- **Sub-app `/games`** — game tracker con portadas de Steam, año y estado.
-
-## D2 Wishlist (sub-app interna)
-
-Una página en `/destiny` (login requerido) que mantiene una wishlist personal de armas de Destiny 2. Al agregar un arma, abrís un modal con 4 inputs manuales para los perks (Cañón, Cargador, Rasgo 1, Rasgo 2) — el server los busca por nombre en el manifest oficial y, si no existen, los guarda como "custom" con placeholder SVG.
-
-## Umamusume Cards (sub-app interna)
-
-Una página en `/umamusume` (login requerido) que mantiene una wishlist personal de personajes de Umamusume: Pretty Derby. Para cada personaje agregado, se muestran sus mejores aptitudes de superficie, distancia y estilo de carrera, junto con las cartas de soporte recomendadas del meta actual: Main build (6 cartas), Budget build (6 cartas) y Alternates agrupados por Speed/Power/Wit.
-
-### Datos
-
-- **Snapshot estático**: `data/uma/characters.json` + `data/uma/cards.json` + `data/uma/recommendations.json` generados con `npm run build:uma-data`. El script scrapea las páginas de game8.co (Best Characters + Best Support Cards tier lists + Build Guide de cada personaje).
-- 96 personajes, 106 cartas con icon, 95 personajes con aptitudes y 91 personajes con recomendaciones. Las 5 guías sin recomendaciones tienen layouts viejos; `564 Escapades` está mal clasificado por Game8 como personaje aunque es un skill.
-- **Aptitudes**: el scraper conserva todas las categorías empatadas con la mejor calificación de Game8. Se guardan como `aptitudes.surface`, `aptitudes.distance` y `aptitudes.pace`.
-- **Tolerancia HTML**: game8 tiene HTML mal-formado cuando el nombre de una carta contiene apostrofes (e.g. "Let's Get This Party Lit!") — el `"` interno cierra el atributo alt prematuramente. El script maneja esto con regex tolerante que matchea `support[\s\S]{0,40}?card` en lugar del alt exacto.
-- **Iconos**: cacheados desde `img.game8.co` → R2 (`arthurapphub-d2-assets` con prefix `uma/`) via `/umamusume/api/icon`. Fallback automático si R2 no tiene la imagen.
-
-### Storage
-
-- D1 tabla `uma_wishlist` (migración `0008`): `(username, character_id, found, found_at, added_at)` + índice `(username, found, added_at DESC)`.
-- Las cartas NO se guardan en la wishlist — se leen estáticamente desde `recommendations.json`. La wishlist solo guarda el `character_id` + `found`.
-
-### UX
-
-- **Filtro por estado** (Todas / Pendientes / Encontradas) con chips toggle.
-- **Type-ahead en el buscador**: tres fuentes combinadas (characters.json) con ranking (exact prefix > word prefix > substring).
-- **Expand "Ver más"**: muestra Budget build + Alternates Speed/Power/Wit del scenario actual. Click toggle.
-- **Aptitudes visibles**: cada tarjeta muestra `Surface`, `Distance` y `Pace`; si hay empate, muestra las opciones separadas por `/`.
-- **Container ancho escalado en ultrawide** (`max-w-[1760px] xl`, `max-w-[2240px] 2xl`).
-
-### Refrescar datos (~cada nuevo scenario)
-
-```bash
-npm run build:uma-data
-git add data/uma/characters.json data/uma/cards.json data/uma/recommendations.json
-git commit -m "uma: refresh manifest" && git push
+```json
+{ "id": "mi-app", "name": "Mi App", "description": "...", "url": "https://app.example.com", "redir": "/api/redir?app=mi-app", "icon": "🚀", "category": "productividad", "sso": true }
 ```
 
-El comando actualiza personajes, aptitudes, cartas y recomendaciones desde Game8. Tarda ~2 min (96 requests secuenciales con rate limit 1.2s). Revisá el diff antes de hacer commit; no se ejecuta desde la app ni desde una request web.
+La lista de apps con SSO se deriva de `apps.json` vía `lib/apps.ts → isSsoApp(id)`. Commit + push → redeploy automático.
 
-### Datos
+## Documentación
 
-- **Manifest**: `data/d2/weapons-index.json` + `data/d2/perks.json` generados con `npm run build:d2-manifest`. Necesita `BUNGIE_API_KEY` (gratis en https://www.bungie.net/en/Application).
-  - 2058 armas con `weaponType` real (Hand Cannon, Auto Rifle, etc.) vía `DestinyItemCategoryDefinition`.
-  - 2000 perks con `category` real (`Barrel` / `Magazine` / `Trait`) vía `itemTypeDisplayName`.
-- **Sub-categorías del manifest mapeadas a slots canónicos**: Bungie tiene muchas sub-categorías para armas especiales que son funcionalmente Barrel o Magazine pero el manifest las etiqueta distinto. El endpoint aplica una whitelist por slot:
-  - `barrel` ← {Barrel, Bowstring, Scope, Sight, Launcher Barrel, Guard, Enhanced Guard, Stock, Grip, Grips, Handle, Tang, Rail, Praxic Blade Form}
-  - `magazine` ← {Magazine, Battery, Arrow}
-  - `perk1`/`perk2` ← {Trait, Enhanced Trait}
-- **Blacklist global**: Intrinsic, Weapon Ornament, Origin Trait, Enhanced Origin Trait, Weapon Mod, Enhanced Weapon Mod, Memento, Shader, Combat Flair, Resonant Material, Restore Defaults — nunca son perks trackeables y se filtran en todos los slots.
-- **Normalización al slot al guardar**: `add.ts`/`update.ts` usan `SLOT_CATEGORY` para que la perk guardada tenga la categoría del slot donde el usuario la puso (no la del manifest). Así "Agile Bowstring" (Trait en manifest) guardada en magazine slot queda con `category: 'Magazine'` y aparece correctamente en futuras aperturas.
-- **Fallback de categoría legacy**: si el manifest no tiene `category`, el endpoint `perks/match` clasifica por regex (`barrel|sights|scope|launcher` → barrel; `mag|magazine|rounds|cartridge|battery` → magazine; resto → trait). Es heurístico — un rebuild del manifest elimina la dependencia.
-- **Iconos**: primer hit baja desde Bungie CDN → se guarda en R2 (`arthurapphub-d2-assets` binding `D2_ASSETS`). Después se sirve desde R2 con cache de 30 días.
-- **Iconos custom**: pool personal del usuario en `d2_perk_icons`. Cada icono tiene `category` asignable (Cañón/Cargador/Rasgo/Sin tipo) para que el picker los filtre correctamente.
-
-### Storage
-
-- D1 tabla `d2_wishlist` (migraciones `0003` + `0004` + `0005`): `(username, item_hash, weapon_name, weapon_icon_path, perks_json, found, found_at, added_at)` + índice `(username, found, added_at DESC)`. Cada fila guarda 4 perks en `perks_json` como `{name, hash, icon, category}` por slot.
-- D1 tabla `d2_perk_icons` (migraciones `0006` + `0007`): `(username, perk_name_lower, perk_name_display, icon_path, category, created_at)`.
-- R2 bucket `arthurapphub-d2-assets`: `weapons/<hash>.png` + `perks/<hash>.png`.
-
-### UX
-
-- **Filtros por estado** (Todas/Pendientes/Encontradas) + **por tipo de arma** (chips pill con conteo).
-- **Type-ahead en inputs de perk**: tres fuentes combinadas con dedup por nombre — (1) perks ya guardadas por el usuario (`d2_wishlist.perks_json`), (2) pool de iconos custom (`d2_perk_icons`), (3) fallback al manifest de Bungie (`listAllPerks()`) **solo cuando hay `q`** para no abrumar con 2000 perks cuando el dropdown abre vacío. Permite typeahead cross-categoría (e.g. tipear "bowstring" en slot magazine).
-- **Orden por uso**: `countPerkUses()` cuenta ocurrencias de cada nombre en la wishlist del usuario. Sort: `_score` ASC → `useCount` DESC → nombre ASC. Chip `×N` al lado del nombre cuando `useCount > 1` con tooltip "Usada en N armas".
-- **Dropdown fixed-position**: `position:fixed` con coordenadas del viewport (`getBoundingClientRect()` + `z-index:9999`) para escapar el clipping del `<dialog>`. **Atomic reveal**: `position:fixed` + coords se aplican **antes** de remover `hidden` — el navegador nunca ve el dropdown con `position:static` (causaba bug "a la mitad").
-- **Re-posicionamiento**: en scroll/resize del window, con filtro para no reposicionar cuando el scroll es interno al propio dropdown.
-- **`state.perkConfirmed[slot]`**: evita que el dropdown se reabra con la perk recién seleccionada cuando el usuario vuelve a hacer focus en el input.
-- **Sin auto-focus**: el primer perk input no recibe focus automático al abrir el modal de perks (el focus listener disparaba el dropdown). El usuario hace click cuando quiere tipear.
-- **Dialogs robustos**: `overflow-y-auto` + `overscroll-contain` (scroll interno no propaga al body) + `lockBodyScroll()` (lockea `body.overflow:hidden` con compensación de scrollbar para evitar layout shift al abrir/cerrar).
-
-### Refrescar manifest (~cada season de D2)
-
-```bash
-BUNGIE_API_KEY=<key> npm run build:d2-manifest
-git add data/d2/weapons-index.json data/d2/perks.json
-git commit -m "d2: refresh manifest" && git push
-```
-
-## Suscripciones (sub-app interna)
-
-Una página en `/subs` (login requerido) que mantiene el control de las suscripciones mensuales: nombre, precio por mes, moneda (MXN/USD) y día de cobro. Un chip flotante "+ Agregar suscripción" abre el dialog para crear o editar; cada card tiene toggle Activa/Pausada, editar y eliminar.
-
-### Summary superior
-
-- **Total del mes**: suma de las suscripciones **activas**, desglosada por moneda (ej. `$219.00 MXN · $12.00 USD`). Se oculta la moneda que no tiene subs.
-- **Próximo cobro**: la sub activa más cercana por cobrar, con su día (`Netflix · 12 ago · $219.00 MXN`). El día de cobro se clampea al último día del mes en meses cortos (31 en feb → 28/29) y la fecha de "hoy" se calcula en `America/Mexico_City` (el worker corre en UTC).
-- Todo se recalcula en el cliente tras agregar/editar/toggle/eliminar.
-
-### Storage
-
-- D1 tabla `subs` (migración `0009`): `(username, id, name, price_cents, currency, billing_day, active, created_at)` + índice `(username, active, created_at DESC)`. Precio en **centavos** (enteros, sin floats).
-
-### API
-
-- `POST /subs/api/add` `{name, priceCents, currency, billingDay}` → 201 `{sub}` (400 si inválido).
-- `POST /subs/api/update` `{id, ...}` → `{sub}` (404 si no existe).
-- `POST /subs/api/remove` `{id}` → 204.
-- `POST /subs/api/toggle-active` `{id}` → `{active}`.
-
-## GameTracker (sub-app interna)
-
-Una página en `/games` (login requerido) que mantiene la lista de juegos con su estado: **Jugando**, **Por jugar** o **Terminado**. Al agregar un juego se busca en **Steam** (portada + año automáticos); si no está en Steam (juegos móviles, gacha, etc.), se agrega **manual** con nombre, año y URL de portada opcionales.
-
-### Datos (Steam, sin API key)
-
-- **Búsqueda**: el dialog usa `GET /games/api/search?q=` → proxy de `store.steampowered.com/api/storesearch/` (filtra `type === "app"`, excluye bundles/subs; top 8). Thumbnails (capsule 231x87) para elegir visualmente.
-- **Detalle al agregar**: `POST /games/api/add {appId}` → `appdetails?filters=basic,release_date` (una sola request) devuelve `type`, `name`, `header_image` (460x215) y `release_date` → se guardan cover + año ("20 Feb, 2024" → 2024).
-- **Solo juegos**: se rechaza con 400 lo que no sea `type === "game"` (DLCs, soundtracks, demos).
-- **Fuera de Steam**: el dialog tiene tabs "Buscar en Steam" / "Agregar manual". El manual guarda `app_id NULL` (nombre 1-80 obligatorio, año 1900-2100 y URL de portada http(s) opcionales); sin portada la card muestra un placeholder con las iniciales del nombre. Duplicado manual por nombre case-insensitive → 409.
-- **Covers**: se sirven directo del CDN de Steam (URL estable, cacheada por Cloudflare). Sin proxy R2.
-
-### Estados
-
-| Key | Label |
+| Doc | Para qué |
 |---|---|
-| `backlog` | Por jugar (default) |
-| `playing` | Jugando |
-| `finished` | Terminado |
-
-El estado se cambia desde un dropdown custom en cada card (patrón del perk dropdown de D2; el `<select>` nativo abría el popup con estilos del OS, ilegible en dark mode). Filtros por estado con chips pill y conteo.
-
-### Storage
-
-- D1 tabla `games` (migraciones `0010` + `0011`): `(username, id, app_id NULL, name, cover_url NULL, year, status, created_at, updated_at)` + UNIQUE parcial `(username, app_id) WHERE app_id IS NOT NULL` (409 en duplicado de Steam) + índice `(username, status, created_at DESC)`. `app_id NULL` = juego agregado manualmente.
-
-### API
-
-- `GET /games/api/search?q=` → `{results: [{appId, name, tinyImage}]}`.
-- `POST /games/api/add` `{appId}` → 201 `{game}` (400 no-game, 404 no encontrado, 409 duplicado, 502 steam caído).
-- `POST /games/api/add-manual` `{name, year?, coverUrl?}` → 201 `{game}` (400 inválido, 409 duplicado por nombre).
-- `POST /games/api/set-status` `{id, status}` → `{game}` (400 status inválido, 404 si no existe).
-- `POST /games/api/remove` `{id}` → 204.
-
-Ver `STATE.md` para el plan completo, próximos pasos y la historia del proyecto.
+| [INDEX.md](INDEX.md) | Mapa navegable del proyecto |
+| [DESIGN.md](DESIGN.md) | Sistema de diseño canónico (paleta, componentes) |
+| [docs/architecture.md](docs/architecture.md) | Stack, bindings, flujo SSO, lifecycle |
+| [docs/sub-apps/d2.md](docs/sub-apps/d2.md) | D2 Wishlist |
+| [docs/sub-apps/uma.md](docs/sub-apps/uma.md) | Umamusume |
+| [docs/sub-apps/subs.md](docs/sub-apps/subs.md) | Suscripciones |
+| [docs/sub-apps/zzz.md](docs/sub-apps/zzz.md) | ZZZ |
+| [docs/sub-apps/trackers.md](docs/sub-apps/trackers.md) | GameTracker, MediaTracker, Manga, Book, Anime |
+| [docs/data-pipelines.md](docs/data-pipelines.md) | Scripts `build:*` y refresh |
+| [docs/decisions.md](docs/decisions.md) | Decisiones de arquitectura vigentes |
+| [docs/plan-revision-consistencia.md](docs/plan-revision-consistencia.md) | Plan de revisión estructural y de consistencia |
+| [docs/sessions/STATE.md](docs/sessions/STATE.md) | Estado operativo vigente |
+| [docs/sessions/](docs/sessions/) | Logs históricos; `Mavis_*` no es documentación operativa |

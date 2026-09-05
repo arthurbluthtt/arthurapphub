@@ -1,4 +1,11 @@
 ---
+import SagaPicker from './SagaPicker.astro';
+
+interface Props {
+  userSagas?: readonly string[];
+}
+
+const { userSagas = [] } = Astro.props;
 ---
 
 <button
@@ -136,6 +143,8 @@
       </button>
     </form>
 
+    <SagaPicker name="add" userSagas={userSagas} />
+
     <p
       class="mt-3 hidden rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-center text-sm text-emerald-700 dark:text-emerald-400"
       data-add-success
@@ -154,6 +163,12 @@
   // No usamos innerHTML para los results — construimos cada <button> con
   // createElement/setAttribute/textContent (mismo patrón que AddCharacterDialog).
 
+  // Guard contra doble-inicialización.
+  if (window.__addGameDialogInit) {
+    // Ya inicializado en esta página, nada que hacer.
+  } else {
+    window.__addGameDialogInit = true;
+
   const dialog = document.querySelector("[data-add-dialog]");
   const chip = document.querySelector("[data-add-game-chip]");
   const input = document.querySelector("[data-add-input]");
@@ -170,6 +185,8 @@
   const manualYear = document.querySelector("[data-manual-year]");
   const manualCover = document.querySelector("[data-manual-cover]");
   const manualSubmit = document.querySelector("[data-manual-submit]");
+
+  // (sin auto-detect de saga: el user la tipea manualmente con el picker)
 
   const TAB_ACTIVE = [
     "border-transparent",
@@ -244,6 +261,7 @@
     manualName.value = "";
     manualYear.value = "";
     manualCover.value = "";
+    if (typeof window.__sagaPickerReset === "function") window.__sagaPickerReset("add");
     setMode(currentMode);
     lockBodyScroll();
     dialog.showModal();
@@ -284,6 +302,7 @@
       img.src = r.tinyImage;
       img.alt = r.name ?? "";
       img.loading = "lazy";
+      img.decoding = "async";
       img.className = "h-10 w-auto shrink-0 rounded bg-zinc-100 object-cover dark:bg-white/[0.02]";
       btn.appendChild(img);
     }
@@ -309,6 +328,7 @@
 
   async function runSearch(query) {
     const seq = ++searchSeq;
+    hideStatus();
     if (query.length < 2) {
       resultsEl.replaceChildren();
       resultsEl.classList.add("hidden");
@@ -321,6 +341,18 @@
       const res = await fetch("/games/api/search?q=" + encodeURIComponent(query), {
         signal: searchAbort.signal,
       });
+      if (!res.ok) {
+        if (seq !== searchSeq) return;
+        resultsEl.replaceChildren();
+        resultsEl.classList.add("hidden");
+        emptyEl.classList.add("hidden");
+        showError(
+          res.status === 401
+            ? "Tu sesión expiró. Recargá la página."
+            : "No se pudo buscar en Steam (error " + res.status + ")."
+        );
+        return;
+      }
       const data = await res.json();
       if (seq !== searchSeq) return;
       const results = data.results || [];
@@ -336,15 +368,35 @@
       for (const r of results) frag.appendChild(buildResultButton(r));
       resultsEl.replaceChildren(frag);
     } catch (err) {
-      if (err.name !== "AbortError") console.error(err);
+      if (err.name !== "AbortError") {
+        console.error(err);
+        if (seq === searchSeq) {
+          resultsEl.replaceChildren();
+          resultsEl.classList.add("hidden");
+          emptyEl.classList.add("hidden");
+          showError("No se pudo buscar en Steam. Revisá tu conexión.");
+        }
+      }
     }
   }
 
   let debounce;
+  let currentSaga = "__all__";
+  function effectiveQuery(text) {
+    // Si hay saga activa, la usamos como prefijo para que Steam filtre.
+    // Ej: saga="Fallout" + text="4" → "Fallout 4".
+    if (currentSaga && currentSaga !== "__all__") {
+      const t = (text || "").trim();
+      return t ? currentSaga + " " + t : currentSaga;
+    }
+    return text;
+  }
   input?.addEventListener("input", (e) => {
     clearTimeout(debounce);
-    debounce = setTimeout(() => runSearch(e.target.value.trim()), 250);
+    debounce = setTimeout(() => runSearch(effectiveQuery(e.target.value.trim())), 250);
   });
+
+  // (sin auto-suggest de saga: el user la tipea manualmente con el picker)
 
   resultsEl?.addEventListener("click", async (e) => {
     const btn = e.target.closest("[data-pick-game]");
@@ -354,11 +406,14 @@
     btn.disabled = true;
     btn.classList.add("opacity-50", "pointer-events-none");
     hideStatus();
+    const saga = (typeof window.__sagaPickerGet === "function"
+      ? window.__sagaPickerGet("add")
+      : null);
     try {
       const res = await fetch("/games/api/add", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ appId }),
+        body: JSON.stringify({ appId, saga }),
       });
       if (res.status === 409) {
         showError("Ese juego ya está en tu lista");
@@ -378,11 +433,11 @@
         return;
       }
       const data = await res.json();
-      successEl.classList.remove("hidden");
-      setTimeout(() => closeDialog(), 350);
       window.dispatchEvent(
         new CustomEvent("games:game-added", { detail: { game: data.game } })
       );
+      successEl.classList.remove("hidden");
+      setTimeout(() => closeDialog(), 350);
     } catch (err) {
       showError("Error de red");
       btn.disabled = false;
@@ -414,6 +469,13 @@
       manualCover.focus();
       return;
     }
+    const saga = (typeof window.__sagaPickerGet === "function"
+      ? window.__sagaPickerGet("add")
+      : null);
+    if (saga && saga.length > 60) {
+      showError("Saga demasiado larga (máx 60 chars)");
+      return;
+    }
 
     submitting = true;
     manualSubmit.disabled = true;
@@ -421,7 +483,7 @@
       const res = await fetch("/games/api/add-manual", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, year, coverUrl }),
+        body: JSON.stringify({ name, year, coverUrl, saga }),
       });
       if (res.status === 409) {
         showError("Ese juego ya está en tu lista");
@@ -441,11 +503,11 @@
         return;
       }
       const data = await res.json();
-      successEl.classList.remove("hidden");
-      setTimeout(() => closeDialog(), 350);
       window.dispatchEvent(
         new CustomEvent("games:game-added", { detail: { game: data.game } })
       );
+      successEl.classList.remove("hidden");
+      setTimeout(() => closeDialog(), 350);
     } catch (err) {
       showError("Error de red");
     } finally {
@@ -453,4 +515,19 @@
       manualSubmit.disabled = false;
     }
   });
+
+  // API pública: cambiar la saga activa del filtro de búsqueda de Steam.
+  // La llama `index.astro` cuando el usuario cambia el dropdown de saga.
+  window.__addGameDialogSetSaga = (saga) => {
+    currentSaga = saga || "__all__";
+    // Re-correr la búsqueda actual con el nuevo filtro.
+    if (input && currentMode === "steam") {
+      clearTimeout(debounce);
+      debounce = setTimeout(
+        () => runSearch(effectiveQuery(input.value.trim())),
+        100
+      );
+    }
+  };
+  } // end __addGameDialogInit guard
 </script>

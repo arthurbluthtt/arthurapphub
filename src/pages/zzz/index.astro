@@ -1,0 +1,439 @@
+---
+import { env } from 'cloudflare:workers';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AddZzzDialog from '../../components/zzz/AddZzzDialog.astro';
+import EditZzzDialog from '../../components/zzz/EditZzzDialog.astro';
+import ZzzCard from '../../components/zzz/ZzzCard.astro';
+import SearchBar from '../../components/SearchBar.astro';
+import { lookupSession, readCookie } from '../../lib/auth';
+import { listZzz } from '../../lib/zzz/store';
+
+export const prerender = false;
+
+const sessionId = readCookie(Astro.request);
+const sess = sessionId ? await lookupSession(env.AUTH_DB, sessionId) : null;
+if (!sess) {
+  return Astro.redirect('/?next=' + encodeURIComponent('/zzz'));
+}
+const items = await listZzz(env.AUTH_DB, sess.username);
+const totalCount = items.length;
+---
+
+<BaseLayout title="ZZZ — AppHub" contentMaxWidth="max-w-[1760px] 2xl:max-w-[2240px]">
+  <div class="mb-6 flex items-baseline justify-between gap-6">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl xl:text-5xl dark:text-white">ZZZ</h1>
+      <p class="mt-2 text-sm text-zinc-500 xl:text-base">Mis builds de Zenless Zone Zero — W-Engine, discos 4+2 y stats con valor al lado.</p>
+    </div>
+    <span class="text-xs uppercase tracking-wider text-zinc-500 xl:text-sm" data-zzz-count>{totalCount} {totalCount === 1 ? 'build' : 'builds'}</span>
+  </div>
+
+  <SearchBar placeholder="Buscar..." />
+  <div class="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" data-zzz-grid>
+    {items.map(item => <ZzzCard item={item} />)}
+  </div>
+
+  <p class="hidden mt-8 rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500" data-empty-state>
+    Sin builds. Usa “Agregar personaje”.
+  </p>
+
+  <p class="hidden mt-8 rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500" data-filtered-empty>
+    No hay builds que coincidan con la búsqueda.
+  </p>
+
+  <p class="hidden mt-4 text-center text-xs text-red-500" data-zzz-runtime-status role="status"></p>
+
+  <AddZzzDialog />
+  <EditZzzDialog />
+
+  <script id="zzz-data" type="application/json" set:html={JSON.stringify(items)}></script>
+
+  <script>
+    (() => {
+      const grid = document.querySelector('[data-zzz-grid]');
+      if (!grid) return;
+      const countEl = document.querySelector('[data-zzz-count]');
+      const emptyState = document.querySelector('[data-empty-state]');
+      const filteredEmpty = document.querySelector('[data-filtered-empty]');
+      const runtimeStatus = document.querySelector('[data-zzz-runtime-status]');
+      const searchInput = document.querySelector('[data-search-input]');
+      const searchClear = document.querySelector('[data-search-clear]');
+      let builds = [];
+      try {
+        const parsed = JSON.parse(document.getElementById('zzz-data')?.textContent || '[]');
+        builds = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        builds = [];
+      }
+      let currentSearch = '';
+      let searchTimer = null;
+      let statusTimer = null;
+
+      function getCards() {
+        return Array.from(grid.querySelectorAll('[data-zzz-card]'));
+      }
+      function findCard(id) {
+        return getCards().find((card) => card.dataset.zzzId === id) || null;
+      }
+      function showRuntimeStatus(message) {
+        if (!runtimeStatus) return;
+        runtimeStatus.textContent = message;
+        runtimeStatus.classList.remove('hidden');
+        if (statusTimer) clearTimeout(statusTimer);
+        statusTimer = setTimeout(() => runtimeStatus.classList.add('hidden'), 5000);
+      }
+      function clearRuntimeStatus() {
+        if (!runtimeStatus) return;
+        runtimeStatus.classList.add('hidden');
+        runtimeStatus.textContent = '';
+        if (statusTimer) clearTimeout(statusTimer);
+      }
+      function syncCount() {
+        const count = getCards().length;
+        if (countEl) countEl.textContent = `${count} ${count === 1 ? 'build' : 'builds'}`;
+      }
+      function updateDragDisabled() {
+        const disabled = Boolean(currentSearch);
+        getCards().forEach((card) => { card.draggable = !disabled; });
+        grid.querySelectorAll('[data-drag-handle]').forEach((handle) => {
+          handle.style.display = disabled ? 'none' : '';
+          handle.title = disabled ? 'Limpia la búsqueda para reordenar' : 'Arrastrar para ordenar (mantener pulsado en móvil)';
+        });
+      }
+      function applySearch() {
+        const cards = getCards();
+        let visible = 0;
+        cards.forEach((card) => {
+          const visibleCard = !currentSearch || (card.dataset.search || '').includes(currentSearch);
+          card.classList.toggle('hidden', !visibleCard);
+          if (visibleCard) visible += 1;
+        });
+        if (emptyState) emptyState.classList.toggle('hidden', cards.length > 0);
+        if (filteredEmpty) {
+          filteredEmpty.classList.toggle('hidden', cards.length === 0 || visible > 0 || !currentSearch);
+        }
+        updateDragDisabled();
+        syncCount();
+      }
+      function toggleSearchClear() {
+        if (searchClear) searchClear.classList.toggle('hidden', !searchInput || !searchInput.value);
+      }
+      searchInput?.addEventListener('input', () => {
+        if (searchTimer) clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          currentSearch = (searchInput.value || '').trim().toLowerCase();
+          toggleSearchClear();
+          applySearch();
+        }, 200);
+      });
+      searchClear?.addEventListener('click', () => {
+        if (!searchInput) return;
+        searchInput.value = '';
+        currentSearch = '';
+        toggleSearchClear();
+        applySearch();
+        searchInput.focus();
+      });
+
+      function placeholder(title) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'grid h-full w-full place-items-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-white/[0.04] dark:to-white/[0.06]';
+        const initials = String(title || '?').split(/\s+/).slice(0, 2).map((word) => word[0] || '').join('').toUpperCase();
+        const text = document.createElement('span');
+        text.className = 'text-3xl font-bold tracking-wide text-zinc-300 dark:text-zinc-600';
+        text.textContent = initials;
+        wrapper.appendChild(text);
+        return wrapper;
+      }
+      document.addEventListener('error', (event) => {
+        const image = event.target;
+        if (!image || image.tagName !== 'IMG' || !image.matches('[data-zzz-cover-image]')) return;
+        image.onerror = null;
+        image.replaceWith(placeholder(image.alt));
+      }, true);
+
+      const DRAG_CLASSES = ['dragging', 'opacity-50', 'ring-2', 'ring-zinc-300', 'dark:ring-white/20'];
+      let dragEl = null;
+      let dragBefore = null;
+      let pendingHandleCard = null;
+      let canDrag = false;
+      let orderRevision = 0;
+
+      function setDragging(card, active) {
+        if (active) card.classList.add(...DRAG_CLASSES);
+        else card.classList.remove(...DRAG_CLASSES);
+      }
+      function getClosestCard(x, y) {
+        const cards = getCards().filter((card) => !card.classList.contains('dragging') && !card.classList.contains('hidden'));
+        let closest = null;
+        let bestDistance = Infinity;
+        let before = true;
+        for (const card of cards) {
+          const rect = card.getBoundingClientRect();
+          const cx = rect.left + rect.width / 2;
+          const cy = rect.top + rect.height / 2;
+          const distance = (x - cx) ** 2 + (y - cy) ** 2;
+          if (distance < bestDistance) {
+            bestDistance = distance;
+            closest = card;
+            before = y < cy || (Math.abs(y - cy) < rect.height / 3 && x < cx);
+          }
+        }
+        return { closest, before };
+      }
+      function moveDraggedCard(x, y) {
+        const { closest, before } = getClosestCard(x, y);
+        if (!closest) grid.appendChild(dragEl);
+        else if (closest !== dragEl) grid.insertBefore(dragEl, before ? closest : closest.nextSibling);
+      }
+      function orderFromCards() {
+        return getCards().map((card) => card.dataset.zzzId).filter(Boolean);
+      }
+      function restoreOrder(snapshot) {
+        builds = snapshot.slice();
+        const fragment = document.createDocumentFragment();
+        for (const build of builds) {
+          const card = findCard(build.id);
+          if (card) fragment.appendChild(card);
+        }
+        grid.appendChild(fragment);
+        applySearch();
+      }
+      async function persistOrder(snapshot) {
+        const orderedIds = orderFromCards();
+        const byId = new Map(builds.map((build) => [build.id, build]));
+        const nextBuilds = orderedIds.map((id) => byId.get(id)).filter(Boolean);
+        if (nextBuilds.length !== builds.length) {
+          restoreOrder(snapshot);
+          showRuntimeStatus('No se pudo preparar el nuevo orden.');
+          return;
+        }
+        builds = nextBuilds;
+        const revision = ++orderRevision;
+        try {
+          const response = await fetch('/zzz/api/reorder', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderedIds }),
+          });
+          if (!response.ok) throw new Error('reorder failed');
+          if (revision === orderRevision) clearRuntimeStatus();
+        } catch {
+          if (revision !== orderRevision) return;
+          restoreOrder(snapshot);
+          showRuntimeStatus('No se pudo guardar el orden; se restauró el anterior.');
+        }
+      }
+      function resetDragState() {
+        canDrag = false;
+        pendingHandleCard = null;
+        dragEl = null;
+        dragBefore = null;
+      }
+      grid.addEventListener('mousedown', (event) => {
+        const target = event.target;
+        const handle = target instanceof Element ? target.closest('[data-drag-handle]') : null;
+        if (handle && !currentSearch) {
+          canDrag = true;
+          pendingHandleCard = handle.closest('[data-zzz-card]');
+          return;
+        }
+        resetDragState();
+      });
+      grid.addEventListener('mouseup', () => setTimeout(() => { canDrag = false; pendingHandleCard = null; }, 0));
+      grid.addEventListener('dragstart', (event) => {
+        if (currentSearch || !canDrag || !pendingHandleCard) {
+          event.preventDefault();
+          return;
+        }
+        dragEl = pendingHandleCard;
+        dragBefore = builds.slice();
+        setDragging(dragEl, true);
+        if (event.dataTransfer) {
+          event.dataTransfer.effectAllowed = 'move';
+          try { event.dataTransfer.setData('text/plain', dragEl.dataset.zzzId || ''); } catch {}
+        }
+      });
+      grid.addEventListener('dragover', (event) => {
+        if (!dragEl || currentSearch) return;
+        event.preventDefault();
+        moveDraggedCard(event.clientX, event.clientY);
+      });
+      grid.addEventListener('drop', (event) => {
+        if (!dragEl) return;
+        event.preventDefault();
+        const snapshot = dragBefore || builds.slice();
+        setDragging(dragEl, false);
+        resetDragState();
+        void persistOrder(snapshot);
+      });
+      grid.addEventListener('dragend', () => {
+        if (dragEl) {
+          const snapshot = dragBefore || builds.slice();
+          setDragging(dragEl, false);
+          restoreOrder(snapshot);
+        }
+        resetDragState();
+      });
+      grid.addEventListener('dragenter', (event) => event.preventDefault());
+
+      grid.addEventListener('touchstart', (event) => {
+        if (currentSearch) return;
+        const target = event.target;
+        const handle = target instanceof Element ? target.closest('[data-drag-handle]') : null;
+        const card = handle?.closest('[data-zzz-card]');
+        const touch = event.touches[0];
+        if (!handle || !card || !touch) return;
+        let touchDragging = false;
+        let cancelled = false;
+        const startX = touch.clientX;
+        const startY = touch.clientY;
+        const snapshot = builds.slice();
+        const finish = (restore) => {
+          if (touchTimer) clearTimeout(touchTimer);
+          grid.removeEventListener('touchmove', onMove);
+          grid.removeEventListener('touchend', onEnd);
+          grid.removeEventListener('touchcancel', onCancel);
+          if (touchDragging && dragEl) {
+            setDragging(dragEl, false);
+            if (restore) restoreOrder(snapshot);
+            else void persistOrder(snapshot);
+          }
+          if (dragEl === card) resetDragState();
+        };
+        const onMove = (moveEvent) => {
+          const nextTouch = moveEvent.touches[0];
+          if (!nextTouch) return;
+          if (!touchDragging && Math.hypot(nextTouch.clientX - startX, nextTouch.clientY - startY) > 8) {
+            cancelled = true;
+            if (touchTimer) clearTimeout(touchTimer);
+            return;
+          }
+          if (!touchDragging || !dragEl || cancelled) return;
+          moveEvent.preventDefault();
+          moveDraggedCard(nextTouch.clientX, nextTouch.clientY);
+        };
+        const onEnd = () => finish(false);
+        const onCancel = () => finish(true);
+        let touchTimer = setTimeout(() => {
+          if (cancelled) return;
+          touchDragging = true;
+          dragEl = card;
+          dragBefore = snapshot;
+          setDragging(card, true);
+        }, 180);
+        grid.addEventListener('touchmove', onMove, { passive: false });
+        grid.addEventListener('touchend', onEnd, { once: true });
+        grid.addEventListener('touchcancel', onCancel, { once: true });
+      }, { passive: true });
+
+      const UNITS = { 'CRIT Rate': '%', 'CRIT DMG': '%', 'PEN Ratio': '%', 'Energy Regen': '%' };
+      function fmt(value, stat) {
+        if (value === null || value === undefined) return '—';
+        const unit = UNITS[stat] || '';
+        const text = Number.isInteger(value) ? value.toLocaleString() : value.toLocaleString(undefined, { maximumFractionDigits: 2 });
+        return unit ? text + unit : text;
+      }
+      function escapeHtml(value) {
+        return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+      function buildCard(item) {
+        const article = document.createElement('article');
+        article.dataset.zzzCard = '';
+        article.dataset.zzzId = item.id;
+        article.dataset.search = (item.characterName || '').toLowerCase();
+        article.draggable = !currentSearch;
+        article.className = 'group flex w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-white/10 dark:bg-white/[0.025]';
+        const initials = String(item.characterName || '?').split(/\s+/).slice(0, 2).map((word) => word[0] || '').join('').toUpperCase();
+        const statValues = item.statValues || (item.displayStats ? item.displayStats.map((stat) => ({ stat, value: null })) : []);
+        const toShow = statValues.slice(0, 4);
+        const extra = statValues.length - toShow.length;
+        let statsHtml = '';
+        if (toShow.length) {
+          statsHtml = '<div class="flex flex-col gap-1">';
+          for (const stat of toShow) {
+            statsHtml += '<div class="flex items-center justify-between gap-2 rounded-lg bg-zinc-50 px-2.5 py-1.5 dark:bg-white/[0.04]"><span class="text-xs font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-300">' + escapeHtml(stat.stat) + '</span><span class="text-sm tabular-nums font-semibold text-zinc-900 dark:text-white">' + escapeHtml(fmt(stat.value, stat.stat)) + '</span></div>';
+          }
+          if (extra > 0) statsHtml += '<span class="text-xs text-zinc-500">+' + extra + ' más</span>';
+          statsHtml += '</div>';
+        } else {
+          statsHtml = '<p class="text-xs text-zinc-500">Sin stats visibles</p>';
+        }
+        let html = '<div class="relative w-[62%] shrink-0 aspect-[1/2] overflow-hidden bg-zinc-950/5 dark:bg-zinc-900">';
+        html += '<button type="button" data-drag-handle aria-label="Arrastrar" title="Arrastrar para ordenar (mantener pulsado en móvil)" class="absolute left-1 top-1 z-10 grid h-7 w-7 place-items-center rounded bg-zinc-950/60 text-white backdrop-blur cursor-grab active:cursor-grabbing touch-manipulation opacity-80 md:opacity-0 md:group-hover:opacity-100 transition">⋮⋮</button>';
+        if (item.coverUrl) {
+          html += '<img data-zzz-cover-image src="' + escapeHtml(item.coverUrl) + '" alt="' + escapeHtml(item.characterName) + '" loading="lazy" decoding="async" class="h-full w-full object-cover object-top" referrerpolicy="no-referrer" />';
+        } else {
+          html += '<div class="grid h-full w-full place-items-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-white/[0.04] dark:to-white/[0.06]"><span class="text-3xl font-bold tracking-wide text-zinc-300 dark:text-zinc-600">' + escapeHtml(initials) + '</span></div>';
+        }
+        html += '</div><div class="flex w-[38%] flex-col gap-2 p-3"><div>';
+        html += '<h3 class="truncate text-lg font-bold leading-tight text-zinc-900 dark:text-white">' + escapeHtml(item.characterName) + '</h3>';
+        if (item.wEngineId && item.wEngineName) {
+          html += '<div class="mt-2 flex max-w-full items-center gap-2 rounded-full bg-zinc-100 px-2.5 py-1.5 dark:bg-white/10"><img src="/zzz/api/icon?type=wengine&id=' + encodeURIComponent(item.wEngineId) + '" alt="' + escapeHtml(item.wEngineName) + '" loading="lazy" class="h-7 w-7 shrink-0 rounded object-contain bg-white ring-1 ring-zinc-200 dark:ring-white/10"><span class="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-100">' + escapeHtml(item.wEngineName) + '</span></div>';
+        }
+        if (item.discSet4 || item.discSet2) {
+          html += '<div class="mt-2 flex flex-wrap gap-1.5">';
+          if (item.discSet4) html += '<span class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1.5 text-sm font-medium leading-none text-zinc-700 dark:bg-white/10 dark:text-zinc-200"><img src="/zzz/api/icon?type=disc&id=' + encodeURIComponent(item.discSet4) + '" alt="' + escapeHtml(item.discSet4) + '" loading="lazy" class="h-6 w-6 shrink-0 rounded object-contain bg-white ring-1 ring-zinc-200 dark:ring-white/10">' + escapeHtml(item.discSet4) + '</span>';
+          if (item.discSet2) html += '<span class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1.5 text-sm font-medium leading-none text-zinc-700 dark:bg-white/10 dark:text-zinc-200"><img src="/zzz/api/icon?type=disc&id=' + encodeURIComponent(item.discSet2) + '" alt="' + escapeHtml(item.discSet2) + '" loading="lazy" class="h-6 w-6 shrink-0 rounded object-contain bg-white ring-1 ring-zinc-200 dark:ring-white/10">' + escapeHtml(item.discSet2) + '</span>';
+          html += '</div>';
+        }
+        html += '</div>' + statsHtml + '<div class="mt-auto flex items-center justify-end gap-1 pt-1"><button type="button" data-edit-zzz data-zzz-id="' + escapeHtml(item.id) + '" aria-label="Editar" title="Editar" class="grid h-7 w-7 place-items-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-900 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-white"><svg viewBox="0 0 16 16" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.2 2.8a1.6 1.6 0 0 1 2 2L6 12H2v-4l9.2-9.2Z"/><path d="M11 3l2 2"/></svg></button><button type="button" data-remove-zzz data-zzz-id="' + escapeHtml(item.id) + '" aria-label="Eliminar" title="Eliminar" class="grid h-7 w-7 place-items-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-red-400"><svg viewBox="0 0 16 16" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 4h10M6 4V2.5h4V4M5 4l1 9h4l1-9" /></svg></button></div></div>';
+        article.innerHTML = html;
+        return article;
+      }
+
+      grid.addEventListener('click', async (event) => {
+        const target = event.target;
+        const edit = target instanceof Element ? target.closest('[data-edit-zzz]') : null;
+        if (edit) {
+          const item = builds.find((build) => build.id === edit.dataset.zzzId);
+          if (item && window.__openEditZzzDialog) window.__openEditZzzDialog(item);
+          return;
+        }
+        const remove = target instanceof Element ? target.closest('[data-remove-zzz]') : null;
+        if (!remove) return;
+        const id = remove.dataset.zzzId;
+        if (!id || !confirm('¿Eliminar build?')) return;
+        try {
+          const response = await fetch('/zzz/api/remove', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id }),
+          });
+          if (!response.ok) throw new Error('remove failed');
+          builds = builds.filter((build) => build.id !== id);
+          findCard(id)?.remove();
+          clearRuntimeStatus();
+          applySearch();
+        } catch {
+          showRuntimeStatus('No se pudo eliminar la build.');
+        }
+      });
+      window.addEventListener('zzz:added', (event) => {
+        const build = event.detail?.build;
+        if (!build || !build.id || builds.some((item) => item.id === build.id)) return;
+        if (Number.isSafeInteger(build.position)) {
+          builds.push(build);
+          grid.appendChild(buildCard(build));
+        } else {
+          builds.unshift(build);
+          grid.prepend(buildCard(build));
+        }
+        clearRuntimeStatus();
+        applySearch();
+      });
+      window.addEventListener('zzz:edited', (event) => {
+        const build = event.detail?.build;
+        if (!build || !build.id) return;
+        const index = builds.findIndex((item) => item.id === build.id);
+        if (index >= 0) builds[index] = build;
+        const oldCard = findCard(build.id);
+        if (oldCard) oldCard.replaceWith(buildCard(build));
+        clearRuntimeStatus();
+        applySearch();
+      });
+      toggleSearchClear();
+      applySearch();
+    })();
+  </script>
+</BaseLayout>

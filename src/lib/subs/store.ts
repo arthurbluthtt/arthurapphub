@@ -104,16 +104,17 @@ export async function updateSub(
   username: string,
   id: string,
   sub: SubInput
-): Promise<boolean> {
-  const res = await db
+): Promise<SubRow | null> {
+  const row = await db
     .prepare(
       `UPDATE subs
        SET name = ?, price_cents = ?, currency = ?, billing_day = ?
-       WHERE username = ? AND id = ?`
+       WHERE username = ? AND id = ?
+       RETURNING id, name, price_cents, currency, billing_day, active, created_at`
     )
     .bind(sub.name, sub.priceCents, sub.currency, sub.billingDay, username, id)
-    .run();
-  return (res.meta?.changes ?? 0) > 0;
+    .first<D1Row>();
+  return row ? toRow(row) : null;
 }
 
 export async function removeSub(

@@ -43,18 +43,15 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  const updated = await updateSub(env.AUTH_DB, sess.username, id, parsed.value);
-  if (!updated) {
+  const sub = await updateSub(env.AUTH_DB, sess.username, id, parsed.value);
+  if (!sub) {
     return new Response(JSON.stringify({ error: 'not found' }), {
       status: 404,
       headers: { 'content-type': 'application/json' },
     });
   }
   return new Response(
-    JSON.stringify({
-      ok: true,
-      sub: { id, ...parsed.value },
-    }),
+    JSON.stringify({ ok: true, sub }),
     { headers: { 'content-type': 'application/json' } }
   );
 };

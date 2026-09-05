@@ -1,0 +1,352 @@
+---
+/**
+ * SagaPicker — control de saga con dropdown.
+ *
+ * Comportamiento:
+ * - Muestra un botón con la forma de un input (mismo styling que el resto
+ *   de inputs del dialog: rounded-lg border px-3 py-2.5).
+ * - Etiqueta visible: la saga actual o "Sin saga".
+ * - Al hacer click se abre un menú dropdown (singleton en body, posición
+ *   fixed, mismo patrón que el status dropdown de Games y el perk dropdown
+ *   de D2) con:
+ *     - "Sin saga" (para limpiar)
+ *     - "Otra (escribir manualmente)" al final
+ * - Si elige "Otra (escribir manualmente)", el botón se reemplaza por un
+ *   input con autofocus para que el usuario tipee. Al hacer Enter, Blur
+ *   o seleccionar de nuevo desde el dropdown, se persiste el valor.
+ *
+ * No hay catálogo: el usuario tipea libremente la saga que quiera.
+ *
+ * API expuesta en window:
+ *   window.__sagaPickerGet(name)        -> string | null
+ *   window.__sagaPickerSet(name, value) -> void   (value: '' | null | string)
+ *   window.__sagaPickerReset(name)      -> void   (alias de set(name, ''))
+ *
+ * El name es un identificador único por instancia (ej: 'add' y 'edit')
+ * para que coexistan los dos pickers (Add y Edit dialogs) sin colisión.
+ *
+ * Props (frontmatter):
+ *   name: identificador único de instancia ('add' | 'edit' | ...)
+ *   id:   id del <label> wrapper (opcional, default: `saga-picker-${name}`)
+ *   userSagas: sagas que el usuario ya usó en sus juegos, mostradas como
+ *     typeahead entre "Sin saga" y "Otra..." (ordenadas por la página).
+ */
+
+interface Props {
+  name: string;
+  id?: string;
+  userSagas?: readonly string[];
+}
+
+const { name, id = `saga-picker-${name}`, userSagas = [] } = Astro.props;
+---
+
+<div class="block" data-saga-picker={name} data-saga-picker-id={id}>
+  <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Saga (opcional)</span>
+  <div class="relative mt-1.5">
+    <button
+      type="button"
+      data-saga-picker-button
+      data-saga-picker-mode="button"
+      aria-haspopup="listbox"
+      aria-expanded="false"
+      class="flex w-full items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-left text-zinc-900 outline-none transition focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+    >
+      <span data-saga-picker-label class="truncate">Sin saga</span>
+      <span aria-hidden="true" class="shrink-0 text-zinc-400 dark:text-zinc-500">▾</span>
+    </button>
+    <input
+      type="text"
+      data-saga-picker-input
+      data-saga-picker-mode="input"
+      maxlength="60"
+      autocomplete="off"
+      spellcheck="false"
+      class="hidden w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none transition focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+    />
+  </div>
+  <span class="mt-1 block text-[10px] text-zinc-400 dark:text-zinc-500">
+    Escribí una saga o dejala vacía.
+  </span>
+</div>
+
+<script define:vars={{ name, userSagas }}>
+  (() => {
+    if (window.__sagaPickerInit && window.__sagaPickerInit[name]) return;
+    (window.__sagaPickerInit ||= {})[name] = true;
+
+    const root = document.querySelector(`[data-saga-picker="${name}"]`);
+    if (!root) return;
+    const button = root.querySelector('[data-saga-picker-button]');
+    const buttonLabel = root.querySelector('[data-saga-picker-label]');
+    const input = root.querySelector('[data-saga-picker-input]');
+
+    let menu = null; // singleton en body, mismo patrón que statusMenu
+
+    function getMode() {
+      return input && !input.classList.contains('hidden') ? 'input' : 'button';
+    }
+
+    function setMode(mode, focusInput = false) {
+      if (mode === 'input') {
+        button?.classList.add('hidden');
+        input?.classList.remove('hidden');
+        if (focusInput && input) {
+          // Necesitamos un frame para que el display:none -> block surta efecto
+          // antes de poder focus.
+          requestAnimationFrame(() => {
+            input.focus();
+            input.select();
+          });
+        }
+      } else {
+        input?.classList.add('hidden');
+        button?.classList.remove('hidden');
+      }
+    }
+
+    function setLabel(text) {
+      if (buttonLabel) buttonLabel.textContent = text || 'Sin saga';
+    }
+
+    function closeMenu() {
+      if (!menu) return;
+      menu.classList.add('hidden');
+      menu.replaceChildren();
+      button?.setAttribute('aria-expanded', 'false');
+    }
+
+    function ensureMenu() {
+      if (menu) return menu;
+      menu = document.createElement('div');
+      menu.dataset.sagaPickerMenu = name;
+      menu.className =
+        'fixed z-[9999] hidden rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100';
+      menu.setAttribute('role', 'listbox');
+      // IMPORTANTE: el menú debe estar dentro del <dialog> container (si existe)
+      // porque el <dialog> de HTML vive en el "top layer" y queda por encima
+      // de cualquier position:fixed en body. Si el picker está dentro de un
+      // <dialog>, el menú debe heredar ese contexto.
+      const hostDialog = root?.closest('dialog');
+      (hostDialog || document.body).appendChild(menu);
+
+      menu.addEventListener('click', (e) => {
+        const opt = e.target.closest('[data-saga-picker-option]');
+        if (!opt) return;
+        const value = opt.dataset.sagaPickerOption ?? '';
+        const action = opt.dataset.sagaPickerAction || 'pick';
+
+        if (action === 'clear') {
+          // "Sin saga"
+          if (input) input.value = '';
+          setMode('button');
+          setLabel('Sin saga');
+        } else if (action === 'other') {
+          // "Otra (escribir manualmente)"
+          const previous = (input && input.value && getMode() === 'input')
+            ? input.value
+            : (buttonLabel?.textContent && buttonLabel.textContent !== 'Sin saga'
+                ? buttonLabel.textContent
+                : '');
+          if (input) input.value = previous || '';
+          setMode('input', true);
+        } else {
+          // pick del catálogo
+          if (input) input.value = value;
+          setMode('button');
+          setLabel(value);
+        }
+        closeMenu();
+      });
+
+      return menu;
+    }
+
+    function openMenu() {
+      if (getMode() === 'input') return; // no abrir dropdown mientras tipea
+      const m = ensureMenu();
+      closeMenu();
+      button?.setAttribute('aria-expanded', 'true');
+
+      // Opciones: "Sin saga" + sagas que el user ya usó + "Otra..."
+      const opts = [
+        { action: 'clear', value: '', label: 'Sin saga' },
+        ...userSagas.map((s) => ({ action: 'pick', value: s, label: s })),
+        { action: 'other', value: '__other__', label: 'Otra (escribir manualmente)' },
+      ];
+
+      const currentValue = (input && input.value) || (buttonLabel?.textContent === 'Sin saga' ? '' : buttonLabel?.textContent || '');
+
+      for (const o of opts) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.dataset.sagaPickerOption = o.value;
+        btn.dataset.sagaPickerAction = o.action;
+        btn.setAttribute('role', 'option');
+        const isCurrent = o.action === 'pick' && o.value === currentValue;
+        const isClearCurrent = o.action === 'clear' && currentValue === '';
+        btn.setAttribute('aria-selected', isCurrent || isClearCurrent ? 'true' : 'false');
+        btn.className =
+          'flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium text-zinc-900 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-white/10';
+        const label = document.createElement('span');
+        label.textContent = o.label;
+        if (o.action === 'other') {
+          label.className = 'text-zinc-500 dark:text-zinc-400';
+        }
+        btn.appendChild(label);
+        if (isCurrent || isClearCurrent) {
+          const check = document.createElement('span');
+          check.className = 'shrink-0 text-zinc-400 dark:text-zinc-500';
+          check.textContent = '✓';
+          btn.appendChild(check);
+        }
+        m.appendChild(btn);
+      }
+
+      // Si hay sagas del user, agregar un separador visual antes de "Otra..."
+      if (userSagas.length > 0) {
+        const sep = document.createElement('div');
+        sep.className = 'my-1 border-t border-zinc-200 dark:border-white/10';
+        // Insertar antes del último elemento (que es "Otra...")
+        m.insertBefore(sep, m.lastElementChild);
+      }
+
+      // Atomic reveal: posicionar antes de revelar.
+      const rect = button?.getBoundingClientRect();
+      if (rect) {
+        const gap = 4;
+        const menuH = opts.length * 30 + 8;
+        const spaceBelow = window.innerHeight - rect.bottom - gap - 8;
+        const top = spaceBelow >= menuH
+          ? rect.bottom + gap
+          : Math.max(8, rect.top - menuH - gap);
+        const menuW = Math.max(rect.width, 200);
+        const maxLeft = window.innerWidth - menuW - 8;
+        const left = Math.min(Math.max(8, rect.left), maxLeft);
+        menu.style.top = top + 'px';
+        menu.style.left = left + 'px';
+        menu.style.minWidth = menuW + 'px';
+      }
+      m.classList.remove('hidden');
+    }
+
+    // Listeners del control.
+    button?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (button.getAttribute('aria-expanded') === 'true') {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+    input?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const v = input.value.trim();
+        if (v) {
+          setMode('button');
+          setLabel(v);
+        } else {
+          setMode('button');
+          setLabel('Sin saga');
+        }
+        input.blur();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setMode('button');
+      }
+    });
+    input?.addEventListener('blur', () => {
+      const v = input.value.trim();
+      if (v) {
+        setLabel(v);
+        setMode('button');
+      } else {
+        setLabel('Sin saga');
+        setMode('button');
+      }
+    });
+    document.addEventListener('click', (e) => {
+      if (menu && menu.classList.contains('hidden')) return;
+      const t = e.target;
+      if (t === button || button?.contains(t)) return;
+      if (menu && menu.contains(t)) return;
+      closeMenu();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && menu && !menu.classList.contains('hidden')) {
+        closeMenu();
+      }
+    });
+    window.addEventListener('resize', closeMenu);
+    // Cerrar el menú si el scroll es de la página o de un contenedor
+    // externo, pero NO si el scroll es dentro del propio menú.
+    window.addEventListener('scroll', (e) => {
+      if (!menu || menu.classList.contains('hidden')) return;
+      const target = e.target;
+      if (target === menu || menu.contains(target)) return;
+      closeMenu();
+    }, true);
+
+    // API pública
+    window.__sagaPickerGet = window.__sagaPickerGet || ((n) => {
+      const r = document.querySelector(`[data-saga-picker="${n}"]`);
+      if (!r) return null;
+      const inp = r.querySelector('[data-saga-picker-input]');
+      if (inp && !inp.classList.contains('hidden')) {
+        // input visible: leer valor en vivo (puede estar tipeando)
+        const v = inp.value.trim();
+        return v.length > 0 ? v : null;
+      }
+      const lbl = r.querySelector('[data-saga-picker-label]');
+      const t = lbl ? lbl.textContent : '';
+      return t && t !== 'Sin saga' ? t : null;
+    });
+    // (en realidad sobreescribimos por nombre abajo)
+
+    function getValue() {
+      const inp = root.querySelector('[data-saga-picker-input]');
+      if (inp && !inp.classList.contains('hidden')) {
+        const v = inp.value.trim();
+        return v.length > 0 ? v : null;
+      }
+      const lbl = root.querySelector('[data-saga-picker-label]');
+      const t = lbl ? lbl.textContent : '';
+      return t && t !== 'Sin saga' ? t : null;
+    }
+    function setValue(value) {
+      const v = (value == null ? '' : String(value)).trim();
+      if (v) {
+        if (input) input.value = v;
+        setLabel(v);
+        setMode('button');
+      } else {
+        if (input) input.value = '';
+        setLabel('Sin saga');
+        setMode('button');
+      }
+    }
+
+    window.__sagaPickerGet = ((n, ...rest) => {
+      if (n === name) return getValue();
+      return window.__sagaPickerGetOther ? window.__sagaPickerGetOther(n, ...rest) : null;
+    });
+    window.__sagaPickerGetOther = window.__sagaPickerGetOther || ((n) => null);
+    // Forwarder multi-instancia: la primera registrada hace fallback a la
+    // segunda si el nombre no es el propio. Para mantener simple, definimos
+    // una sola función que conoce TODAS las instancias registradas.
+    (window.__sagaPickerInstances ||= {})[name] = { get: getValue, set: setValue };
+    window.__sagaPickerGet = (n) => {
+      const inst = window.__sagaPickerInstances?.[n];
+      return inst ? inst.get() : null;
+    };
+    window.__sagaPickerSet = (n, v) => {
+      const inst = window.__sagaPickerInstances?.[n];
+      if (inst) inst.set(v);
+    };
+    window.__sagaPickerReset = (n) => {
+      const inst = window.__sagaPickerInstances?.[n];
+      if (inst) inst.set('');
+    };
+  })();
+</script>

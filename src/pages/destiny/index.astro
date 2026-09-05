@@ -4,6 +4,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import WeaponCard from '../../components/d2/WeaponCard.astro';
 import AddWeaponDialog from '../../components/d2/AddWeaponDialog.astro';
 import CustomPerkIconDialog from '../../components/d2/CustomPerkIconDialog.astro';
+import SearchBar from '../../components/SearchBar.astro';
 import { lookupSession, readCookie } from '../../lib/auth';
 import { listWishlist } from '../../lib/d2/wishlist';
 import { resolveWishlistRow } from '../../lib/d2/resolver';
@@ -93,6 +94,7 @@ const visible =
   {
     totalCount > 0 && (
       <>
+        <SearchBar placeholder="Buscar..." />
         <div
           class="mb-2 inline-flex rounded-lg border border-zinc-200 p-1 dark:border-white/10"
           data-filter-group
@@ -184,6 +186,7 @@ const visible =
               itemHash={resolved.itemHash}
               name={resolved.name}
               iconPath={resolved.iconPath}
+              tier={resolved.tier}
               perks={resolved.perks}
               weaponType={resolved.weaponType}
               found={resolved.found}
@@ -224,6 +227,7 @@ const visible =
   <script is:inline define:vars={{ initialFilter: currentFilter, initialType: currentType }}>
     window.currentFilter = initialFilter;
     window.currentType = initialType;
+    window.currentSearch = "";
 
     function escapeHtml(s) {
       return String(s).replace(/[&<>"']/g, (c) => ({
@@ -241,6 +245,8 @@ const visible =
       el.dataset.found = w.found ? '1' : '0';
       el.dataset.itemHash = w.itemHash;
       el.dataset.weaponType = w.weaponType || '';
+      el.dataset.tier = w.tier || '';
+      el.dataset.search = (w.name || '').toLowerCase();
       el.className =
         'group relative flex flex-col gap-3 rounded-2xl border border-zinc-200 bg-white p-5 transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur';
       const perksHtml = SLOT_ORDER.map((slot) => {
@@ -264,6 +270,10 @@ const visible =
       const typeLabel = w.weaponType
         ? `<p class="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">${escapeHtml(w.weaponType)}</p>`
         : '';
+      const tierLabel = w.tier === 'exotic' ? 'Exótico' : w.tier === 'legendary' ? 'Legendario' : '';
+      const tierBadge = tierLabel
+        ? `<span data-tier-badge class="w-fit rounded-full border border-zinc-200 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:border-white/10 dark:text-zinc-400">${tierLabel}</span>`
+        : '';
       el.innerHTML = `
         <div class="flex items-center justify-center">
           <div class="flex h-28 w-28 items-center justify-center overflow-hidden rounded-lg bg-zinc-100 dark:bg-white/[0.04]">
@@ -272,6 +282,7 @@ const visible =
         </div>
         <h3 class="font-semibold text-zinc-900 dark:text-white">${escapeHtml(w.name)}</h3>
         ${typeLabel}
+        ${tierBadge}
         <div class="flex flex-col gap-1.5">${perksHtml}</div>
         <div class="mt-auto flex items-center justify-between gap-2 pt-1">
           <button type="button" data-toggle-found data-item-hash="${escapeHtml(w.itemHash)}" data-found="false" class="text-xs uppercase tracking-wider text-zinc-500 transition hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-white">Marcar encontrada</button>
@@ -348,7 +359,9 @@ const visible =
       const typeOk =
         window.currentType === 'all' ||
         card.dataset.weaponType === window.currentType;
-      return statusOk && typeOk;
+      const q = window.currentSearch || '';
+      const qOk = !q || (card.dataset.search || '').includes(q);
+      return statusOk && typeOk && qOk;
     }
 
     window.applyFilter = function applyFilter() {
@@ -534,6 +547,24 @@ const visible =
         }, 200);
       }
     });
+
+    (function() {
+      const searchInput = document.querySelector('[data-search-input]');
+      const searchClear = document.querySelector('[data-search-clear]');
+      let searchTimer = null;
+      function toggleClear(){ if(searchClear) searchClear.classList.toggle('hidden', !searchInput || !searchInput.value); }
+      searchInput?.addEventListener('input', () => {
+        if(searchTimer) clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          window.currentSearch = (searchInput.value || '').trim().toLowerCase();
+          toggleClear();
+          window.applyFilter();
+        }, 200);
+      });
+      searchClear?.addEventListener('click', () => {
+        if(searchInput){ searchInput.value=''; window.currentSearch=''; toggleClear(); window.applyFilter(); searchInput.focus(); }
+      });
+    })();
   </script>
 
   <AddWeaponDialog />

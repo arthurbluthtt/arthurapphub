@@ -15,7 +15,7 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  let body: { id?: string };
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
@@ -24,7 +24,11 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { 'content-type': 'application/json' },
     });
   }
-  const id = (body.id ?? '').trim();
+  const rawId =
+    body && typeof body === 'object' && !Array.isArray(body)
+      ? (body as Record<string, unknown>).id
+      : null;
+  const id = typeof rawId === 'string' ? rawId.trim() : '';
   if (!id) {
     return new Response(JSON.stringify({ error: 'id required' }), {
       status: 400,

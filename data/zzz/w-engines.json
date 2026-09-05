@@ -1,0 +1,762 @@
+[
+  {
+    "id": "knight-s-extolment",
+    "game8Id": "611634",
+    "name": "Knight’s Extolment",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4563101/5b6a90b825902bfc00778b61c7de4061.png/show"
+  },
+  {
+    "id": "sol-exuvia",
+    "game8Id": "604534",
+    "name": "Sol Exuvia",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4527265/5df83386dee54bf8fb10f448a7e1a560.png/show"
+  },
+  {
+    "id": "chief-sidekick",
+    "game8Id": "604525",
+    "name": "Chief Sidekick",
+    "specialty": "stun",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4527267/c510aff527c26558de56513392eace11.png/show"
+  },
+  {
+    "id": "joyau-dore",
+    "game8Id": "604524",
+    "name": "Joyau Dore",
+    "specialty": "anomaly",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4527268/7493462f673c5d161e5efe249d909fb7.png/show"
+  },
+  {
+    "id": "frostfall-sickle",
+    "game8Id": "596531",
+    "name": "Frostfall Sickle",
+    "specialty": "anomaly",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4478590/02ce4073f0229a8f8c522b626db250d2.png/show"
+  },
+  {
+    "id": "starlight-rider-faceplate",
+    "game8Id": "596532",
+    "name": "Starlight Rider Faceplate",
+    "specialty": "rupture",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4478592/8937d61c818c2b765a08f9f5b506cac6.png/show"
+  },
+  {
+    "id": "serpentine-seeker",
+    "game8Id": "586516",
+    "name": "Serpentine Seeker",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4441705/7f450779f9b20d1c5cedec07172d33ca.png/show"
+  },
+  {
+    "id": "angel-in-the-shell",
+    "game8Id": "577362",
+    "name": "Angel in the Shell",
+    "specialty": "anomaly",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4400967/addb5433bc7b106e3977ff90574df091.png/show"
+  },
+  {
+    "id": "thoughtbop",
+    "game8Id": "577361",
+    "name": "Thoughtbop",
+    "specialty": "support",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4400968/03fa9b01b7ae44ebc9291cddc705febe.png/show"
+  },
+  {
+    "id": "cloudcleave-radiance",
+    "game8Id": "572090",
+    "name": "Cloudcleave Radiance",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4372215/bd6215ba508643f57a18ead35e388907.png/show"
+  },
+  {
+    "id": "half-sugar-bunny",
+    "game8Id": "572091",
+    "name": "Half-Sugar Bunny",
+    "specialty": "defense",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4372214/2251084d368b9324390dad8a3a275f59.png/show"
+  },
+  {
+    "id": "wrathful-vajra",
+    "game8Id": "565531",
+    "name": "Wrathful Vajra",
+    "specialty": "rupture",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4334624/747646cefcbcbe62d9a26e3fddda9b83.png/show"
+  },
+  {
+    "id": "yesterday-calls",
+    "game8Id": "565530",
+    "name": "Yesterday Calls",
+    "specialty": "stun",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4334625/f79104f0a58fbd7a4b003d3f27c7fdc3.png/show"
+  },
+  {
+    "id": "kraken-s-cradle",
+    "game8Id": "553781",
+    "name": "Kraken’s Cradle",
+    "specialty": "rupture",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4291953/dde8d28fe7ffa7eb1630dbddb7e9ddb8.png/show"
+  },
+  {
+    "id": "dreamlit-hearth",
+    "game8Id": "553778",
+    "name": "Dreamlit Hearth",
+    "specialty": "support",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4291952/e1e8db40fcef81bc730b83d31c3ac38e.png/show"
+  },
+  {
+    "id": "bellicose-blaze",
+    "game8Id": "545796",
+    "name": "Bellicose Blaze",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4254703/4e021d82971b93d8e053ee0ba5b3afb9.png/show"
+  },
+  {
+    "id": "cordis-germina",
+    "game8Id": "545795",
+    "name": "Cordis Germina",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4254702/017b824b865535c54e4639aab9326e0b.png/show"
+  },
+  {
+    "id": "practiced-perfection",
+    "game8Id": "533767",
+    "name": "Practiced Perfection",
+    "specialty": "anomaly",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4212711/6ab2c2be16383b6b4b78835a5f096fc6.png/show"
+  },
+  {
+    "id": "metanukimorphosis",
+    "game8Id": "533766",
+    "name": "Metanukimorphosis",
+    "specialty": "support",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4212710/7f5419c1661923022eda2b15e4059343.png/show"
+  },
+  {
+    "id": "qingming-birdcage",
+    "game8Id": "523303",
+    "name": "Qingming Birdcage",
+    "specialty": "rupture",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4178866/f653bf4ab8aecf32b2d12698efeae4a7.png/show"
+  },
+  {
+    "id": "roaring-fur-nace",
+    "game8Id": "523304",
+    "name": "Roaring Fur-nace",
+    "specialty": "stun",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4178853/e1a523214057e953f5cc707191c6ff35.png/show"
+  },
+  {
+    "id": "myriad-eclipse",
+    "game8Id": "513707",
+    "name": "Myriad Eclipse",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4150959/71ddb17d2a8c33ccf1909c13c386e0b7.png/show"
+  },
+  {
+    "id": "flight-of-fancy",
+    "game8Id": "513706",
+    "name": "Flight of Fancy",
+    "specialty": "anomaly",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4150961/7956114e4a7c1c9b7f57225ab2ccc4f4.png/show"
+  },
+  {
+    "id": "severed-innocence",
+    "game8Id": "502058",
+    "name": "Severed Innocence",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4120747/7c5b65a43edc6ed92ebdd5f22cae6ac8.png/show"
+  },
+  {
+    "id": "spectral-gaze",
+    "game8Id": "502059",
+    "name": "Spectral Gaze",
+    "specialty": "stun",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4120744/2bb60672ce1d71f551805654cedba38d.png/show"
+  },
+  {
+    "id": "elegant-vanity",
+    "game8Id": "493438",
+    "name": "Elegant Vanity",
+    "specialty": "support",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4080074/f4189632b7f4ec7678708b10a40f8df2.png/show"
+  },
+  {
+    "id": "heartstring-nocturne",
+    "game8Id": "493439",
+    "name": "Heartstring Nocturne",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4287851/6a62c080afc3a593115642b5e5b1d63a.png/show"
+  },
+  {
+    "id": "zanshin-herb-case",
+    "game8Id": "488243",
+    "name": "Zanshin Herb Case",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4064041/90da49022ae2f8b0f9de7c88fd039ef2.png/show"
+  },
+  {
+    "id": "hailstorm-shrine",
+    "game8Id": "488242",
+    "name": "Hailstorm Shrine",
+    "specialty": "anomaly",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4064042/a1db8c84ea951377d3fd98edb90a6f71.png/show"
+  },
+  {
+    "id": "blazing-laurel",
+    "game8Id": "481894",
+    "name": "Blazing Laurel",
+    "specialty": "stun",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4026603/7c97b223113111576c5f74e67d11608d.png/show"
+  },
+  {
+    "id": "timeweaver",
+    "game8Id": "481893",
+    "name": "Timeweaver",
+    "specialty": "anomaly",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4026604/0c4a9b8895b1d82c1be120029cd7e10c.png/show"
+  },
+  {
+    "id": "flamemaker-shaker",
+    "game8Id": "473496",
+    "name": "Flamemaker Shaker",
+    "specialty": "anomaly",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4017478/203ae31873898ac047f9f646790a4429.png/show"
+  },
+  {
+    "id": "tusks-of-fury",
+    "game8Id": "473492",
+    "name": "Tusks of Fury",
+    "specialty": "defense",
+    "rarity": "S",
+    "icon": "https://img.game8.co/3993929/5e5b24890cfaff1ed8fc9610d122e62b.png/show"
+  },
+  {
+    "id": "sharpened-stinger",
+    "game8Id": "463662",
+    "name": "Sharpened Stinger",
+    "specialty": "anomaly",
+    "rarity": "S",
+    "icon": "https://img.game8.co/3945616/69a17f1c07834ba394f13b9ae57b89e6.png/show"
+  },
+  {
+    "id": "ice-jade-teapot",
+    "game8Id": "463660",
+    "name": "Ice-Jade Teapot",
+    "specialty": "stun",
+    "rarity": "S",
+    "icon": "https://img.game8.co/3945608/b5a9fc63c6076f563f62dcae80a74c03.png/show"
+  },
+  {
+    "id": "riot-suppressor-mark-vi",
+    "game8Id": "456280",
+    "name": "Riot Suppressor Mark VI",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/3894337/2d431f07eae2a6259cbaf8af664eefc3.png/show"
+  },
+  {
+    "id": "deep-sea-visitor",
+    "game8Id": "451778",
+    "name": "Deep Sea Visitor",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/3872262/0cf5fc9b20e09835460aac6b76eddf04.png/show"
+  },
+  {
+    "id": "hellfire-gears",
+    "game8Id": "451779",
+    "name": "Hellfire Gears",
+    "specialty": "stun",
+    "rarity": "S",
+    "icon": "https://img.game8.co/3872265/847cd499439049c5b2e1d054a43d3894.png/show"
+  },
+  {
+    "id": "the-restrained",
+    "game8Id": "451780",
+    "name": "The Restrained",
+    "specialty": "stun",
+    "rarity": "S",
+    "icon": "https://img.game8.co/3872264/effbfabb5cf1768261c7c8367245bd43.png/show"
+  },
+  {
+    "id": "steel-cushion",
+    "game8Id": "451739",
+    "name": "Steel Cushion",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/3872268/3849355dad9c5c492975fde07db145e1.png/show"
+  },
+  {
+    "id": "the-brimstone",
+    "game8Id": "451781",
+    "name": "The Brimstone",
+    "specialty": "attack",
+    "rarity": "S",
+    "icon": "https://img.game8.co/3872263/fd581a1f7429e70f55173af9b2fca112.png/show"
+  },
+  {
+    "id": "weeping-cradle",
+    "game8Id": "451782",
+    "name": "Weeping Cradle",
+    "specialty": "support",
+    "rarity": "S",
+    "icon": "https://img.game8.co/3872267/f724110b00994e43b017eb0317000a52.png/show"
+  },
+  {
+    "id": "fusion-compiler",
+    "game8Id": "451783",
+    "name": "Fusion Compiler",
+    "specialty": "anomaly",
+    "rarity": "S",
+    "icon": "https://img.game8.co/3872266/2cea1c2376ed15b0594e8141bfe4782d.png/show"
+  },
+  {
+    "id": "ode-of-resurrected-wings",
+    "game8Id": "611632",
+    "name": "Ode of Resurrected Wings",
+    "specialty": "anomaly",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4563103/6ecae33ea9a071786bf378e6d384434d.png/show"
+  },
+  {
+    "id": "boisterous-echoes",
+    "game8Id": "604537",
+    "name": "Boisterous Echoes",
+    "specialty": "anomaly",
+    "rarity": "A",
+    "icon": "https://img.game8.co/4527266/f4c49f0ca2f343a63e364aa61ba4799f.png/show"
+  },
+  {
+    "id": "the-simmering-pot",
+    "game8Id": "586519",
+    "name": "The Simmering Pot",
+    "specialty": "stun",
+    "rarity": "A",
+    "icon": "https://img.game8.co/4441763/d29f5ec0be51776c6a615d03999dd5f8.png/show"
+  },
+  {
+    "id": "neon-fantasies",
+    "game8Id": "586514",
+    "name": "Neon Fantasies",
+    "specialty": "stun",
+    "rarity": "S",
+    "icon": "https://img.game8.co/4441706/3f0b58bbbfae983aabd20ffa2904e33b.png/show"
+  },
+  {
+    "id": "cauldron-of-clarity",
+    "game8Id": "572092",
+    "name": "Cauldron of Clarity",
+    "specialty": "rupture",
+    "rarity": "A",
+    "icon": "https://img.game8.co/4372212/01d7ec80d239f4bb7c2a401118de4bc2.png/show"
+  },
+  {
+    "id": "grill-o-wisp",
+    "game8Id": "553782",
+    "name": "Grill O’Wisp",
+    "specialty": "rupture",
+    "rarity": "A",
+    "icon": "https://img.game8.co/4291955/ea77586def46e3e3d9c5b4f3c8ae64d1.png/show"
+  },
+  {
+    "id": "reel-projector",
+    "game8Id": "523313",
+    "name": "Reel Projector",
+    "specialty": "defense",
+    "rarity": "A",
+    "icon": "https://img.game8.co/4178924/0771ae17f3616cbd73b389310fa18358.png/show"
+  },
+  {
+    "id": "radiowave-journey",
+    "game8Id": "523311",
+    "name": "Radiowave Journey",
+    "specialty": "rupture",
+    "rarity": "A",
+    "icon": "https://img.game8.co/4178925/2e3770c961d1e2fbfd97e193e0d80ca6.png/show"
+  },
+  {
+    "id": "puzzle-sphere",
+    "game8Id": "523309",
+    "name": "Puzzle Sphere",
+    "specialty": "rupture",
+    "rarity": "A",
+    "icon": "https://img.game8.co/4178923/eeea04240506e4a35f952943af31a5eb.png/show"
+  },
+  {
+    "id": "tremor-trigram-vessel",
+    "game8Id": "523306",
+    "name": "Tremor Trigram Vessel",
+    "specialty": "defense",
+    "rarity": "A",
+    "icon": "https://img.game8.co/4178854/ecc7544fb8c55cbaa3b156d855c5f12a.png/show"
+  },
+  {
+    "id": "box-cutter",
+    "game8Id": "502060",
+    "name": "Box Cutter",
+    "specialty": "stun",
+    "rarity": "A",
+    "icon": "https://img.game8.co/4120746/2c1e84bb9a34db01552f35893e2e955d.png/show"
+  },
+  {
+    "id": "marcato-desire",
+    "game8Id": "488260",
+    "name": "Marcato Desire",
+    "specialty": "attack",
+    "rarity": "A",
+    "icon": "https://img.game8.co/4059196/acb15705043e29495de1b5e1b1dadb41.png/show"
+  },
+  {
+    "id": "gilded-blossom",
+    "game8Id": "463514",
+    "name": "Gilded Blossom",
+    "specialty": "attack",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3945631/b4c1cbd17491d4117e25e6515b02a953.png/show"
+  },
+  {
+    "id": "peacekeeper-specialized",
+    "game8Id": "463663",
+    "name": "Peacekeeper - Specialized",
+    "specialty": "defense",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3945624/6984e1b2539cea130110e3f4264c5901.png/show"
+  },
+  {
+    "id": "kaboom-the-cannon",
+    "game8Id": "460149",
+    "name": "Kaboom the Cannon",
+    "specialty": "support",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3922286/0d8e0157cff437e9def055d0d355f0e3.png/show"
+  },
+  {
+    "id": "roaring-ride",
+    "game8Id": "460150",
+    "name": "Roaring Ride",
+    "specialty": "anomaly",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3922287/eaa583f09922f2a42a1c90aa8091b3d6.png/show"
+  },
+  {
+    "id": "big-cylinder",
+    "game8Id": "451771",
+    "name": "Big Cylinder",
+    "specialty": "defense",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872582/84af0578923fec99bd3a9a833f6d685f.png/show"
+  },
+  {
+    "id": "starlight-engine-replica",
+    "game8Id": "451772",
+    "name": "Starlight Engine Replica",
+    "specialty": "attack",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895010/c2ea75ee51b98b99fef71e7b5e737296.png/show"
+  },
+  {
+    "id": "housekeeper",
+    "game8Id": "451773",
+    "name": "Housekeeper",
+    "specialty": "attack",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895054/75a9c05c0bb3654d69809f168ff97965.png/show"
+  },
+  {
+    "id": "the-vault",
+    "game8Id": "451775",
+    "name": "The Vault",
+    "specialty": "support",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872583/f8971ab0c9755b80c98ad77bd6cf5768.png/show"
+  },
+  {
+    "id": "demara-battery-mark-ii",
+    "game8Id": "451774",
+    "name": "Demara Battery Mark II",
+    "specialty": "stun",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895007/537f39cc4062f218df6dfc83c4fb2710.png/show"
+  },
+  {
+    "id": "drill-rig-red-axis",
+    "game8Id": "451776",
+    "name": "Drill Rig - Red Axis",
+    "specialty": "attack",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895014/4a1b6adc3a6d52aa6d2aa70bea3e2fc3.png/show"
+  },
+  {
+    "id": "street-superstar",
+    "game8Id": "451796",
+    "name": "Street Superstar",
+    "specialty": "attack",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895002/a58725768764be2bc243edff18fad3b6.png/show"
+  },
+  {
+    "id": "slice-of-time",
+    "game8Id": "451797",
+    "name": "Slice of Time",
+    "specialty": "support",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895011/97ccee0d6e9e5c1577027a4e69f8bd49.png/show"
+  },
+  {
+    "id": "rainforest-gourmet",
+    "game8Id": "451798",
+    "name": "Rainforest Gourmet",
+    "specialty": "anomaly",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895004/ac5b7951da4ef3bba554b74881dd1fc6.png/show"
+  },
+  {
+    "id": "starlight-engine",
+    "game8Id": "451799",
+    "name": "Starlight Engine",
+    "specialty": "attack",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895005/63982f002ea8d8a49544bf3645b1472c.png/show"
+  },
+  {
+    "id": "steam-oven",
+    "game8Id": "451800",
+    "name": "Steam Oven",
+    "specialty": "stun",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895006/f7d0e25527e195f826ac1e8a164646e3.png/show"
+  },
+  {
+    "id": "precious-fossilized-core",
+    "game8Id": "451801",
+    "name": "Precious Fossilized Core",
+    "specialty": "stun",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895012/3a8f1de3596b11ebf74927f45abd5529.png/show"
+  },
+  {
+    "id": "original-transmorpher",
+    "game8Id": "451802",
+    "name": "Original Transmorpher",
+    "specialty": "defense",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895009/19b3cd750ebbcf200e98efd44294e47e.png/show"
+  },
+  {
+    "id": "weeping-gemini",
+    "game8Id": "451803",
+    "name": "Weeping Gemini",
+    "specialty": "anomaly",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895016/c959553ef26bdef0651be70de6bffd82.png/show"
+  },
+  {
+    "id": "bunny-band",
+    "game8Id": "451737",
+    "name": "Bunny Band",
+    "specialty": "defense",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872245/3ee8944ae3a30a125a3c99dd00130254.png/show"
+  },
+  {
+    "id": "cannon-rotor",
+    "game8Id": "451804",
+    "name": "Cannon Rotor",
+    "specialty": "attack",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895001/6578b0d76ed31dee2a710165c67330aa.png/show"
+  },
+  {
+    "id": "six-shooter",
+    "game8Id": "451805",
+    "name": "Six Shooter",
+    "specialty": "stun",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895013/04136b75577d98dfff7b80e274ec630e.png/show"
+  },
+  {
+    "id": "electro-lip-gloss",
+    "game8Id": "451806",
+    "name": "Electro-Lip Gloss",
+    "specialty": "anomaly",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895003/6ebfb26587a831028f84becb130bfeb9.png/show"
+  },
+  {
+    "id": "unfettered-game-ball",
+    "game8Id": "451807",
+    "name": "Unfettered Game Ball",
+    "specialty": "support",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895015/18f2a339b8a8eb9edf156a1a7ad29144.png/show"
+  },
+  {
+    "id": "spring-embrace",
+    "game8Id": "451808",
+    "name": "Spring Embrace",
+    "specialty": "defense",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3895008/f3fdd78c7184f0d4cc1262b91d9398e9.png/show"
+  },
+  {
+    "id": "bashful-demon",
+    "game8Id": "451809",
+    "name": "Bashful Demon",
+    "specialty": "support",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872244/293f1b32542fa80ab6b34d19ccd94860.png/show"
+  },
+  {
+    "id": "cinder-cobalt",
+    "game8Id": "523315",
+    "name": "Cinder - Cobalt",
+    "specialty": "rupture",
+    "rarity": "A",
+    "icon": "https://img.game8.co/4178926/0ab3d842776c9bac24a5dd35b9003b22.png/show"
+  },
+  {
+    "id": "vortex-revolver",
+    "game8Id": "451777",
+    "name": "Vortex - Revolver",
+    "specialty": "stun",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872260/5e199c50038b0f8ae7b81006ae9df46c.png/show"
+  },
+  {
+    "id": "vortex-arrow",
+    "game8Id": "451738",
+    "name": "Vortex - Arrow",
+    "specialty": "stun",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872251/f1c8ca09842e9021d285523a7d085312.png/show"
+  },
+  {
+    "id": "magnetic-storm-bravo",
+    "game8Id": "451784",
+    "name": "Magnetic Storm - Bravo",
+    "specialty": "anomaly",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872257/44b6e2ec5c745a382824811c49ba1ba0.png/show"
+  },
+  {
+    "id": "reverb-mark-i",
+    "game8Id": "451785",
+    "name": "Reverb - Mark I",
+    "specialty": "support",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872247/67e257c76e2d13b705a69f3b44d1bf05.png/show"
+  },
+  {
+    "id": "reverb-mark-ii",
+    "game8Id": "451786",
+    "name": "Reverb - Mark II",
+    "specialty": "support",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872255/96ae437409f537daab158c646bd6d2a5.png/show"
+  },
+  {
+    "id": "reverb-mark-iii",
+    "game8Id": "451787",
+    "name": "Reverb - Mark III",
+    "specialty": "support",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872250/b700ebcbc7b9aeb21f60027aa73091f7.png/show"
+  },
+  {
+    "id": "vortex-hatchet",
+    "game8Id": "451788",
+    "name": "Vortex - Hatchet",
+    "specialty": "stun",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872256/37c71ad65fe23265cf8cf105ce99b1c3.png/show"
+  },
+  {
+    "id": "lunar-decrescent",
+    "game8Id": "451789",
+    "name": "Lunar - Decrescent",
+    "specialty": "attack",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872248/3d84368f1277d03f2ef71b4182b675a4.png/show"
+  },
+  {
+    "id": "lunar-pleniluna",
+    "game8Id": "451790",
+    "name": "Lunar - Pleniluna",
+    "specialty": "attack",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872252/ac6fbafbf3abbae883e50081486101a2.png/show"
+  },
+  {
+    "id": "lunar-noviluna",
+    "game8Id": "451791",
+    "name": "Lunar - Noviluna",
+    "specialty": "attack",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872253/5bf4ae05ce4071b7945bc904854d42cc.png/show"
+  },
+  {
+    "id": "magnetic-storm-alpha",
+    "game8Id": "451792",
+    "name": "Magnetic Storm - Alpha",
+    "specialty": "anomaly",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872249/83e009aafff4d7c2460ca4de0cdb677c.png/show"
+  },
+  {
+    "id": "magnetic-storm-charlie",
+    "game8Id": "451793",
+    "name": "Magnetic Storm - Charlie",
+    "specialty": "anomaly",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872258/2555b411f770bd7a3b72e235475df2e7.png/show"
+  },
+  {
+    "id": "identity-inflection",
+    "game8Id": "451794",
+    "name": "Identity - Inflection",
+    "specialty": "defense",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872254/cc0681a4b2b622ae62153bad924968b8.png/show"
+  },
+  {
+    "id": "identity-base",
+    "game8Id": "451795",
+    "name": "Identity - Base",
+    "specialty": "defense",
+    "rarity": "A",
+    "icon": "https://img.game8.co/3872246/5e7df834b29dc59cbbe48cb25eeea099.png/show"
+  }
+]

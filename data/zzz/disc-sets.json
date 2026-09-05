@@ -1,0 +1,236 @@
+[
+  {
+    "id": "thorned-rose",
+    "game8Id": "611637",
+    "name": "Thorned Rose",
+    "icon": "https://img.game8.co/4563129/89bff4860f299f8b3707b417311623aa.png/show"
+  },
+  {
+    "id": "feathered-fate",
+    "game8Id": "611636",
+    "name": "Feathered Fate",
+    "icon": "https://img.game8.co/4563128/e256431f3a0a1c542f89a660d2ca9e84.png/show"
+  },
+  {
+    "id": "wuthering-salon",
+    "game8Id": "604521",
+    "name": "Wuthering Salon",
+    "icon": "https://img.game8.co/4527257/87896cee1e4b49c2e07357f3d78090e2.png/show"
+  },
+  {
+    "id": "the-sky-ablaze",
+    "game8Id": "604522",
+    "name": "The Sky Ablaze",
+    "icon": "https://img.game8.co/4527258/16c31c2031e23e593d0c73e0ac314b9b.png/show"
+  },
+  {
+    "id": "notes-from-the-chained",
+    "game8Id": "586525",
+    "name": "Notes from the Chained",
+    "icon": "https://img.game8.co/4441787/422e7ba441170deacca37f97a44603bb.png/show"
+  },
+  {
+    "id": "bunny-in-wonderland",
+    "game8Id": "586524",
+    "name": "Bunny in Wonderland",
+    "icon": "https://img.game8.co/4441785/53e9a7e8fdaf6c4b468bdb547abbba0f.png/show"
+  },
+  {
+    "id": "shining-aria",
+    "game8Id": "572096",
+    "name": "Shining Aria",
+    "icon": "https://img.game8.co/4372245/f9cc143de32c9943e255bd5917473851.png/show"
+  },
+  {
+    "id": "white-water-ballad",
+    "game8Id": "572095",
+    "name": "White Water Ballad",
+    "icon": "https://img.game8.co/4372244/d34a3854b77e5ea19a901912532f7aef.png/show"
+  },
+  {
+    "id": "moonlight-lullaby",
+    "game8Id": "545818",
+    "name": "Moonlight Lullaby",
+    "icon": "https://img.game8.co/4254751/7e0cf5cd2fbb0dc0459e3d50e50bb49a.png/show"
+  },
+  {
+    "id": "dawn",
+    "game8Id": "545814",
+    "name": "Dawn",
+    "icon": "https://img.game8.co/4254750/e66574f468c5cd0c18c73c55d6fd069e.png/show"
+  },
+  {
+    "id": "king-of-the-summit",
+    "game8Id": "523319",
+    "name": "King of the Summit",
+    "icon": "https://img.game8.co/4178928/2b3a411a360094aeff5d42b5086bde85.png/show"
+  },
+  {
+    "id": "yunkui-tales",
+    "game8Id": "523316",
+    "name": "Yunkui Tales",
+    "icon": "https://img.game8.co/4178927/86a8fa7ab6da4fade056ca1cd46cce93.png/show"
+  },
+  {
+    "id": "shadow-harmony",
+    "game8Id": "502196",
+    "name": "Shadow Harmony",
+    "icon": "https://img.game8.co/4120921/a27c14217fd7a7741f4206c8ae6bbaa0.png/show"
+  },
+  {
+    "id": "phaethon",
+    "game8Id": "502197",
+    "name": "Phaethon",
+    "icon": "https://img.game8.co/4120918/0e3f72d56dbc1746e5e2079e20341c7a.png/show"
+  },
+  {
+    "id": "astral-voice",
+    "game8Id": "488266",
+    "name": "Astral Voice",
+    "icon": "https://img.game8.co/4059268/2e93a05e5ba1a9d1f259e64378ba7c60.png/show"
+  },
+  {
+    "id": "branch-and-blade-song",
+    "game8Id": "488264",
+    "name": "Branch and Blade Song",
+    "icon": "https://img.game8.co/4059267/dc3294bba4ef1ba5581b33d3fef94ac0.png/show"
+  },
+  {
+    "id": "proto-punk",
+    "game8Id": "473494",
+    "name": "Proto Punk",
+    "icon": "https://img.game8.co/3990263/6633a2a9e3659638a638da7354b8d5f5.png/show"
+  },
+  {
+    "id": "chaos-jazz",
+    "game8Id": "473491",
+    "name": "Chaos Jazz",
+    "icon": "https://img.game8.co/3990264/ea56cb484759733c84cace008a4963f3.png/show"
+  },
+  {
+    "id": "freedom-blues",
+    "game8Id": "451715",
+    "name": "Freedom Blues",
+    "icon": "https://img.game8.co/3926729/83e7c9a7630c3322b4bfb41f098aa3b4.png/show"
+  },
+  {
+    "id": "polar-metal",
+    "game8Id": "451716",
+    "name": "Polar Metal",
+    "icon": "https://img.game8.co/3926731/ce36b1f35b3672819221a35fae6ab69f.png/show"
+  },
+  {
+    "id": "puffer-electro",
+    "game8Id": "451704",
+    "name": "Puffer Electro",
+    "icon": "https://img.game8.co/3926720/a81d9d89d9f7b838dc21791b1281877f.png/show"
+  },
+  {
+    "id": "inferno-metal",
+    "game8Id": "451717",
+    "name": "Inferno Metal",
+    "icon": "https://img.game8.co/3926728/13966f79a86e1c25b101c80964d37751.png/show"
+  },
+  {
+    "id": "shockstar-disco",
+    "game8Id": "451718",
+    "name": "Shockstar Disco",
+    "icon": "https://img.game8.co/3926723/4cba01b232864401b83238f185547313.png/show"
+  },
+  {
+    "id": "thunder-metal",
+    "game8Id": "451719",
+    "name": "Thunder Metal",
+    "icon": "https://img.game8.co/3926726/1e1fb421328aee9ac952e8d8b825db6d.png/show"
+  },
+  {
+    "id": "hormone-punk",
+    "game8Id": "451720",
+    "name": "Hormone Punk",
+    "icon": "https://img.game8.co/3926727/42c2c3c7ca401a84f0dbc01b82ec2041.png/show"
+  },
+  {
+    "id": "fanged-metal",
+    "game8Id": "451721",
+    "name": "Fanged Metal",
+    "icon": "https://img.game8.co/3926724/8a84adae9ac13de711c9ea8b3f7d0531.png/show"
+  },
+  {
+    "id": "swing-jazz",
+    "game8Id": "451722",
+    "name": "Swing Jazz",
+    "icon": "https://img.game8.co/3926730/cd932cb19e90e2c33110c3863395bbbd.png/show"
+  },
+  {
+    "id": "chaotic-metal",
+    "game8Id": "451723",
+    "name": "Chaotic Metal",
+    "icon": "https://img.game8.co/3926722/8285b5a03578f809329fa430acb7e09b.png/show"
+  },
+  {
+    "id": "woodpecker-electro",
+    "game8Id": "451724",
+    "name": "Woodpecker Electro",
+    "icon": "https://img.game8.co/3926721/8d67f64bb18370ae2954afda8c4bbd65.png/show"
+  },
+  {
+    "id": "soul-rock",
+    "game8Id": "451725",
+    "name": "Soul Rock",
+    "icon": "https://img.game8.co/3926725/84e56d9395b418b2d65708b26f98d0bc.png/show"
+  },
+  {
+    "id": "monsoon-funk",
+    "game8Id": "451703",
+    "name": "Monsoon Funk",
+    "icon": "https://img.game8.co/3872129/36334d48995f6c5faf6f573c4f1c774f.png/show"
+  },
+  {
+    "id": "assassin",
+    "game8Id": "451733",
+    "name": "Assassin",
+    "icon": "https://img.game8.co/3872128/5c0edf8e9cc009f9b3d476f649300112.png/show"
+  },
+  {
+    "id": "doom-grindcore",
+    "game8Id": "451732",
+    "name": "Doom Grindcore",
+    "icon": "https://img.game8.co/3872127/8367ad35b5198575b6e125e1d52eb297.png/show"
+  },
+  {
+    "id": "unicorn-electro",
+    "game8Id": "451731",
+    "name": "Unicorn Electro",
+    "icon": "https://img.game8.co/3872126/cead433dadf25df29cd0322b9529bcc0.png/show"
+  },
+  {
+    "id": "mammoth-electro",
+    "game8Id": "451730",
+    "name": "Mammoth Electro",
+    "icon": "https://img.game8.co/3872125/0e358eb52d146be6812c5bd4c702ffaa.png/show"
+  },
+  {
+    "id": "vagabond-folk",
+    "game8Id": "451729",
+    "name": "Vagabond Folk",
+    "icon": "https://img.game8.co/3872124/0c048e2cad8495d24d922f2a9f69e4ce.png/show"
+  },
+  {
+    "id": "ecstatic-punk",
+    "game8Id": "451728",
+    "name": "Ecstatic Punk",
+    "icon": "https://img.game8.co/3872123/c9ddc6417d8250db80bb708e420f93cf.png/show"
+  },
+  {
+    "id": "twisted-grindcore",
+    "game8Id": "451727",
+    "name": "Twisted Grindcore",
+    "icon": "https://img.game8.co/3872122/d6f24d8d660bc2e6c38effbee6621fe9.png/show"
+  },
+  {
+    "id": "noisy-pop",
+    "game8Id": "451726",
+    "name": "Noisy Pop",
+    "icon": "https://img.game8.co/3872121/3957f0f8fe1f38192a0834f28f8bc04c.png/show"
+  }
+]

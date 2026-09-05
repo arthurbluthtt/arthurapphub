@@ -1,0 +1,462 @@
+---
+import { ANIME_TYPES, ANIME_TYPE_LABELS } from '../../lib/anime/store';
+---
+
+<button
+  type="button"
+  data-add-anime-chip
+  class="fixed bottom-4 right-4 z-30 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 shadow-md transition hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-zinc-800 dark:text-white"
+  aria-haspopup="dialog"
+>
+  <span aria-hidden="true">+</span>
+  <span>Agregar</span>
+</button>
+
+<dialog
+  data-add-anime-dialog
+  class="backdrop:bg-zinc-900/95 dark:backdrop:bg-zinc-950/95 m-auto max-h-[90vh] w-[min(560px,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+>
+  <div class="flex items-center justify-between gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
+    <div>
+      <h2 class="text-base font-semibold">Agregar a AnimeTracker</h2>
+      <p class="text-xs uppercase tracking-wider text-zinc-500">Busca en Kitsu o agregá manual</p>
+    </div>
+    <button
+      type="button"
+      data-add-anime-close
+      aria-label="Cerrar"
+      class="grid h-8 w-8 place-items-center rounded-full hover:bg-zinc-100 dark:hover:bg-white/10"
+    >
+      <span aria-hidden="true" class="text-lg leading-none">×</span>
+    </button>
+  </div>
+
+  <div class="flex border-b border-zinc-200 dark:border-white/10" data-add-anime-tabs>
+    <button
+      type="button"
+      data-add-anime-tab="search"
+      class="flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-white/10"
+      aria-selected="true"
+    >
+      Buscar en Kitsu
+    </button>
+    <button
+      type="button"
+      data-add-anime-tab="manual"
+      class="flex-1 px-3 py-2 text-xs font-medium uppercase tracking-wider text-zinc-500 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-white/10"
+      aria-selected="false"
+    >
+      Agregar manual
+    </button>
+  </div>
+
+  <div data-add-anime-pane="search" class="p-4">
+    <input
+      type="search"
+      placeholder="Buscar anime..."
+      data-add-anime-input
+      autocomplete="off"
+      spellcheck="false"
+      class="w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+    />
+    <p
+      data-add-anime-empty
+      class="hidden mt-3 text-center text-xs text-zinc-500"
+    >
+      Escribí el nombre y elegí un resultado.
+    </p>
+    <div
+      data-add-anime-results
+      class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-4"
+    >
+    </div>
+  </div>
+
+  <div data-add-anime-pane="manual" class="hidden p-4">
+    <form data-add-anime-manual-form class="flex flex-col gap-3">
+      <div>
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Tipo</span>
+          <select
+            data-add-manual-type
+            class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30 [&>option]:bg-white dark:[&>option]:bg-zinc-800"
+          >
+            {ANIME_TYPES.map((t) => (
+              <option value={t}>{ANIME_TYPE_LABELS[t]}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+      <label class="block">
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Título *</span>
+        <input
+          type="text"
+          name="title"
+          data-add-manual-title
+          maxlength="120"
+          required
+          autocomplete="off"
+          class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+        />
+      </label>
+      <div class="grid grid-cols-2 gap-3">
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Año (opcional)</span>
+          <input
+            type="number"
+            name="year"
+            data-add-manual-year
+            min="1888"
+            max="2100"
+            class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+          />
+        </label>
+        <label class="block">
+          <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Director/Creador (opcional)</span>
+          <input
+            type="text"
+            name="director"
+            data-add-manual-director
+            maxlength="120"
+            autocomplete="off"
+            class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+          />
+        </label>
+      </div>
+      <label class="block">
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">URL de portada (opcional)</span>
+        <input
+          type="url"
+          name="coverUrl"
+          data-add-manual-cover
+          autocomplete="off"
+          spellcheck="false"
+          class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+        />
+      </label>
+      <div class="flex items-center justify-end gap-2 border-t border-zinc-200 pt-3 dark:border-white/10">
+        <button
+          type="submit"
+          data-add-manual-submit
+          class="rounded-lg bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+        >
+          Agregar
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <p
+    data-add-anime-status
+    class="hidden m-0 border-t border-zinc-200 px-4 py-2 text-center text-xs text-zinc-500 dark:border-white/10"
+  >
+  </p>
+</dialog>
+
+<script>
+  (() => {
+    if (window.__addAnimeDialogInit) return;
+    window.__addAnimeDialogInit = true;
+
+    const dialog = document.querySelector('[data-add-anime-dialog]');
+    const chip = document.querySelector('[data-add-anime-chip]');
+    const closeBtn = document.querySelector('[data-add-anime-close]');
+    const tabs = document.querySelectorAll('[data-add-anime-tab]');
+    const panes = {
+      search: document.querySelector('[data-add-anime-pane="search"]'),
+      manual: document.querySelector('[data-add-anime-pane="manual"]'),
+    };
+    const input = document.querySelector('[data-add-anime-input]');
+    const resultsEl = document.querySelector('[data-add-anime-results]');
+    const emptyEl = document.querySelector('[data-add-anime-empty]');
+    const statusEl = document.querySelector('[data-add-anime-status]');
+
+    const manualForm = document.querySelector('[data-add-anime-manual-form]');
+    const manualType = document.querySelector('[data-add-manual-type]');
+    const manualTitle = document.querySelector('[data-add-manual-title]');
+    const manualYear = document.querySelector('[data-add-manual-year]');
+    const manualDirector = document.querySelector('[data-add-manual-director]');
+    const manualCover = document.querySelector('[data-add-manual-cover]');
+    const manualSubmit = document.querySelector('[data-add-manual-submit]');
+
+    let currentTab = 'search';
+    let debounce = 0;
+    let bodyLocked = false;
+
+    function lockBodyScroll() {
+      if (bodyLocked) return;
+      bodyLocked = true;
+      const sbw = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
+    }
+    function unlockBodyScroll() {
+      if (!bodyLocked) return;
+      bodyLocked = false;
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+    function showStatus(text, isError) {
+      if (!statusEl) return;
+      statusEl.textContent = text;
+      statusEl.classList.remove('hidden', 'text-red-500', 'dark:text-red-400');
+      if (isError) {
+        statusEl.classList.add('text-red-500', 'dark:text-red-400');
+      }
+    }
+    function hideStatus() {
+      if (!statusEl) return;
+      statusEl.classList.add('hidden');
+      statusEl.textContent = '';
+    }
+
+    function setTab(name) {
+      currentTab = name;
+      tabs.forEach((t) => {
+        const active = t.dataset.addAnimeTab === name;
+        t.setAttribute('aria-selected', active ? 'true' : 'false');
+        t.classList.toggle('text-zinc-700', active);
+        t.classList.toggle('dark:text-zinc-200', active);
+        t.classList.toggle('text-zinc-500', !active);
+        t.classList.toggle('dark:text-zinc-400', !active);
+      });
+      panes.search?.classList.toggle('hidden', name !== 'search');
+      panes.manual?.classList.toggle('hidden', name !== 'manual');
+    }
+
+    function resetDialog() {
+      clearTimeout(debounce);
+      seq++;
+      setTab('search');
+      if (input) input.value = '';
+      resultsEl.replaceChildren();
+      resultsEl.classList.add('hidden');
+      emptyEl.textContent = 'Escribí el nombre y elegí un resultado.';
+      emptyEl.classList.remove('hidden');
+      manualForm?.reset();
+      hideStatus();
+    }
+
+    function openDialog() {
+      resetDialog();
+      lockBodyScroll();
+      dialog?.showModal();
+      setTimeout(() => input?.focus(), 0);
+    }
+    function closeDialog() {
+      dialog?.close();
+      unlockBodyScroll();
+    }
+
+    chip?.addEventListener('click', openDialog);
+    closeBtn?.addEventListener('click', closeDialog);
+    dialog?.addEventListener('click', (e) => {
+      if (e.target === dialog) closeDialog();
+    });
+    dialog?.addEventListener('close', unlockBodyScroll);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dialog?.open) closeDialog();
+    });
+
+    tabs.forEach((t) => {
+      t.addEventListener('click', () => setTab(t.dataset.addAnimeTab));
+    });
+
+    // Search debounced
+    let seq = 0;
+    async function runSearch(q) {
+      const mySeq = ++seq;
+      if (!q) {
+        resultsEl.replaceChildren();
+        resultsEl.classList.add('hidden');
+        emptyEl.textContent = 'Escribí el nombre y elegí un resultado.';
+        emptyEl.classList.remove('hidden');
+        hideStatus();
+        return;
+      }
+      emptyEl.classList.add('hidden');
+      hideStatus();
+      try {
+        const res = await fetch(`/anime/api/search?q=${encodeURIComponent(q)}`, {
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) {
+          const error = await readError(res);
+          throw new Error(errorMessage(error, 'No se pudo buscar en Kitsu.'));
+        }
+        const data = await res.json();
+        if (mySeq !== seq) return; // stale
+        if (!Array.isArray(data.results)) throw new Error('Respuesta inválida de Kitsu.');
+        renderResults(data.results);
+      } catch (err) {
+        if (mySeq !== seq) return;
+        showStatus(err instanceof Error ? err.message : 'No se pudo buscar en Kitsu.', true);
+      }
+    }
+    async function readError(res) {
+      try {
+        const data = await res.json();
+        return data && typeof data.error === 'string' ? data.error : null;
+      } catch {
+        return null;
+      }
+    }
+    function errorMessage(code, fallback) {
+      if (code === 'unauthorized') return 'Sesión vencida. Volvé a iniciar sesión.';
+      if (code === 'kitsu_failed') return 'Kitsu no está disponible. Probá de nuevo o usá Agregar manual.';
+      if (code === 'kitsu_not_found') return 'No encontrado en Kitsu.';
+      if (code === 'duplicate') return 'Ya está en tu lista.';
+      if (code === 'invalid_body' || code?.startsWith('invalid_')) return 'Datos inválidos.';
+      return fallback;
+    }
+    function renderResults(results) {
+      resultsEl.replaceChildren();
+      if (results.length === 0) {
+        resultsEl.classList.add('hidden');
+        emptyEl.textContent = 'No encontramos animes en Kitsu.';
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+      resultsEl.classList.remove('hidden');
+      emptyEl.classList.add('hidden');
+      for (const r of results) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className =
+          'group flex flex-col overflow-hidden rounded-lg border border-zinc-200 bg-white text-left transition hover:border-zinc-400 dark:border-white/10 dark:bg-white/[0.025] dark:hover:border-white/30';
+        const imgWrap = document.createElement('div');
+        imgWrap.className =
+          'relative aspect-[2/3] w-full overflow-hidden bg-zinc-100 dark:bg-zinc-800';
+        if (r.coverUrl) {
+          const img = document.createElement('img');
+          img.src = r.coverUrl;
+          img.alt = r.title;
+          img.loading = 'lazy';
+          img.decoding = 'async';
+          img.className = 'h-full w-full object-cover';
+          img.onerror = () => {
+            img.replaceWith(placeholder(r.title));
+          };
+          imgWrap.appendChild(img);
+        } else {
+          imgWrap.appendChild(placeholder(r.title));
+        }
+        function placeholder(title) {
+          const ph = document.createElement('div');
+          ph.className =
+            'grid h-full w-full place-items-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-white/[0.04] dark:to-white/[0.06]';
+          const sp = document.createElement('span');
+          sp.className = 'text-base font-semibold text-zinc-400 dark:text-zinc-500';
+          sp.textContent = String(title || '?')
+            .split(/\s+/)
+            .slice(0, 2)
+            .map((w) => w[0] || '')
+            .join('')
+            .toUpperCase();
+          ph.appendChild(sp);
+          return ph;
+        }
+        btn.appendChild(imgWrap);
+        const info = document.createElement('div');
+        info.className = 'flex flex-col gap-0.5 p-1.5';
+        const titleEl = document.createElement('span');
+        titleEl.className = 'truncate text-xs font-semibold';
+        titleEl.textContent = r.title;
+        info.appendChild(titleEl);
+        const meta = document.createElement('span');
+        meta.className = 'truncate text-[10px] uppercase tracking-wider text-zinc-500';
+        meta.textContent = `${r.animeType === 'tv' ? '📺 Serie' : '🎬 Peli'}${r.year ? ' · ' + r.year : ''}`;
+        info.appendChild(meta);
+        btn.appendChild(info);
+        btn.addEventListener('click', () => addFromResult(r));
+        resultsEl.appendChild(btn);
+      }
+    }
+    input?.addEventListener('input', () => {
+      clearTimeout(debounce);
+      debounce = setTimeout(() => runSearch(input.value.trim()), 250);
+    });
+
+    async function addFromResult(r) {
+      if (manualSubmit) manualSubmit.disabled = true;
+      showStatus('Agregando...', false);
+      try {
+        const res = await fetch('/anime/api/add', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ kitsuId: r.kitsuId, animeType: r.animeType }),
+        });
+        if (res.status === 201) {
+          const data = await res.json();
+          showStatus('Agregado.', false);
+          window.dispatchEvent(new CustomEvent('anime:added', { detail: { anime: data.anime } }));
+          setTimeout(closeDialog, 200);
+        } else {
+          showStatus(errorMessage(await readError(res), 'Error al agregar.'), true);
+        }
+      } catch (err) {
+        showStatus('Error de red', true);
+      } finally {
+        if (manualSubmit) manualSubmit.disabled = false;
+      }
+    }
+
+    manualForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      hideStatus();
+      const title = manualTitle.value.trim();
+      if (!title) {
+        showStatus('Título requerido', true);
+        manualTitle.focus();
+        return;
+      }
+      const coverUrl = manualCover.value.trim() || null;
+      if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
+        showStatus('URL de portada inválida', true);
+        manualCover.focus();
+        return;
+      }
+      const yearText = manualYear.value.trim();
+      const year = yearText ? Number(yearText) : null;
+      if (year !== null && (!Number.isSafeInteger(year) || year < 1888 || year > 2100)) {
+        showStatus('Año inválido (1888–2100)', true);
+        manualYear.focus();
+        return;
+      }
+      const director = manualDirector.value.trim() || null;
+      if (director && director.length > 120) {
+        showStatus('Director/Creador demasiado largo (máximo 120)', true);
+        manualDirector.focus();
+        return;
+      }
+      manualSubmit.disabled = true;
+      showStatus('Agregando...', false);
+      try {
+        const body = {
+          animeType: manualType.value,
+          title,
+          year,
+          director,
+          coverUrl,
+        };
+        const res = await fetch('/anime/api/add-manual', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.status === 201) {
+          const data = await res.json();
+          showStatus('Agregado.', false);
+          window.dispatchEvent(new CustomEvent('anime:added', { detail: { anime: data.anime } }));
+          setTimeout(closeDialog, 200);
+        } else {
+          showStatus(errorMessage(await readError(res), 'Error al agregar.'), true);
+        }
+      } catch (err) {
+        showStatus('Error de red', true);
+      } finally {
+        manualSubmit.disabled = false;
+      }
+    });
+  })();
+</script>

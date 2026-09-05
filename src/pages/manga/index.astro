@@ -1,0 +1,590 @@
+---
+import { env } from 'cloudflare:workers';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import AddMangaDialog from '../../components/manga/AddMangaDialog.astro';
+import EditMangaDialog from '../../components/manga/EditMangaDialog.astro';
+import SearchBar from '../../components/SearchBar.astro';
+import MangaCard from '../../components/manga/MangaCard.astro';
+import { lookupSession, readCookie } from '../../lib/auth';
+import {
+  listManga,
+  STATUSES,
+  STATUS_LABELS,
+  MANGA_TYPES,
+  MANGA_TYPE_LABELS,
+  MANGA_TYPE_ICONS,
+  type MangaRow,
+  type MangaStatus,
+  type MangaType,
+} from '../../lib/manga/store';
+
+export const prerender = false;
+
+const sessionId = readCookie(Astro.request);
+const sess = sessionId ? await lookupSession(env.AUTH_DB, sessionId) : null;
+if (!sess) {
+  return Astro.redirect('/?next=' + encodeURIComponent('/manga'));
+}
+
+const items = await listManga(env.AUTH_DB, sess.username);
+const totalCount = items.length;
+
+const counts: Record<MangaStatus, number> = { backlog: 0, reading: 0, finished: 0 };
+const typeCounts: Record<MangaType, number> = { manga: 0, manhwa: 0, manhua: 0 };
+for (const it of items) {
+  counts[it.status]++;
+  typeCounts[it.mangaType]++;
+}
+
+const FILTER_STATUS_TABS = ['all', ...STATUSES] as const;
+const FILTER_TYPE_TABS = ['all', ...MANGA_TYPES] as const;
+---
+
+<BaseLayout title="MangaTracker — AppHub" contentMaxWidth="max-w-[1760px] 2xl:max-w-[2240px]">
+  <div class="mb-6 flex items-baseline justify-between gap-6">
+    <div>
+      <h1 class="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl xl:text-5xl dark:text-white">
+        MangaTracker
+      </h1>
+      <p class="mt-2 text-sm text-zinc-500 xl:text-base">
+        Mis mangas con estado: portada, tipo y progreso.
+      </p>
+    </div>
+    <span class="text-xs uppercase tracking-wider text-zinc-500 xl:text-sm" data-manga-count>
+      {totalCount} {totalCount === 1 ? 'manga' : 'mangas'}
+    </span>
+  </div>
+
+  <SearchBar placeholder="Buscar..." />
+  <div class="mb-4 flex flex-wrap items-center gap-2" data-filter-group>
+    {FILTER_STATUS_TABS.map((tab) => {
+      const label = tab === 'all' ? 'Todas' : STATUS_LABELS[tab];
+      const n = tab === 'all' ? totalCount : counts[tab];
+      const isActive = tab === 'all';
+      return (
+        <button
+          type="button"
+          data-status-filter={tab}
+          aria-pressed={isActive ? 'true' : 'false'}
+          class:list={[
+            'rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition',
+            isActive
+              ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900'
+              : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:hover:text-white',
+          ]}
+        >
+          {label} <span data-filter-count class="ml-1.5 text-zinc-500">{n}</span>
+        </button>
+      );
+    })}
+  </div>
+
+  <div class="mb-4 flex flex-wrap items-center gap-2" data-type-filter-group>
+    {FILTER_TYPE_TABS.map((tab) => {
+      const label = tab === 'all' ? 'Todos' : MANGA_TYPE_LABELS[tab];
+      const icon = tab === 'all' ? '📚' : MANGA_TYPE_ICONS[tab];
+      const n = tab === 'all' ? totalCount : typeCounts[tab];
+      const isActive = tab === 'all';
+      return (
+        <button
+          type="button"
+          data-type-filter={tab}
+          aria-pressed={isActive ? 'true' : 'false'}
+          class:list={[
+            'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition',
+            isActive
+              ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900'
+              : 'border-zinc-200 bg-white text-zinc-700 hover:border-zinc-400 hover:text-zinc-900 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:hover:text-white',
+          ]}
+        >
+          <span aria-hidden="true">{icon}</span>
+          <span>{label}</span>
+          <span data-filter-count class="ml-1.5 text-zinc-500">{n}</span>
+        </button>
+      );
+    })}
+  </div>
+
+  <div
+    class="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-8"
+    data-manga-grid
+  >
+    {items.map((it) => <MangaCard item={it} />)}
+  </div>
+
+  <p
+    class="hidden rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500"
+    data-empty-state
+  >
+    No tenés mangas en MangaTracker. Hacé click en "+ Agregar" para empezar.
+  </p>
+
+  <p
+    class="hidden rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500"
+    data-filtered-empty
+  >
+    No hay mangas que coincidan con el filtro.
+  </p>
+
+  <AddMangaDialog />
+  <EditMangaDialog />
+</BaseLayout>
+
+<script
+  is:inline
+  define:vars={{
+    statusKeys: STATUSES,
+    statusLabels: STATUS_LABELS,
+    typeKeys: MANGA_TYPES,
+  }}
+>
+  const grid = document.querySelector("[data-manga-grid]");
+  const emptyState = document.querySelector("[data-empty-state]");
+  const filteredEmpty = document.querySelector("[data-filtered-empty]");
+  const mangaCount = document.querySelector("[data-manga-count]");
+  const filterGroup = document.querySelector("[data-filter-group]");
+  const typeFilterGroup = document.querySelector("[data-type-filter-group]");
+
+  const FILTER_ACTIVE = [
+    "border-zinc-900", "bg-zinc-900", "text-white",
+    "dark:border-white", "dark:bg-white", "dark:text-zinc-900",
+  ];
+  const FILTER_INACTIVE = [
+    "border-zinc-200", "text-zinc-700", "hover:border-zinc-400", "hover:text-zinc-900",
+    "dark:border-white/10", "dark:text-zinc-200", "dark:hover:border-white/30", "dark:hover:text-white",
+  ];
+  const FILTER_INACTIVE_CLEAN = FILTER_INACTIVE.filter((c) => !c.startsWith("dark:"));
+  const FILTER_INACTIVE_DARK = FILTER_INACTIVE.filter((c) => c.startsWith("dark:"));
+
+  let currentStatus = "all";
+  let currentType = "all";
+  let currentSearch = "";
+
+  function makeBadge(text) {
+    const sp = document.createElement("span");
+    sp.className = "ml-1.5 text-zinc-500";
+    sp.textContent = text;
+    return sp;
+  }
+
+  function setStatusFilter(tab) {
+    currentStatus = tab;
+    if (!filterGroup) return;
+    const btns = filterGroup.querySelectorAll("[data-status-filter]");
+    btns.forEach((b) => {
+      const active = b.dataset.statusFilter === tab;
+      b.setAttribute("aria-pressed", active ? "true" : "false");
+      b.classList.remove(...FILTER_ACTIVE, ...FILTER_INACTIVE);
+      if (active) {
+        b.classList.add("border-zinc-900", "bg-zinc-900", "text-white");
+        b.classList.add("dark:border-white", "dark:bg-white", "dark:text-zinc-900");
+      } else {
+        b.classList.add(...FILTER_INACTIVE_CLEAN);
+        b.classList.add(...FILTER_INACTIVE_DARK);
+      }
+    });
+    applyFilters();
+  }
+  function setTypeFilter(tab) {
+    currentType = tab;
+    if (!typeFilterGroup) return;
+    const btns = typeFilterGroup.querySelectorAll("[data-type-filter]");
+    btns.forEach((b) => {
+      const active = b.dataset.typeFilter === tab;
+      b.setAttribute("aria-pressed", active ? "true" : "false");
+      b.classList.remove(...FILTER_ACTIVE, ...FILTER_INACTIVE);
+      if (active) {
+        b.classList.add("border-zinc-900", "bg-zinc-900", "text-white");
+        b.classList.add("dark:border-white", "dark:bg-white", "dark:text-zinc-900");
+      } else {
+        b.classList.add(...FILTER_INACTIVE_CLEAN);
+        b.classList.add(...FILTER_INACTIVE_DARK);
+      }
+    });
+    applyFilters();
+  }
+
+  function applyFilters() {
+    const cards = grid?.querySelectorAll("[data-manga-card]") || [];
+    let visible = 0;
+    cards.forEach((c) => {
+      const okStatus = currentStatus === "all" || c.dataset.status === currentStatus;
+      const okType = currentType === "all" || c.dataset.mangaType === currentType;
+      const qOk = !currentSearch || (c.dataset.search || "").includes(currentSearch);
+      const show = okStatus && okType && qOk;
+      c.classList.toggle("hidden", !show);
+      if (show) visible++;
+    });
+    const totalCards = cards.length;
+    if (emptyState) emptyState.classList.toggle("hidden", totalCards > 0);
+    if (filteredEmpty) filteredEmpty.classList.toggle("hidden", visible !== 0 || totalCards === 0);
+  }
+
+  filterGroup?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-status-filter]");
+    if (btn) setStatusFilter(btn.dataset.statusFilter);
+  });
+  typeFilterGroup?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-type-filter]");
+    if (btn) setTypeFilter(btn.dataset.typeFilter);
+  });
+  const searchInput = document.querySelector('[data-search-input]');
+  const searchClear = document.querySelector('[data-search-clear]');
+  let searchTimer = null;
+  function toggleClear(){ if(searchClear) searchClear.classList.toggle('hidden', !searchInput || !searchInput.value); }
+  searchInput?.addEventListener('input', () => {
+    if(searchTimer) clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { currentSearch = (searchInput.value || '').trim().toLowerCase(); toggleClear(); applyFilters(); }, 200);
+  });
+  searchClear?.addEventListener('click', () => { if(searchInput){ searchInput.value=''; currentSearch=''; toggleClear(); applyFilters(); searchInput.focus(); } });
+
+  function placeholder(title) {
+    const ph = document.createElement("div");
+    ph.className =
+      "grid h-full w-full place-items-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-white/[0.04] dark:to-white/[0.06]";
+    const sp = document.createElement("span");
+    sp.className = "text-xl font-bold tracking-wide text-zinc-300 dark:text-zinc-600";
+    sp.textContent = String(title || "?")
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((w) => w[0] || "")
+      .join("")
+      .toUpperCase();
+    ph.appendChild(sp);
+    return ph;
+  }
+
+  function wireCoverImage(img, title) {
+    img.onerror = () => {
+      img.onerror = null;
+      img.replaceWith(placeholder(title));
+    };
+  }
+
+  function getCards() {
+    return grid ? Array.from(grid.querySelectorAll("[data-manga-card]")) : [];
+  }
+
+  function findCard(id) {
+    return getCards().find((card) => card.dataset.mangaId === id) || null;
+  }
+
+  grid?.querySelectorAll("[data-manga-cover-image]").forEach((img) => {
+    wireCoverImage(img, img.alt);
+  });
+
+  function buildMangaCard(manga) {
+    const article = document.createElement("article");
+    article.dataset.mangaCard = "";
+    article.dataset.mangaId = manga.id;
+    article.dataset.status = manga.status;
+    article.dataset.mangaType = manga.mangaType;
+    article.dataset.search = (manga.title || "").toLowerCase();
+    article.className =
+      "w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur";
+
+    const coverWrap = document.createElement("div");
+    coverWrap.className = "relative aspect-[2/3] overflow-hidden bg-zinc-100 dark:bg-zinc-800";
+    if (manga.coverUrl) {
+      const img = document.createElement("img");
+      img.src = manga.coverUrl;
+      img.alt = manga.title || "";
+      img.loading = "lazy";
+      img.decoding = "async";
+      img.dataset.mangaCoverImage = "";
+      img.className = "h-full w-full object-cover";
+      wireCoverImage(img, manga.title);
+      coverWrap.appendChild(img);
+    } else {
+      coverWrap.appendChild(placeholder(manga.title));
+    }
+    const typeIcon = manga.mangaType === 'manhwa' ? '🇰🇷' : manga.mangaType === 'manhua' ? '🇨🇳' : '📚';
+    const typeLabel = manga.mangaType === 'manhwa' ? 'Manhwa' : manga.mangaType === 'manhua' ? 'Manhua' : 'Manga';
+    const typeChip = document.createElement("span");
+    typeChip.className =
+      "absolute left-1.5 top-1.5 rounded-full bg-zinc-950/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white backdrop-blur";
+    typeChip.textContent = typeIcon + " " + typeLabel;
+    coverWrap.appendChild(typeChip);
+    article.appendChild(coverWrap);
+
+    const body = document.createElement("div");
+    body.className = "flex flex-col gap-1 p-1.5";
+
+    const titleEl = document.createElement("h3");
+    titleEl.className = "truncate font-semibold text-zinc-900 dark:text-white";
+    titleEl.textContent = manga.title || "";
+    body.appendChild(titleEl);
+
+    const actionsRow = document.createElement("div");
+    actionsRow.className = "flex items-center gap-1";
+
+    const statusBtn = document.createElement("button");
+    statusBtn.type = "button";
+    statusBtn.dataset.statusButton = "";
+    statusBtn.dataset.mangaId = manga.id;
+    statusBtn.dataset.status = manga.status;
+    statusBtn.setAttribute("aria-haspopup", "listbox");
+    statusBtn.setAttribute("aria-expanded", "false");
+    statusBtn.className =
+      "flex flex-1 items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 outline-none transition hover:border-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:focus:border-white/30";
+    const labelEl = document.createElement("span");
+    labelEl.dataset.statusLabel = "";
+    labelEl.className = "truncate";
+    labelEl.textContent = statusLabels[manga.status] || manga.status;
+    statusBtn.appendChild(labelEl);
+    const caret = document.createElement("span");
+    caret.setAttribute("aria-hidden", "true");
+    caret.className = "shrink-0 text-[10px] text-zinc-400 dark:text-zinc-500";
+    caret.textContent = "▾";
+    statusBtn.appendChild(caret);
+    actionsRow.appendChild(statusBtn);
+
+    const editBtn = document.createElement("button");
+    editBtn.type = "button";
+    editBtn.dataset.editButton = "";
+    editBtn.dataset.mangaId = manga.id;
+    editBtn.setAttribute("aria-label", "Editar");
+    editBtn.title = "Editar";
+    editBtn.className =
+      "grid h-6 w-6 shrink-0 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-700 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-zinc-200";
+    editBtn.textContent = "✎";
+    actionsRow.appendChild(editBtn);
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.dataset.removeButton = "";
+    removeBtn.dataset.mangaId = manga.id;
+    removeBtn.setAttribute("aria-label", "Eliminar");
+    removeBtn.title = "Eliminar";
+    removeBtn.className =
+      "grid h-6 w-6 shrink-0 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-200 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-red-400";
+    const removeIcon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    removeIcon.setAttribute("viewBox", "0 0 16 16");
+    removeIcon.setAttribute("class", "h-3 w-3");
+    removeIcon.setAttribute("fill", "none");
+    removeIcon.setAttribute("stroke", "currentColor");
+    removeIcon.setAttribute("stroke-width", "1.5");
+    removeIcon.setAttribute("stroke-linecap", "round");
+    const removePath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    removePath.setAttribute("d", "M3 4h10M6 4V2.5h4V4M5 4l1 9h4l1-9");
+    removeIcon.appendChild(removePath);
+    removeBtn.appendChild(removeIcon);
+    actionsRow.appendChild(removeBtn);
+
+    body.appendChild(actionsRow);
+    article.appendChild(body);
+    return article;
+  }
+
+  let statusMenu = null;
+
+  document.addEventListener("click", (e) => {
+    const statusBtn = e.target.closest && e.target.closest("[data-status-button]");
+    if (statusBtn) {
+      e.stopPropagation();
+      const id = statusBtn.dataset.mangaId;
+      const currentStatus = statusBtn.dataset.status;
+      openStatusMenu(statusBtn, id, currentStatus);
+      return;
+    }
+    const editBtn = e.target.closest && e.target.closest("[data-edit-button]");
+    if (editBtn) {
+      e.stopPropagation();
+      const id = editBtn.dataset.mangaId;
+      const card = findCard(id);
+      if (card) {
+        const manga = {
+          id,
+          title: card.querySelector("h3")?.textContent || "",
+          mangaType: card.dataset.mangaType || "manga",
+          coverUrl: card.querySelector("img")?.src || null,
+        };
+        if (window.__openEditMangaDialog) window.__openEditMangaDialog(manga);
+      }
+      return;
+    }
+    const removeBtn = e.target.closest && e.target.closest("[data-remove-button]");
+    if (removeBtn) {
+      e.stopPropagation();
+      const id = removeBtn.dataset.mangaId;
+      removeManga(id);
+      return;
+    }
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!statusMenu || statusMenu.classList.contains("hidden")) return;
+    if (statusMenu.contains(e.target)) return;
+    if (e.target.closest && e.target.closest("[data-status-button]")) return;
+    closeStatusMenu();
+  }, true);
+  function ensureStatusMenu() {
+    if (statusMenu) return statusMenu;
+    statusMenu = document.createElement("div");
+    statusMenu.dataset.statusMenu = "";
+    statusMenu.className =
+      "fixed z-[9999] hidden rounded-lg border border-zinc-300 bg-white p-1 text-zinc-900 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100";
+    statusMenu.setAttribute("role", "listbox");
+    document.body.appendChild(statusMenu);
+    statusMenu.addEventListener("click", async (e) => {
+      const opt = e.target.closest("[data-status-option]");
+      if (!opt) return;
+      const id = opt.dataset.mangaId;
+      const status = opt.dataset.status;
+      closeStatusMenu();
+      await setStatus(id, status);
+    });
+    return statusMenu;
+  }
+  function openStatusMenu(anchor, id, currentStatusValue) {
+    const m = ensureStatusMenu();
+    closeStatusMenu();
+    m.replaceChildren();
+    for (const s of statusKeys) {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.dataset.statusOption = "";
+      btn.dataset.mangaId = id;
+      btn.dataset.status = s;
+      btn.setAttribute("role", "option");
+      const isCurrent = s === currentStatusValue;
+      btn.setAttribute("aria-selected", isCurrent ? "true" : "false");
+      btn.className =
+        "flex w-full cursor-pointer items-center justify-between gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium text-zinc-900 hover:bg-zinc-100 dark:text-zinc-100 dark:hover:bg-white/10";
+      const label = document.createElement("span");
+      label.textContent = statusLabels[s] || s;
+      btn.appendChild(label);
+      if (isCurrent) {
+        const check = document.createElement("span");
+        check.className = "shrink-0 text-zinc-400 dark:text-zinc-500";
+        check.textContent = "✓";
+        btn.appendChild(check);
+      }
+      m.appendChild(btn);
+    }
+    const rect = anchor.getBoundingClientRect();
+    const gap = 4;
+    const menuH = statusKeys.length * 32 + 8;
+    const spaceBelow = window.innerHeight - rect.bottom - gap - 8;
+    const top = spaceBelow >= menuH ? rect.bottom + gap : Math.max(8, rect.top - menuH - gap);
+    const menuW = Math.max(rect.width, 160);
+    const maxLeft = window.innerWidth - menuW - 8;
+    const left = Math.min(Math.max(8, rect.left), maxLeft);
+    m.style.top = top + "px";
+    m.style.left = left + "px";
+    m.style.minWidth = menuW + "px";
+    m.classList.remove("hidden");
+    anchor.setAttribute("aria-expanded", "true");
+  }
+  function closeStatusMenu() {
+    if (!statusMenu) return;
+    statusMenu.classList.add("hidden");
+    statusMenu.replaceChildren();
+    document.querySelectorAll("[data-status-button][aria-expanded=true]").forEach((b) => {
+      b.setAttribute("aria-expanded", "false");
+    });
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeStatusMenu();
+  });
+  window.addEventListener("resize", closeStatusMenu);
+  window.addEventListener("scroll", (e) => {
+    if (!statusMenu || statusMenu.classList.contains("hidden")) return;
+    if (statusMenu.contains(e.target)) return;
+    closeStatusMenu();
+  }, true);
+
+  async function setStatus(id, status) {
+    try {
+      const res = await fetch("/manga/api/set-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, status }),
+      });
+      if (!res.ok) throw new Error("set-status failed");
+      const data = await res.json();
+      const card = findCard(id);
+      if (card) {
+        card.dataset.status = data.manga.status;
+        const btn = card.querySelector("[data-status-button]");
+        if (btn) btn.dataset.status = data.manga.status;
+        const lbl = card.querySelector("[data-status-label]");
+        if (lbl) lbl.textContent = statusLabels[data.manga.status] || data.manga.status;
+      }
+      updateCounts();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function removeManga(id) {
+    if (!confirm("¿Eliminar este manga?")) return;
+    try {
+      const res = await fetch("/manga/api/remove", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error("remove failed");
+      const card = findCard(id);
+      if (card) card.remove();
+      updateCounts();
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  function updateCounts() {
+    const cards = getCards();
+    const newCounts = { backlog: 0, reading: 0, finished: 0, manga: 0, manhwa: 0, manhua: 0, total: 0 };
+    cards.forEach((c) => {
+      const status = c.dataset.status;
+      const mangaType = c.dataset.mangaType;
+      if (status in newCounts) newCounts[status]++;
+      if (mangaType in newCounts) newCounts[mangaType]++;
+      newCounts.total++;
+    });
+    if (mangaCount) {
+      const n = cards.length;
+      mangaCount.textContent = `${n} ${n === 1 ? "manga" : "mangas"}`;
+    }
+    if (filterGroup) {
+      filterGroup.querySelectorAll("[data-status-filter]").forEach((btn) => {
+        const t = btn.dataset.statusFilter;
+        const counter = btn.querySelector("[data-filter-count]");
+        if (counter) {
+          counter.textContent = t === "all" ? cards.length : newCounts[t] || 0;
+        }
+      });
+    }
+    if (typeFilterGroup) {
+      typeFilterGroup.querySelectorAll("[data-type-filter]").forEach((btn) => {
+        const t = btn.dataset.typeFilter;
+        const counter = btn.querySelector("[data-filter-count]");
+        if (counter) {
+          counter.textContent = t === "all" ? cards.length : newCounts[t] || 0;
+        }
+      });
+    }
+    if (emptyState) emptyState.classList.toggle("hidden", cards.length > 0);
+    applyFilters();
+  }
+
+  window.addEventListener("manga:added", (e) => {
+    const m = e.detail.manga;
+    const card = buildMangaCard(m);
+    grid?.prepend(card);
+    updateCounts();
+  });
+  window.addEventListener("manga:edited", (e) => {
+    const m = e.detail.manga;
+    const old = findCard(m.id);
+    if (old) {
+      const fresh = buildMangaCard(m);
+      old.replaceWith(fresh);
+    }
+    updateCounts();
+  });
+
+  applyFilters();
+</script>

@@ -1,0 +1,286 @@
+---
+import { SPECIALTIES, SPECIALTY_LABELS } from '../../lib/zzz/constants';
+interface Props {
+  name: string; // unique e.g. add-wengine, edit-disc4
+  type: 'wengine' | 'disc';
+  placeholder?: string;
+}
+const { name, type, placeholder = 'Seleccionar...' } = Astro.props;
+---
+<div data-zzz-picker-root={name} data-zzz-picker-type={type} class="relative">
+  <button
+    type="button"
+    data-zzz-picker-button={name}
+    aria-haspopup="listbox"
+    aria-expanded="false"
+    class="flex w-full items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-700 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:focus:border-white/30"
+  >
+    <span data-zzz-picker-label={name} class="truncate text-zinc-400">{placeholder}</span>
+    <span aria-hidden="true" class="shrink-0 text-xs text-zinc-400">▾</span>
+  </button>
+  <input type="hidden" data-zzz-picker-value={name} />
+
+  <div
+    data-zzz-picker-menu={name}
+    class="fixed z-[9999] hidden max-h-72 w-[min(420px,calc(100vw-2rem))] overflow-y-auto rounded-lg border border-zinc-300 bg-white p-1 shadow-2xl ring-1 ring-black/5 dark:border-zinc-700 dark:bg-zinc-900"
+    role="listbox"
+  >
+    <div class="sticky top-0 bg-white p-1 dark:bg-zinc-900">
+      <input
+        type="search"
+        data-zzz-picker-search={name}
+        placeholder={type === 'wengine' ? 'Buscar W-Engine...' : 'Buscar set...'}
+        autocomplete="off"
+        spellcheck="false"
+        class="w-full rounded-lg border border-zinc-200 bg-white px-2.5 py-1.5 text-sm outline-none focus:border-zinc-400 dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-white/20"
+      />
+      {type === 'wengine' && (
+        <div class="mt-2 flex flex-wrap gap-1" data-zzz-picker-pills={name}>
+          <button type="button" data-pill="" aria-pressed="true" class="rounded-full border bg-zinc-900 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-white dark:bg-white dark:text-zinc-900">Todos</button>
+          {SPECIALTIES.map((s) => (
+            <button type="button" data-pill={s} aria-pressed="false" class="rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-zinc-600 hover:bg-zinc-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-300">{SPECIALTY_LABELS[s]}</button>
+          ))}
+        </div>
+      )}
+    </div>
+    <div data-zzz-picker-list={name} class="mt-1 flex flex-col gap-0.5 p-1"></div>
+    <p data-zzz-picker-empty={name} class="hidden p-2 text-center text-xs text-zinc-500">Sin resultados</p>
+  </div>
+</div>
+
+<script>
+  (() => {
+    if (window.__zzzPickerInit) return;
+    window.__zzzPickerInit = true;
+    window.__zzzPickerInstances = window.__zzzPickerInstances || {};
+    window.__zzzPickerResets = window.__zzzPickerResets || {};
+
+    function initRoot(root) {
+      const name = root.dataset.zzzPickerRoot;
+      const type = root.dataset.zzzPickerType;
+      const button = root.querySelector(`[data-zzz-picker-button="${CSS.escape(name)}"]`);
+      const label = root.querySelector(`[data-zzz-picker-label="${CSS.escape(name)}"]`);
+      const hidden = root.querySelector(`[data-zzz-picker-value="${CSS.escape(name)}"]`);
+      const menu = root.querySelector(`[data-zzz-picker-menu="${CSS.escape(name)}"]`);
+      const search = root.querySelector(`[data-zzz-picker-search="${CSS.escape(name)}"]`);
+      const list = root.querySelector(`[data-zzz-picker-list="${CSS.escape(name)}"]`);
+      const empty = root.querySelector(`[data-zzz-picker-empty="${CSS.escape(name)}"]`);
+      const pillsRoot = root.querySelector(`[data-zzz-picker-pills="${CSS.escape(name)}"]`);
+      let specialty = '';
+      let isOpen = false;
+      const placeholder = label?.textContent || 'Seleccionar...';
+
+      function positionMenu() {
+        const rect = button.getBoundingClientRect();
+        menu.style.left = rect.left + 'px';
+        menu.style.width = rect.width + 'px';
+        const spaceBelow = window.innerHeight - rect.bottom - 8;
+        const spaceAbove = rect.top - 8;
+        const menuH = Math.min(288, menu.scrollHeight || 288);
+        if (spaceBelow < 160 && spaceAbove > spaceBelow) {
+          menu.style.top = Math.max(8, rect.top - menuH - 4) + 'px';
+          menu.style.maxHeight = Math.max(80, Math.min(menuH, spaceAbove - 8)) + 'px';
+        } else {
+          menu.style.top = rect.bottom + 4 + 'px';
+          menu.style.maxHeight = Math.max(80, Math.min(menuH, spaceBelow)) + 'px';
+        }
+      }
+
+      function open() {
+        if (isOpen) return;
+        // append to dialog if inside dialog for top-layer escape
+        const dlg = root.closest('dialog');
+        if (dlg && menu.parentElement !== dlg) {
+          dlg.appendChild(menu);
+        } else if (!dlg && menu.parentElement !== document.body) {
+          document.body.appendChild(menu);
+        }
+        positionMenu();
+        menu.classList.remove('hidden');
+        button.setAttribute('aria-expanded', 'true');
+        isOpen = true;
+        setTimeout(() => search?.focus(), 0);
+        runSearch(search?.value?.trim() || '');
+      }
+      function close() {
+        if (!isOpen) return;
+        menu.classList.add('hidden');
+        button.setAttribute('aria-expanded', 'false');
+        isOpen = false;
+      }
+
+      function setValue(id, displayName) {
+        hidden.value = id || '';
+        if (id && displayName) {
+          label.textContent = displayName;
+          label.classList.remove('text-zinc-400');
+          label.classList.add('text-zinc-900', 'dark:text-white');
+        } else {
+          label.textContent = placeholder;
+          label.classList.add('text-zinc-400');
+          label.classList.remove('text-zinc-900', 'dark:text-white');
+        }
+        window.__zzzPickerInstances[name] = id ? { id, name: displayName } : null;
+      }
+
+      function updatePills() {
+        pillsRoot?.querySelectorAll('[data-pill]').forEach((p) => {
+          const active = p.dataset.pill === specialty;
+          p.setAttribute('aria-pressed', String(active));
+          p.className = active
+            ? 'rounded-full border bg-zinc-900 px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-white dark:bg-white dark:text-zinc-900'
+            : 'rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-medium uppercase tracking-wider text-zinc-600 hover:bg-zinc-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-300';
+        });
+      }
+
+      function reset() {
+        close();
+        specialty = '';
+        if (search) search.value = '';
+        list.replaceChildren();
+        empty.classList.add('hidden');
+        updatePills();
+        setValue('', '');
+      }
+
+      window.__zzzPickerInstances[name] = null;
+      window.__zzzPickerResets[name] = reset;
+      window[`__zzzPickerGet_${name}`] = () => window.__zzzPickerInstances[name];
+      // generic helpers
+      if (!window.__zzzPickerGet) {
+        window.__zzzPickerGet = (n) => window.__zzzPickerInstances[n] || null;
+        window.__zzzPickerSet = (n, val) => {
+          if (!val || (!val.id && !val.name)) {
+            window.__zzzPickerResets[n]?.();
+            return;
+          }
+          const inst = document.querySelector(`[data-zzz-picker-root="${CSS.escape(n)}"]`);
+          if (!inst) return;
+          const lbl = inst.querySelector(`[data-zzz-picker-label="${CSS.escape(n)}"]`);
+          const hid = inst.querySelector(`[data-zzz-picker-value="${CSS.escape(n)}"]`);
+          if (val && val.id) {
+            hid.value = val.id;
+            lbl.textContent = val.name || val.id;
+            lbl.classList.remove('text-zinc-400');
+            window.__zzzPickerInstances[n] = val;
+          } else if (val && val.name) {
+            hid.value = val.name;
+            lbl.textContent = val.name;
+            lbl.classList.remove('text-zinc-400');
+            window.__zzzPickerInstances[n] = { id: val.name, name: val.name };
+          }
+        };
+        window.__zzzPickerReset = (n) => window.__zzzPickerResets[n]?.();
+      }
+      // store placeholder for reset
+      label.setAttribute('data-placeholder', placeholder);
+      // expose per-name for compatibility
+      window[`__zzzPickerSet_${name}`] = (val) => window.__zzzPickerSet(name, val);
+
+      let seq = 0;
+      async function runSearch(q) {
+        const my = ++seq;
+        const params = new URLSearchParams();
+        params.set('type', type);
+        params.set('q', q || '');
+        if (type === 'wengine' && specialty) params.set('specialty', specialty);
+        list.replaceChildren();
+        empty.classList.add('hidden');
+        try {
+          const res = await fetch(`/zzz/api/search?${params.toString()}`, { headers: { Accept: 'application/json' } });
+          const data = await res.json().catch(() => null);
+          if (my !== seq) return;
+          if (!res.ok) {
+            empty.textContent = res.status === 401 || data?.error === 'unauthorized'
+              ? 'Sesión vencida. Volvé a iniciar sesión.'
+              : 'No se pudo cargar el catálogo.';
+            empty.classList.remove('hidden');
+            return;
+          }
+          if (!data || !Array.isArray(data.results)) throw new Error('invalid-results');
+          renderList(data.results);
+        } catch {
+          if (my === seq) {
+            list.replaceChildren();
+            empty.classList.remove('hidden');
+            empty.textContent = 'No se pudo cargar el catálogo.';
+          }
+        }
+      }
+
+      function cleanDisplay(name) {
+        return String(name).replace(/^(ZZZ|Zenless Zone Zero)\s*-\s*/i, '').trim();
+      }
+      function renderList(results) {
+        list.replaceChildren();
+        if (!results.length) {
+          empty.classList.remove('hidden');
+          empty.textContent = 'Sin resultados';
+          return;
+        }
+        empty.classList.add('hidden');
+        for (const r of results) {
+          const displayName = cleanDisplay(r.name);
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.setAttribute('role', 'option');
+          btn.className = 'w-full rounded-md px-2 py-1.5 text-left text-xs hover:bg-zinc-100 dark:hover:bg-white/10';
+          if (type === 'wengine') {
+            btn.textContent = `${displayName} · ${r.specialty} · ${r.rarity}`;
+            btn.dataset.id = r.id;
+            btn.dataset.name = displayName;
+          } else {
+            btn.textContent = displayName;
+            btn.dataset.id = displayName;
+            btn.dataset.name = displayName;
+          }
+          btn.addEventListener('click', () => {
+            setValue(btn.dataset.id, btn.dataset.name);
+            close();
+          });
+          list.appendChild(btn);
+        }
+      }
+
+      button.addEventListener('click', () => (isOpen ? close() : open()));
+      search?.addEventListener('input', () => runSearch(search.value.trim()));
+
+      pillsRoot?.querySelectorAll('[data-pill]').forEach((p) => {
+        p.addEventListener('click', () => {
+          specialty = p.dataset.pill || '';
+          updatePills();
+          runSearch(search?.value?.trim() || '');
+        });
+      });
+
+      // close handlers
+      document.addEventListener('click', (e) => {
+        if (!isOpen) return;
+        if (root.contains(e.target) || menu.contains(e.target)) return;
+        close();
+      });
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isOpen) close();
+      });
+      window.addEventListener('resize', () => { if (isOpen) positionMenu(); });
+      window.addEventListener('scroll', () => { if (isOpen) positionMenu(); }, true);
+
+      // expose for external set
+      root._zzzSetValue = setValue;
+    }
+
+    document.querySelectorAll('[data-zzz-picker-root]').forEach(initRoot);
+    // re-init for dynamically added? observe
+    const obs = new MutationObserver((muts) => {
+      muts.forEach((m) => {
+        m.addedNodes.forEach((n) => {
+          if (n.nodeType === 1) {
+            if (n.matches?.('[data-zzz-picker-root]')) initRoot(n);
+            n.querySelectorAll?.('[data-zzz-picker-root]').forEach(initRoot);
+          }
+        });
+      });
+    });
+    obs.observe(document.body, { childList: true, subtree: true });
+  })();
+</script>

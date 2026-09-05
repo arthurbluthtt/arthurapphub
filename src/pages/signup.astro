@@ -12,12 +12,13 @@ import {
   lookupSession,
   normalizeUsername,
   readCookie,
+  safeNextPath,
   usernameTaken,
 } from '../lib/auth';
 
 export const prerender = false;
 
-const next = Astro.url.searchParams.get('next') ?? '/';
+const next = safeNextPath(Astro.url.searchParams.get('next'));
 
 const sessionId = readCookie(Astro.request);
 if (sessionId) {

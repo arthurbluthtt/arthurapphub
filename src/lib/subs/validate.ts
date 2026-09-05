@@ -22,21 +22,16 @@ export function parseSubInput(body: unknown): ParseResult {
   if (!name) return { ok: false, error: 'name required' };
   if (name.length > 100) return { ok: false, error: 'name too long' };
 
-  const priceCents =
-    typeof b.priceCents === 'number' && Number.isFinite(b.priceCents)
-      ? Math.round(b.priceCents)
-      : NaN;
-  if (!Number.isInteger(priceCents) || priceCents < 0) {
+  const priceCents = b.priceCents;
+  if (typeof priceCents !== 'number' || !Number.isSafeInteger(priceCents) || priceCents < 0) {
     return { ok: false, error: 'priceCents invalid' };
   }
 
   if (!isCurrency(b.currency)) return { ok: false, error: 'currency invalid' };
 
-  const billingDay =
-    typeof b.billingDay === 'number' && Number.isFinite(b.billingDay)
-      ? Math.round(b.billingDay)
-      : NaN;
+  const billingDay = b.billingDay;
   if (
+    typeof billingDay !== 'number' ||
     !Number.isInteger(billingDay) ||
     billingDay < MIN_BILLING_DAY ||
     billingDay > MAX_BILLING_DAY

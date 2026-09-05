@@ -11,8 +11,8 @@
  *   BUNGIE_API_KEY=<key> npm run build:d2-manifest
  *
  * Output:
- *   data/d2/weapons-index.json   array con { hash, name, icon, tier, damage, perkPoolHashes }
- *   data/d2/perks.json           { hash: { name, icon } } lookup
+ *   data/d2/weapons-index.json   array con { hash, name, icon, tier, damage, perkPoolHashes, mainPerkHashes }
+ *   data/d2/perks.json           { hash: { name, icon, description, category } } lookup
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -223,6 +223,18 @@ async function build() {
   }
   console.log(`  → ${perkCount} perks con nombre resueltos.`);
 
+  // Solo publicamos referencias que realmente pudieron resolverse como perk.
+  // Algunos sockets de Bungie apuntan a items no trackeables y no aparecen
+  // en perks.json; mantener esos hashes produciría referencias colgantes.
+  const validPerkHashes = new Set(Object.keys(perks));
+  const droppedPoolRefs = weapons.reduce(
+    (count, w) => count + w.perkPoolHashes.filter((h) => !validPerkHashes.has(h)).length,
+    0
+  );
+  if (droppedPoolRefs) {
+    console.log(`  → ${droppedPoolRefs} referencias de sockets descartadas por no ser perks resolubles.`);
+  }
+
   // Emisión.
   const weaponsIndex = weapons.map((w) => ({
     hash: w.hash,
@@ -231,8 +243,8 @@ async function build() {
     damage: w.damage,
     tier: w.tier,
     weaponType: w.weaponType,
-    perkPoolHashes: w.perkPoolHashes,
-    mainPerkHashes: w.mainPerkHashes,
+    perkPoolHashes: w.perkPoolHashes.filter((h) => validPerkHashes.has(h)),
+    mainPerkHashes: w.mainPerkHashes.filter((h) => validPerkHashes.has(h)),
   }));
 
   await mkdir('data/d2', { recursive: true });

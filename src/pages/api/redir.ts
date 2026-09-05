@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { createAuthCode, lookupSession, readCookie } from '../../lib/auth';
-import { findApp } from '../../lib/apps';
+import { findApp, isSsoApp } from '../../lib/apps';
 
 export const prerender = false;
 
@@ -19,6 +19,9 @@ export const GET: APIRoute = async ({ request, url, redirect }) => {
 
   const app = findApp(appId);
   if (!app) return new Response('unknown app', { status: 404 });
+  if (!isSsoApp(appId)) {
+    return new Response('app is not SSO-enabled', { status: 400 });
+  }
 
   const baseUrl = safeAppUrl(app.url);
   if (!baseUrl) return new Response('invalid app url', { status: 500 });

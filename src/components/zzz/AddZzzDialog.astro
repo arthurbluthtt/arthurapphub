@@ -1,0 +1,121 @@
+---
+import { STAT_KEYS } from '../../lib/zzz/constants';
+import ZZZPicker from './ZZZPicker.astro';
+---
+
+<button type="button" data-add-zzz-chip class="fixed bottom-4 right-4 z-30 inline-flex items-center gap-2 rounded-full border border-zinc-200 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 shadow-md transition hover:-translate-y-0.5 hover:shadow-lg dark:border-white/10 dark:bg-zinc-800 dark:text-white" aria-haspopup="dialog"><span aria-hidden="true">+</span><span>Agregar personaje</span></button>
+
+<dialog data-add-zzz-dialog class="m-auto max-h-[90vh] w-[min(720px,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-zinc-900/95 dark:border-white/10 dark:bg-zinc-900 dark:text-white dark:backdrop:bg-zinc-950/95">
+  <div class="flex items-center justify-between gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
+    <div><h2 class="text-base font-semibold">Agregar a ZZZ</h2><p class="text-xs uppercase tracking-wider text-zinc-500">Foto manual + W-Engine/Discos dropdown</p></div>
+    <button type="button" data-add-zzz-close aria-label="Cerrar" class="grid h-8 w-8 place-items-center rounded-full hover:bg-zinc-100 dark:hover:bg-white/10"><span aria-hidden="true" class="text-lg leading-none">×</span></button>
+  </div>
+
+  <form data-add-zzz-form class="flex flex-col gap-4 p-4">
+    <label class="block"><span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Personaje *</span><input type="text" data-add-zzz-name maxlength="80" required autocomplete="off" class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-white/30" /></label>
+
+    <label class="block"><span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Foto URL (manual, opcional)</span><input type="url" data-add-zzz-cover placeholder="https://..." autocomplete="off" spellcheck="false" class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:focus:border-white/30" /></label>
+
+    <div>
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">W-Engine (dropdown con búsqueda + pills dentro)</span>
+      <div class="mt-1.5"><ZZZPicker name="add-wengine" type="wengine" placeholder="Elige W-Engine..." /></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Disc Set 4pc</span>
+        <div class="mt-1.5"><ZZZPicker name="add-disc4" type="disc" placeholder="Elige set 4pc..." /></div>
+      </div>
+      <div>
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Disc Set 2pc</span>
+        <div class="mt-1.5"><ZZZPicker name="add-disc2" type="disc" placeholder="Elige set 2pc..." /></div>
+      </div>
+    </div>
+
+    <div>
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Estadísticas visibles con valor (al lado en la tarjeta)</span>
+      <div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {STAT_KEYS.map(k => (
+          <label class="flex items-center gap-2 rounded-lg border border-zinc-200 px-2 py-1.5 dark:border-white/10">
+            <input type="checkbox" value={k} data-add-zzz-stat class="shrink-0" />
+            <span class="flex-1 text-xs font-medium">{k}</span>
+            <input type="number" data-add-zzz-stat-value={k} placeholder="0" disabled inputmode="decimal" step="0.01" class="w-24 rounded border border-zinc-200 px-1.5 py-1 text-xs tabular-nums outline-none placeholder:text-zinc-400 focus:border-zinc-400 disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.04]" />
+          </label>
+        ))}
+      </div>
+      <p class="mt-1 text-[11px] text-zinc-500">Marca la stat y escribe el número que quieras mostrar en la tarjeta.</p>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 border-t border-zinc-200 pt-3 dark:border-white/10">
+      <button type="button" data-add-zzz-cancel class="rounded-lg border border-zinc-200 px-4 py-2 text-xs font-medium dark:border-white/10">Cancelar</button>
+      <button type="submit" data-add-zzz-submit class="rounded-lg bg-zinc-900 px-4 py-2 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900">Agregar</button>
+    </div>
+  </form>
+  <p data-add-zzz-status class="hidden m-0 border-t border-zinc-200 px-4 py-2 text-center text-xs text-zinc-500 dark:border-white/10"></p>
+</dialog>
+
+<script>
+  (() => {
+    if (window.__addZzzInit) return; window.__addZzzInit = true;
+    const dialog = document.querySelector('[data-add-zzz-dialog]');
+    const chip = document.querySelector('[data-add-zzz-chip]');
+    const closeBtn = document.querySelector('[data-add-zzz-close]');
+    const cancelBtn = document.querySelector('[data-add-zzz-cancel]');
+    const form = document.querySelector('[data-add-zzz-form]');
+    const nameEl = document.querySelector('[data-add-zzz-name]');
+    const coverEl = document.querySelector('[data-add-zzz-cover]');
+    const statusEl = document.querySelector('[data-add-zzz-status]');
+    let bodyLocked=false;
+    function lock(){ if(bodyLocked) return; bodyLocked=true; const sbw=window.innerWidth-document.documentElement.clientWidth; document.body.style.overflow='hidden'; if(sbw>0) document.body.style.paddingRight=sbw+'px'; }
+    function unlock(){ if(!bodyLocked) return; bodyLocked=false; document.body.style.overflow=''; document.body.style.paddingRight=''; }
+    function show(t,err){ if(!statusEl) return; statusEl.textContent=t; statusEl.classList.remove('hidden'); if(err) statusEl.classList.add('text-red-500'); else statusEl.classList.remove('text-red-500');}
+    function hide(){ statusEl?.classList.add('hidden'); if(statusEl) statusEl.textContent='';}
+    function open(){ hide(); lock(); dialog?.showModal(); setTimeout(()=>nameEl?.focus(),0); }
+    function close(){ dialog?.close(); unlock(); }
+    chip?.addEventListener('click', open);
+    closeBtn?.addEventListener('click', close);
+    cancelBtn?.addEventListener('click', close);
+    dialog?.addEventListener('click', e=>{ if(e.target===dialog) close();});
+    dialog?.addEventListener('close', unlock);
+    // enable number inputs when checkbox checked
+    form?.querySelectorAll('[data-add-zzz-stat]').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const valInput = form.querySelector(`[data-add-zzz-stat-value="${CSS.escape(cb.value)}"]`);
+        if(valInput){
+          valInput.disabled = !cb.checked;
+          if(cb.checked) setTimeout(()=>valInput.focus(),0);
+          else valInput.value='';
+        }
+      });
+    });
+    form?.addEventListener('submit', async e=>{
+      e.preventDefault(); hide();
+      const characterName=nameEl.value.trim(); if(!characterName){ show('Nombre requerido',true); return;}
+      const coverUrl=coverEl.value.trim()||null;
+      if(coverUrl && !/^https?:\/\//i.test(coverUrl)){ show('URL de foto inválida',true); return;}
+      const wPick = window.__zzzPickerGet?.('add-wengine');
+      const wEngineId = wPick?.id || null;
+      const d4Pick = window.__zzzPickerGet?.('add-disc4');
+      const d2Pick = window.__zzzPickerGet?.('add-disc2');
+      const discSet4 = d4Pick?.name || d4Pick?.id || null;
+      const discSet2 = d2Pick?.name || d2Pick?.id || null;
+      const statValues=[];
+      for(const cb of form.querySelectorAll('[data-add-zzz-stat]:checked')){
+        const stat=cb.value;
+        const inp=form.querySelector(`[data-add-zzz-stat-value="${CSS.escape(stat)}"]`);
+        const raw=inp ? inp.value.trim() : '';
+        const num = raw === '' ? null : Number(raw);
+        if(num!==null && (!Number.isFinite(num) || num<0 || num>100000)){ show(`Valor inválido para ${stat} (0-100000)`, true); return; }
+        statValues.push({ stat, value: num });
+      }
+      const btn=form.querySelector('[data-add-zzz-submit]'); if(btn) btn.disabled=true; show('Agregando...');
+      try{
+        const res=await fetch('/zzz/api/add',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({characterName, coverUrl, wEngineId, discSet4, discSet2, statValues})});
+        if(res.status===201){ const data=await res.json(); window.dispatchEvent(new CustomEvent('zzz:added',{detail:{build:data.build}})); show('Agregado'); setTimeout(close,200); form.reset(); form.querySelectorAll('[data-add-zzz-stat-value]').forEach(i=>{ i.disabled=true; i.value=''; }); window.__zzzPickerSet?.('add-wengine', null); window.__zzzPickerSet?.('add-disc4', null); window.__zzzPickerSet?.('add-disc2', null); }
+        else if(res.status===409) show('Ya existe (build única)',true);
+        else{ const t=await res.text(); show(t||'Error',true);}
+      }catch{ show('Error de red',true);}
+      finally{ if(btn) btn.disabled=false;}
+    });
+  })();
+</script>

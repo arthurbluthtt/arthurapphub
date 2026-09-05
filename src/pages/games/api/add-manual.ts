@@ -1,7 +1,8 @@
 /**
- * POST /games/api/add-manual {name, year?, coverUrl?} — agrega un juego que
+ * POST /games/api/add-manual {name, year?, coverUrl?, saga?} — agrega un juego que
  * no está en Steam (app_id NULL). name obligatorio (1-80 chars); year entero
- * 1900-2100 opcional; coverUrl http(s) opcional (sin URL → placeholder).
+ * 1900-2100 opcional; coverUrl http(s) opcional (sin URL → placeholder);
+ * saga texto libre de hasta 60 caracteres.
  * Duplicado por nombre (case-insensitive) → 409.
  */
 
@@ -14,24 +15,30 @@ export const prerender = false;
 
 const MIN_YEAR = 1900;
 const MAX_YEAR = 2100;
+const INVALID_COVER_URL = Symbol('invalid-cover-url');
 
-function parseYear(v: unknown): number | null {
-  if (v === undefined || v === null || v === '') return null;
-  const n = Number(v);
-  if (!Number.isInteger(n) || n < MIN_YEAR || n > MAX_YEAR) return NaN;
-  return n;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
-function parseCoverUrl(v: unknown): string | null {
-  if (v === undefined || v === null || v === '') return null;
-  if (typeof v !== 'string') return null;
+function parseYear(v: unknown): number | null {
+  if (v === undefined || v === null) return null;
+  if (typeof v !== 'number' || !Number.isSafeInteger(v) || v < MIN_YEAR || v > MAX_YEAR) {
+    return NaN;
+  }
+  return v;
+}
+
+function parseCoverUrl(v: unknown): string | null | typeof INVALID_COVER_URL {
+  if (v === undefined || v === null) return null;
+  if (typeof v !== 'string') return INVALID_COVER_URL;
   const trimmed = v.trim();
   if (!trimmed) return null;
   try {
     const u = new URL(trimmed);
-    return u.protocol === 'https:' || u.protocol === 'http:' ? trimmed : null;
+    return u.protocol === 'https:' || u.protocol === 'http:' ? trimmed : INVALID_COVER_URL;
   } catch {
-    return null;
+    return INVALID_COVER_URL;
   }
 }
 
@@ -45,11 +52,17 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  let body: Record<string, unknown>;
+  let body: unknown;
   try {
-    body = (await request.json()) as Record<string, unknown>;
+    body = await request.json();
   } catch {
     return new Response(JSON.stringify({ error: 'invalid json' }), {
+      status: 400,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+  if (!isRecord(body)) {
+    return new Response(JSON.stringify({ error: 'body must be an object' }), {
       status: 400,
       headers: { 'content-type': 'application/json' },
     });
@@ -70,7 +83,7 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
   const coverUrl = parseCoverUrl(body.coverUrl);
-  if (coverUrl === null && body.coverUrl !== undefined && body.coverUrl !== null && String(body.coverUrl).trim() !== '') {
+  if (coverUrl === INVALID_COVER_URL) {
     return new Response(JSON.stringify({ error: 'invalid coverUrl' }), {
       status: 400,
       headers: { 'content-type': 'application/json' },
@@ -84,10 +97,29 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
+  // `saga` opcional. Trim, max 60 chars. Si no se manda o queda vacío → null.
+  let saga: string | null = null;
+  if (body.saga !== undefined && body.saga !== null && body.saga !== '') {
+    if (typeof body.saga !== 'string') {
+      return new Response(JSON.stringify({ error: 'saga must be a string' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    const raw = body.saga.trim();
+    if (raw.length > 60) {
+      return new Response(JSON.stringify({ error: 'saga must be 0-60 chars' }), {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    if (raw.length > 0) saga = raw;
+  }
+
   const game = await addGame(
     env.AUTH_DB,
     sess.username,
-    { appId: null, name, coverUrl, year },
+    { appId: null, name, coverUrl, year, saga },
     crypto.randomUUID()
   );
   if (game === 'duplicate') {

@@ -1,0 +1,120 @@
+---
+import { STAT_KEYS } from '../../lib/zzz/constants';
+import ZZZPicker from './ZZZPicker.astro';
+---
+<dialog data-edit-zzz-dialog class="m-auto max-h-[90vh] w-[min(720px,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl backdrop:bg-zinc-900/95 dark:border-white/10 dark:bg-zinc-900 dark:text-white dark:backdrop:bg-zinc-950/95">
+  <div class="flex items-center justify-between gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
+    <h2 class="text-base font-semibold">Editar build ZZZ</h2>
+    <button type="button" data-edit-zzz-close aria-label="Cerrar" class="grid h-8 w-8 place-items-center rounded-full hover:bg-zinc-100 dark:hover:bg-white/10"><span aria-hidden="true" class="text-lg leading-none">×</span></button>
+  </div>
+  <form data-edit-zzz-form class="flex flex-col gap-4 p-4">
+    <input type="hidden" data-edit-zzz-id />
+    <label class="block"><span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Personaje *</span><input type="text" data-edit-zzz-name maxlength="80" required autocomplete="off" class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04]" /></label>
+    <label class="block"><span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Foto URL</span><input type="url" data-edit-zzz-cover autocomplete="off" spellcheck="false" class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04]" /></label>
+    <div>
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">W-Engine (dropdown con búsqueda + pills dentro)</span>
+      <div class="mt-1.5"><ZZZPicker name="edit-wengine" type="wengine" placeholder="Elige W-Engine..." /></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div><span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Disc Set 4pc</span><div class="mt-1.5"><ZZZPicker name="edit-disc4" type="disc" placeholder="Elige set 4pc..." /></div></div>
+      <div><span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Disc Set 2pc</span><div class="mt-1.5"><ZZZPicker name="edit-disc2" type="disc" placeholder="Elige set 2pc..." /></div></div>
+    </div>
+    <div>
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Estadísticas visibles con valor</span>
+      <div class="mt-1.5 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {STAT_KEYS.map(k => (
+          <label class="flex items-center gap-2 rounded-lg border border-zinc-200 px-2 py-1.5 dark:border-white/10">
+            <input type="checkbox" value={k} data-edit-zzz-stat class="shrink-0" />
+            <span class="flex-1 text-xs font-medium">{k}</span>
+            <input type="number" data-edit-zzz-stat-value={k} placeholder="0" disabled inputmode="decimal" step="0.01" class="w-24 rounded border border-zinc-200 px-1.5 py-1 text-xs tabular-nums outline-none placeholder:text-zinc-400 focus:border-zinc-400 disabled:opacity-40 dark:border-white/10 dark:bg-white/[0.04]" />
+          </label>
+        ))}
+      </div>
+    </div>
+    <div class="flex items-center justify-end gap-2 border-t border-zinc-200 pt-3 dark:border-white/10">
+      <button type="button" data-edit-zzz-cancel class="rounded-lg border border-zinc-200 px-4 py-2 text-xs font-medium dark:border-white/10">Cancelar</button>
+      <button type="submit" data-edit-zzz-submit class="rounded-lg bg-zinc-900 px-4 py-2 text-xs font-medium text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900">Guardar</button>
+    </div>
+  </form>
+  <p data-edit-zzz-status class="hidden m-0 border-t border-zinc-200 px-4 py-2 text-center text-xs text-zinc-500 dark:border-white/10"></p>
+</dialog>
+
+<script>
+  (() => {
+    if (window.__editZzzInit) return; window.__editZzzInit = true;
+    const dialog = document.querySelector('[data-edit-zzz-dialog]');
+    const form = document.querySelector('[data-edit-zzz-form]');
+    const idEl = document.querySelector('[data-edit-zzz-id]');
+    const nameEl = document.querySelector('[data-edit-zzz-name]');
+    const coverEl = document.querySelector('[data-edit-zzz-cover]');
+    const statusEl = document.querySelector('[data-edit-zzz-status]');
+    const closeBtn = document.querySelector('[data-edit-zzz-close]');
+    const cancelBtn = document.querySelector('[data-edit-zzz-cancel]');
+    let bodyLocked=false;
+    function lock(){ if(bodyLocked) return; bodyLocked=true; const sbw=window.innerWidth-document.documentElement.clientWidth; document.body.style.overflow='hidden'; if(sbw>0) document.body.style.paddingRight=sbw+'px';}
+    function unlock(){ if(!bodyLocked) return; bodyLocked=false; document.body.style.overflow=''; document.body.style.paddingRight='';}
+    function show(t,err){ if(!statusEl) return; statusEl.textContent=t; statusEl.classList.remove('hidden'); if(err) statusEl.classList.add('text-red-500'); else statusEl.classList.remove('text-red-500');}
+    function hide(){ statusEl?.classList.add('hidden'); if(statusEl) statusEl.textContent='';}
+    function open(){ hide(); lock(); dialog?.showModal(); }
+    function close(){ dialog?.close(); unlock(); }
+    dialog?.addEventListener('click', e=>{ if(e.target===dialog) close();});
+    dialog?.addEventListener('close', unlock);
+    closeBtn?.addEventListener('click', close);
+    cancelBtn?.addEventListener('click', close);
+    // enable number inputs
+    form?.querySelectorAll('[data-edit-zzz-stat]').forEach(cb=>{
+      cb.addEventListener('change', ()=>{
+        const inp = form.querySelector(`[data-edit-zzz-stat-value="${CSS.escape(cb.value)}"]`);
+        if(inp){ inp.disabled = !cb.checked; if(cb.checked) setTimeout(()=>inp.focus(),0); else inp.value=''; }
+      });
+    });
+    window.__openEditZzzDialog=(detail)=>{
+      idEl.value=detail.id; nameEl.value=detail.characterName||''; coverEl.value=detail.coverUrl||'';
+      window.__zzzPickerSet?.('edit-wengine', detail.wEngineId ? { id: detail.wEngineId, name: detail.wEngineName } : null);
+      window.__zzzPickerSet?.('edit-disc4', detail.discSet4 ? { id: detail.discSet4, name: detail.discSet4 } : null);
+      window.__zzzPickerSet?.('edit-disc2', detail.discSet2 ? { id: detail.discSet2, name: detail.discSet2 } : null);
+      const statValues = detail.statValues || (detail.displayStats ? detail.displayStats.map(s=>({stat:s, value:null})) : []);
+      const map = new Map(statValues.map(s=>[s.stat, s.value]));
+      form.querySelectorAll('[data-edit-zzz-stat]').forEach(cb=>{
+        const has = map.has(cb.value);
+        cb.checked = has;
+        const inp = form.querySelector(`[data-edit-zzz-stat-value="${CSS.escape(cb.value)}"]`);
+        if(inp){
+          inp.disabled = !has;
+          inp.value = has && map.get(cb.value)!==null ? String(map.get(cb.value)) : '';
+        }
+      });
+      open();
+    };
+    form?.addEventListener('submit', async e=>{
+      e.preventDefault(); hide();
+      const characterName=nameEl.value.trim(); if(!characterName){ show('Nombre requerido',true); return;}
+      const coverUrl=coverEl.value.trim()||null;
+      if(coverUrl && !/^https?:\/\//i.test(coverUrl)){ show('URL inválida',true); return;}
+      const wPick = window.__zzzPickerGet?.('edit-wengine');
+      const wEngineId = wPick?.id || null;
+      const d4Pick = window.__zzzPickerGet?.('edit-disc4');
+      const d2Pick = window.__zzzPickerGet?.('edit-disc2');
+      const discSet4 = d4Pick?.name || d4Pick?.id || null;
+      const discSet2 = d2Pick?.name || d2Pick?.id || null;
+      const statValues=[];
+      for(const cb of form.querySelectorAll('[data-edit-zzz-stat]:checked')){
+        const stat=cb.value;
+        const inp=form.querySelector(`[data-edit-zzz-stat-value="${CSS.escape(stat)}"]`);
+        const raw=inp ? inp.value.trim() : '';
+        const num = raw === '' ? null : Number(raw);
+        if(num!==null && (!Number.isFinite(num) || num<0 || num>100000)){ show(`Valor inválido para ${stat}`, true); return; }
+        statValues.push({ stat, value: num });
+      }
+      const btn=form.querySelector('[data-edit-zzz-submit]'); if(btn) btn.disabled=true; show('Guardando...');
+      try{
+        const body={id:idEl.value, characterName, coverUrl, wEngineId, discSet4, discSet2, statValues};
+        const res=await fetch('/zzz/api/edit',{method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+        if(res.ok){ const data=await res.json(); window.dispatchEvent(new CustomEvent('zzz:edited',{detail:{build:data.build}})); show('Guardado'); setTimeout(close,200);}
+        else if(res.status===409) show('Duplicado (build única)',true);
+        else{ const t=await res.text(); show(t||'Error',true);}
+      }catch{ show('Error de red',true);}
+      finally{ if(btn) btn.disabled=false;}
+    });
+  })();
+</script>

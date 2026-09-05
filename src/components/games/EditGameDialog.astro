@@ -1,0 +1,267 @@
+---
+import SagaPicker from './SagaPicker.astro';
+
+interface Props {
+  userSagas?: readonly string[];
+}
+
+const { userSagas = [] } = Astro.props;
+---
+<dialog
+  class="backdrop:bg-zinc-900/95 dark:bg-zinc-950/95 m-auto max-h-[90vh] w-[min(560px,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+  data-edit-dialog
+>
+  <header class="flex items-center gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
+    <div class="min-w-0 flex-1">
+      <h2 class="truncate font-semibold">Editar juego</h2>
+      <p class="text-xs uppercase tracking-wider text-zinc-500">Cambiá nombre, año, portada o saga</p>
+    </div>
+    <button
+      type="button"
+      class="grid h-8 w-8 place-items-center rounded-full text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-white/10 dark:hover:text-white"
+      data-edit-close
+      aria-label="Cerrar"
+    >
+      ×
+    </button>
+  </header>
+
+  <form class="flex flex-col gap-3 p-4" data-edit-form novalidate>
+    <label class="block">
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Nombre</span>
+      <input
+        type="text"
+        name="name"
+        placeholder="Ej. Stella Sora"
+        autocomplete="off"
+        spellcheck="false"
+        required
+        maxlength="80"
+        class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+        data-edit-name
+      />
+    </label>
+
+    <div class="grid grid-cols-2 gap-3">
+      <label class="block">
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Año (opcional)</span>
+        <input
+          type="number"
+          name="year"
+          inputmode="numeric"
+          min="1900"
+          max="2100"
+          placeholder="2024"
+          class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+          data-edit-year
+        />
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Portada URL (opcional)</span>
+        <input
+          type="url"
+          name="coverUrl"
+          placeholder="https://…"
+          autocomplete="off"
+          spellcheck="false"
+          class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+          data-edit-cover
+        />
+      </label>
+    </div>
+
+    <SagaPicker name="edit" userSagas={userSagas} />
+
+    <p
+      class="hidden rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-center text-sm text-emerald-700 dark:text-emerald-400"
+      data-edit-success
+    >
+      Guardado ✓
+    </p>
+
+    <p
+      class="hidden rounded-lg border border-red-500/40 bg-red-500/10 p-3 text-center text-sm text-red-600 dark:text-red-400"
+      data-edit-error
+    ></p>
+
+    <div class="mt-1 flex gap-2">
+      <button
+        type="button"
+        class="flex-1 rounded-lg border border-zinc-300 px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 dark:border-white/10 dark:text-zinc-200 dark:hover:bg-white/10"
+        data-edit-cancel
+      >
+        Cancelar
+      </button>
+      <button
+        type="submit"
+        class="flex-1 rounded-lg bg-zinc-900 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-zinc-700 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-200"
+        data-edit-submit
+      >
+        Guardar cambios
+      </button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+  // Guard contra doble-inicialización: si la página se rehidrata o el
+  // componente se monta dos veces, no acumulamos listeners en document.
+  if (!window.__editGameDialogInit) {
+    window.__editGameDialogInit = true;
+
+    const dialog = document.querySelector("[data-edit-dialog]");
+    const form = document.querySelector("[data-edit-form]");
+    const nameInput = document.querySelector("[data-edit-name]");
+    const yearInput = document.querySelector("[data-edit-year]");
+    const coverInput = document.querySelector("[data-edit-cover]");
+    const submitBtn = document.querySelector("[data-edit-submit]");
+    const cancelBtn = document.querySelector("[data-edit-cancel]");
+    const closeBtn = document.querySelector("[data-edit-close]");
+    const successEl = document.querySelector("[data-edit-success]");
+    const errorEl = document.querySelector("[data-edit-error]");
+
+    let bodyLocked = false;
+    let submitting = false;
+    let currentId = null;
+
+    function lockBodyScroll() {
+      if (bodyLocked) return;
+      bodyLocked = true;
+      const sbw = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = "hidden";
+      if (sbw > 0) document.body.style.paddingRight = sbw + "px";
+    }
+    function unlockBodyScroll() {
+      if (!bodyLocked) return;
+      bodyLocked = false;
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+    }
+
+    function showError(msg) {
+      errorEl.textContent = msg;
+      errorEl.classList.remove("hidden");
+    }
+    function hideStatus() {
+      successEl.classList.add("hidden");
+      errorEl.classList.add("hidden");
+    }
+
+    function openDialog(id, name, year, coverUrl, saga) {
+      if (!dialog) return;
+      currentId = id;
+      nameInput.value = name || "";
+      yearInput.value = year == null ? "" : String(year);
+      coverInput.value = coverUrl || "";
+      if (typeof window.__sagaPickerSet === "function") {
+        window.__sagaPickerSet("edit", saga || "");
+      }
+      hideStatus();
+      lockBodyScroll();
+      dialog.showModal();
+      setTimeout(() => nameInput.focus(), 0);
+    }
+
+    function closeDialog() {
+      if (!dialog) return;
+      currentId = null;
+      dialog.close();
+      unlockBodyScroll();
+    }
+
+    closeBtn?.addEventListener("click", closeDialog);
+    cancelBtn?.addEventListener("click", closeDialog);
+    dialog?.addEventListener("click", (e) => {
+      if (e.target === dialog) closeDialog();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && dialog?.open) closeDialog();
+    });
+
+    form?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (submitting || !currentId) return;
+      hideStatus();
+
+      const name = nameInput.value.trim();
+      if (!name) {
+        showError("Poné un nombre");
+        nameInput.focus();
+        return;
+      }
+      const yearRaw = yearInput.value.trim();
+      let year = null;
+      if (yearRaw) {
+        const n = Number(yearRaw);
+        if (!Number.isInteger(n) || n < 1900 || n > 2100) {
+          showError("Año inválido (1900-2100)");
+          yearInput.focus();
+          return;
+        }
+        year = n;
+      }
+      const coverUrl = coverInput.value.trim() || null;
+      if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
+        showError("URL de portada inválida (debe empezar con http:// o https://)");
+        coverInput.focus();
+        return;
+      }
+      const sagaRaw = (typeof window.__sagaPickerGet === "function"
+        ? window.__sagaPickerGet("edit")
+        : null) || "";
+      const saga = sagaRaw.length > 0 ? sagaRaw : null;
+      if (saga && saga.length > 60) {
+        showError("Saga demasiado larga (máx 60 chars)");
+        return;
+      }
+
+      submitting = true;
+      submitBtn.disabled = true;
+      try {
+        const res = await fetch("/games/api/edit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: currentId, name, year, coverUrl, saga }),
+        });
+        if (res.status === 409) {
+          showError("Ya tenés un juego con ese nombre");
+          submitting = false;
+          submitBtn.disabled = false;
+          return;
+        }
+        if (res.status === 404) {
+          showError("Ese juego ya no existe (recargá la página)");
+          submitting = false;
+          submitBtn.disabled = false;
+          return;
+        }
+        if (!res.ok) {
+          let msg = "Error " + res.status;
+          try {
+            const body = await res.json();
+            if (body && body.error) msg = "Error " + res.status + ": " + body.error;
+          } catch {}
+          showError(msg);
+          submitting = false;
+          submitBtn.disabled = false;
+          return;
+        }
+        const data = await res.json();
+        // Despachar ANTES de cerrar (mismo patrón que AddGameDialog).
+        window.dispatchEvent(
+          new CustomEvent("games:game-updated", { detail: { game: data.game } })
+        );
+        successEl.classList.remove("hidden");
+        setTimeout(() => closeDialog(), 300);
+      } catch (err) {
+        showError("Error de red");
+      } finally {
+        submitting = false;
+        submitBtn.disabled = false;
+      }
+    });
+
+    // API pública para que la página lo abra desde los botones ✏️.
+    window.__openEditGameDialog = openDialog;
+  }
+</script>

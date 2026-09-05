@@ -7,6 +7,8 @@
  */
 
 import type { APIRoute } from 'astro';
+import { env } from 'cloudflare:workers';
+import { lookupSession, readCookie } from '../../../lib/auth';
 
 export const prerender = false;
 
@@ -14,13 +16,21 @@ const STEAM_SEARCH_URL = 'https://store.steampowered.com/api/storesearch/';
 const MAX_RESULTS = 8;
 
 interface SteamSearchItem {
-  type?: string;
-  name?: string;
-  id?: number;
-  tiny_image?: string;
+  type?: unknown;
+  name?: unknown;
+  id?: unknown;
+  tiny_image?: unknown;
 }
 
-export const GET: APIRoute = async ({ url }) => {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+export const GET: APIRoute = async ({ request, url }) => {
+  const sessionId = readCookie(request);
+  const sess = sessionId ? await lookupSession(env.AUTH_DB, sessionId) : null;
+  if (!sess) return new Response('Unauthorized', { status: 401 });
+
   const q = (url.searchParams.get('q') ?? '').trim();
   if (!q) {
     return new Response(JSON.stringify({ results: [] }), {
@@ -47,9 +57,9 @@ export const GET: APIRoute = async ({ url }) => {
     });
   }
 
-  let data: { items?: SteamSearchItem[] };
+  let payload: unknown;
   try {
-    data = (await upstream.json()) as { items?: SteamSearchItem[] };
+    payload = await upstream.json();
   } catch {
     return new Response(JSON.stringify({ error: 'steam invalid json' }), {
       status: 502,
@@ -57,15 +67,28 @@ export const GET: APIRoute = async ({ url }) => {
     });
   }
 
-  const results = (data.items ?? [])
+  if (!isRecord(payload) || !Array.isArray(payload.items)) {
+    return new Response(JSON.stringify({ error: 'steam invalid response' }), {
+      status: 502,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const results = (payload.items as unknown[])
+    .filter((i): i is SteamSearchItem => isRecord(i))
     .filter(
-      (i) => i.type === 'app' && typeof i.id === 'number' && typeof i.name === 'string'
+      (i) =>
+        i.type === 'app' &&
+        typeof i.id === 'number' &&
+        Number.isSafeInteger(i.id) &&
+        i.id > 0 &&
+        typeof i.name === 'string'
     )
     .slice(0, MAX_RESULTS)
     .map((i) => ({
       appId: i.id as number,
       name: i.name as string,
-      tinyImage: i.tiny_image ?? null,
+      tinyImage: typeof i.tiny_image === 'string' ? i.tiny_image : null,
     }));
 
   return new Response(JSON.stringify({ results }), {

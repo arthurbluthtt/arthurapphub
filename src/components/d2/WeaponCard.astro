@@ -13,6 +13,7 @@ interface Props {
   itemHash: string;
   name: string;
   iconPath: string;
+  tier?: 'exotic' | 'legendary';
   perks: Partial<Record<PerkSlot, PerkLite | null>>;
   weaponType?: string;
   found: boolean;
@@ -27,7 +28,7 @@ const SLOT_LABELS: Record<PerkSlot, string> = {
   perk2: 'Rasgo 2',
 };
 
-const { itemHash, name, iconPath, perks, weaponType, found, foundAt } = Astro.props;
+const { itemHash, name, iconPath, tier, perks, weaponType, found, foundAt } = Astro.props;
 
 const weaponIconUrl = `/destiny/api/icon?type=weapon&hash=${itemHash}`;
 const emptyIconUrl =
@@ -53,6 +54,7 @@ const foundDateLabel = foundAt
   data-found={found ? '1' : '0'}
   data-item-hash={itemHash}
   data-weapon-type={weaponType ?? ''}
+  data-search={name.toLowerCase()}
 >
   {
     found && (
@@ -90,6 +92,14 @@ const foundDateLabel = foundAt
     <p class="text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-500">
       {weaponType}
     </p>
+  )}
+  {tier && (
+    <span
+      class="w-fit rounded-full border border-zinc-200 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500 dark:border-white/10 dark:text-zinc-400"
+      data-tier-badge
+    >
+      {tier === 'exotic' ? 'Exótico' : 'Legendario'}
+    </span>
   )}
 
   <div class="flex flex-col gap-1.5">

@@ -62,8 +62,20 @@ function isBlacklisted(category: string): boolean {
   return !!category && BLACKLIST_CATEGORIES.has(category);
 }
 
+// Snapshots antiguos pueden no traer category. En ese caso usamos el nombre
+// como fallback conservador para mantener disponibles las perks legacy:
+// barrel|sights|scope|launcher -> Barrel;
+// mag|magazine|rounds|cartridge|battery -> Magazine;
+// el resto -> Trait.
+function resolvePerkCategory(name: string, category: string): string {
+  if (category) return category;
+  const normalized = name.toLowerCase();
+  if (/barrel|sights?|scope|launcher/.test(normalized)) return 'Barrel';
+  if (/mag|magazine|rounds|cartridge|battery/.test(normalized)) return 'Magazine';
+  return 'Trait';
+}
+
 function categoryMatchesSlot(category: string, slot: PerkSlot): boolean {
-  if (!category) return false;
   return SLOT_CATEGORIES[slot].has(category);
 }
 
@@ -210,7 +222,7 @@ export const GET: APIRoute = async ({ request, url }) => {
 
     let icon = '';
     let isCustom = false;
-    let effectiveCategory = perk.category;
+    let effectiveCategory = resolvePerkCategory(perk.name, perk.category);
     const lowerName = perk.name.toLowerCase();
 
     if (perk.hash) {
@@ -220,13 +232,14 @@ export const GET: APIRoute = async ({ request, url }) => {
         icon = custom.iconPath;
         isCustom = true;
         if (custom.category) effectiveCategory = custom.category;
+        else effectiveCategory = resolvePerkCategory(perk.name, effectiveCategory);
       }
     } else {
       const custom = customIconByName.get(lowerName);
       if (!custom?.iconPath) continue;
       icon = custom.iconPath;
       isCustom = true;
-      effectiveCategory = custom.category;
+      effectiveCategory = resolvePerkCategory(perk.name, custom.category);
     }
 
     // Filtro de categoria: rechazar blacklists (Intrinsic, Weapon Ornament,
@@ -235,7 +248,8 @@ export const GET: APIRoute = async ({ request, url }) => {
     // normalizada al slot (ver add.ts/update.ts), esas perks pasan el
     // filtro. Perks cross-categoria (Bowstring/Scope/Sight/Battery/Arrow
     // etc.) se tipean una vez y quedan guardadas con categoria canonica
-    // del slot donde se pusieron.
+    // del slot donde se pusieron. Si falta category, effectiveCategory ya
+    // viene resuelta por nombre para soportar snapshots legacy.
 
     if (slot) {
       if (effectiveCategory && isBlacklisted(effectiveCategory)) continue;
@@ -299,21 +313,21 @@ export const GET: APIRoute = async ({ request, url }) => {
       if (results.length >= limit) break;
       const lowerName = mp.name.toLowerCase();
       if (seen.has(lowerName)) continue;
+      const custom = customIconByName.get(lowerName);
+      const effectiveCategory = custom?.category || resolvePerkCategory(mp.name, mp.category);
       // Mismo filtro blacklistero + slot-categoria que el userPool.
       // Asi tipear 'incandescent' en slot barrel no trae Origin Traits
       // del manifest, solo perks validas para barrel.
       if (slot) {
-        if (isBlacklisted(mp.category)) continue;
-        if (!categoryMatchesSlot(mp.category, slot)) continue;
+        if (isBlacklisted(effectiveCategory)) continue;
+        if (!categoryMatchesSlot(effectiveCategory, slot)) continue;
       }
       const score = rankMatch(mp.name, q);
       if (score < 0) continue;
-      const custom = customIconByName.get(lowerName);
       const icon = custom?.iconPath
         ? custom.iconPath
         : `/destiny/api/icon?type=perk&hash=${encodeURIComponent(mp.hash)}`;
       const isCustom = !!custom?.iconPath;
-      const effectiveCategory = custom?.category || mp.category;
       seen.add(lowerName);
       results.push({
         name: mp.name,
@@ -336,7 +350,7 @@ export const GET: APIRoute = async ({ request, url }) => {
     if (a.useCount !== b.useCount) return b.useCount - a.useCount;
     return a.name.localeCompare(b.name);
   });
-  for (const r of results) delete r._score;
+  const publicResults: PerkMatch[] = results.map(({ _score: _scoreValue, ...perk }) => perk);
 
   const groups: Record<string, { key: string; label: string; perks: PerkMatch[] }> = {
     barrel: { key: 'barrel', label: 'Cañón', perks: [] },
@@ -344,12 +358,12 @@ export const GET: APIRoute = async ({ request, url }) => {
     trait: { key: 'trait', label: 'Rasgo', perks: [] },
     custom: { key: 'custom', label: 'Custom', perks: [] },
   };
-  for (const p of results) {
+  for (const p of publicResults) {
     if (p.category === 'Barrel') groups.barrel.perks.push(p);
     else if (p.category === 'Magazine') groups.magazine.perks.push(p);
     else if (p.category === 'Trait') groups.trait.perks.push(p);
     else groups.custom.perks.push(p);
   }
 
-  return jsonOk({ results, groups });
+  return jsonOk({ results: publicResults, groups });
 };

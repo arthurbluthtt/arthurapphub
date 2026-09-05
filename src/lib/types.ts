@@ -12,8 +12,10 @@ export interface App {
   redir?: string;
   icon: string;
   category: string;
-  tags: string[];
+  tags?: string[];
   featured?: boolean;
+  /** Si true, la app participa del flujo SSO; si no, se accede directamente. */
+  sso?: boolean;
 }
 
 export interface AppsData {

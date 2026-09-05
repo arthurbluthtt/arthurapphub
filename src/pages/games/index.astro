@@ -2,6 +2,8 @@
 import { env } from 'cloudflare:workers';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AddGameDialog from '../../components/games/AddGameDialog.astro';
+import EditGameDialog from '../../components/games/EditGameDialog.astro';
+import SearchBar from '../../components/SearchBar.astro';
 import { lookupSession, readCookie } from '../../lib/auth';
 import { listGames, STATUSES, STATUS_LABELS } from '../../lib/games/store';
 
@@ -14,9 +16,19 @@ if (!sess) {
 }
 
 const games = await listGames(env.AUTH_DB, sess.username);
-const counts: Record<string, number> = {};
-for (const s of STATUSES) counts[s] = games.filter((g) => g.status === s).length;
+const counts: Record<string, number> = { backlog: 0, playing: 0, finished: 0 };
+for (const g of games) counts[g.status]++;
 const totalCount = games.length;
+
+// Sagas únicas en la lista del usuario (para el dropdown de filtro).
+// Orden: las que más juegos tienen primero, luego alfabético.
+const sagaCounts = new Map<string, number>();
+for (const g of games) {
+  if (g.saga) sagaCounts.set(g.saga, (sagaCounts.get(g.saga) ?? 0) + 1);
+}
+const userSagas = [...sagaCounts.entries()]
+  .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+  .map(([s]) => s);
 
 const FILTER_TABS = ['all', ...STATUSES] as const;
 ---
@@ -31,117 +43,169 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
         Mis juegos con estado: portada de Steam, año de salida y progreso.
       </p>
     </div>
-    <span class="text-xs uppercase tracking-wider text-zinc-500 xl:text-sm">
+    <span class="text-xs uppercase tracking-wider text-zinc-500 xl:text-sm" data-games-count>
       {totalCount} {totalCount === 1 ? 'juego' : 'juegos'}
     </span>
   </div>
 
-  {
-    totalCount > 0 && (
-      <div
-        class="mb-4 flex flex-wrap gap-2"
-        data-filter-group
-        role="tablist"
-        aria-label="Filtrar por estado"
+  {userSagas.length > 0 && (
+    <div
+      class:list={[
+        'mb-4 flex items-center justify-end gap-2',
+        totalCount === 0 && 'hidden',
+      ]}
+      data-saga-filter-group
+    >
+      <label
+        for="saga-filter-select"
+        class="text-xs font-medium uppercase tracking-wider text-zinc-500"
       >
-        {FILTER_TABS.map((f) => (
-          <button
-            type="button"
-            role="tab"
-            aria-selected={f === 'all'}
-            data-filter-tab={f}
-            class:list={[
-              'rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition',
-              f === 'all'
-                ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900'
-                : 'border-zinc-200 text-zinc-500 hover:border-zinc-400 hover:text-zinc-900 dark:border-white/10 dark:text-zinc-500 dark:hover:border-white/30 dark:hover:text-white',
-            ]}
-          >
-            {f === 'all' ? `Todas (${totalCount})` : `${STATUS_LABELS[f]} (${counts[f]})`}
-          </button>
-        ))}
-      </div>
-    )
-  }
+        Saga:
+      </label>
+      <select
+        id="saga-filter-select"
+        data-saga-filter
+        class="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-700 outline-none transition hover:border-zinc-400 focus:border-zinc-500 [&>option]:bg-white [&>option]:text-zinc-900 dark:border-white/10 dark:bg-zinc-800 dark:text-zinc-200 dark:hover:border-white/30 dark:focus:border-white/30 dark:[&>option]:bg-zinc-800 dark:[&>option]:text-zinc-100"
+      >
+        <option value="__all__">Todas ({totalCount})</option>
+        {userSagas.map((s) => {
+          const n = sagaCounts.get(s) ?? 0;
+          return <option value={s}>{s} ({n})</option>;
+        })}
+      </select>
+    </div>
+  )}
 
+  <SearchBar placeholder="Buscar..." />
+
+  <div
+    class:list={[
+      'mb-4 flex flex-wrap gap-2',
+      totalCount === 0 && 'hidden',
+    ]}
+    data-filter-group
+    role="tablist"
+    aria-label="Filtrar por estado"
+  >
+    {FILTER_TABS.map((f) => (
+      <button
+        type="button"
+        role="tab"
+        aria-selected={f === 'all'}
+        data-filter-tab={f}
+        class:list={[
+          'rounded-full border px-3 py-1 text-xs font-medium uppercase tracking-wider transition',
+          f === 'all'
+            ? 'border-zinc-900 bg-zinc-900 text-white dark:border-white dark:bg-white dark:text-zinc-900'
+            : 'border-zinc-200 text-zinc-500 hover:border-zinc-400 hover:text-zinc-900 dark:border-white/10 dark:text-zinc-500 dark:hover:border-white/30 dark:hover:text-white',
+        ]}
+      >
+        {f === 'all' ? `Todas (${totalCount})` : `${STATUS_LABELS[f]} (${counts[f]})`}
+      </button>
+    ))}
+  </div>
+
+  <p
+    class:list={[
+      'rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500',
+      totalCount > 0 && 'hidden',
+    ]}
+    data-empty-state
+  >
+    Tu lista está vacía. Buscá un juego en Steam y agregalo con un click.
+  </p>
+
+  <div
+    class:list={[
+      'grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7',
+      totalCount === 0 && 'hidden',
+    ]}
+    data-games-grid
+  >
   {
-    totalCount === 0 ? (
-      <p
-        class="rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500"
-        data-empty-state
+    games.map((g) => (
+      <article
+        data-game-card
+        data-game-id={g.id}
+        data-status={g.status}
+        data-saga={g.saga ?? ''}
+        data-search={(g.name + ' ' + (g.saga ?? '')).toLowerCase()}
+        class="overflow-hidden rounded-2xl border border-zinc-200 bg-white transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur"
       >
-        Tu lista está vacía. Buscá un juego en Steam y agregalo con un click.
-      </p>
-    ) : (
-      <div
-        class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-        data-games-grid
-      >
-        {games.map((g) => (
-          <article
-            data-game-card
-            data-game-id={g.id}
-            data-status={g.status}
-            class="overflow-hidden rounded-2xl border border-zinc-200 bg-white transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur"
-          >
-            <div class="relative aspect-[460/215] overflow-hidden bg-zinc-100 dark:bg-white/[0.04]">
-              {g.coverUrl ? (
-                <img
-                  src={g.coverUrl}
-                  alt={g.name}
-                  loading="lazy"
-                  class="h-full w-full object-cover"
-                />
-              ) : (
-                <div
-                  class="grid h-full w-full place-items-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-white/[0.04] dark:to-white/[0.06]"
-                  aria-hidden="true"
-                >
-                  <span class="text-3xl font-bold tracking-wide text-zinc-300 dark:text-zinc-600">
-                    {g.name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? '').join('').toUpperCase()}
-                  </span>
-                </div>
-              )}
-              {g.year && (
-                <span class="absolute left-2 top-2 rounded-full bg-zinc-950/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white backdrop-blur">
-                  {g.year}
+          <div class="relative aspect-[460/215] overflow-hidden bg-zinc-100 dark:bg-zinc-800">
+            {g.coverUrl ? (
+              <img
+                src={g.coverUrl}
+                alt={g.name}
+                loading="lazy"
+                decoding="async"
+                data-game-cover-image
+                class="h-full w-full object-cover"
+              />
+            ) : (
+              <div
+                class="grid h-full w-full place-items-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-white/[0.04] dark:to-white/[0.06]"
+                aria-hidden="true"
+              >
+                <span class="text-3xl font-bold tracking-wide text-zinc-300 dark:text-zinc-600">
+                  {g.name.split(/\s+/).slice(0, 2).map((w) => w[0] ?? '').join('').toUpperCase()}
                 </span>
-              )}
-            </div>
-            <div class="flex items-start gap-3 p-4">
-              <div class="min-w-0 flex-1">
-                <h3 class="truncate font-semibold text-zinc-900 dark:text-white">{g.name}</h3>
-                <button
-                  type="button"
-                  data-status-button
-                  data-game-id={g.id}
-                  data-status={g.status}
-                  aria-haspopup="listbox"
-                  aria-expanded="false"
-                  class="mt-2 flex w-full items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-white px-2.5 py-2 text-xs font-medium text-zinc-700 outline-none transition hover:border-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:focus:border-white/30"
-                >
-                  <span data-status-label class="truncate">{STATUS_LABELS[g.status]}</span>
-                  <span aria-hidden="true" class="shrink-0 text-[10px] text-zinc-400 dark:text-zinc-500">
-                    ▾
-                  </span>
-                </button>
               </div>
+            )}
+            {g.year && (
+              <span class="absolute left-2 top-2 rounded-full bg-zinc-950/70 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white backdrop-blur">
+                {g.year}
+              </span>
+            )}
+          </div>
+          <div class="flex flex-col gap-1.5 p-2.5">
+            <h3 class="truncate font-semibold text-zinc-900 dark:text-white">{g.name}</h3>
+            <div class="flex items-center gap-1.5">
+              <button
+                type="button"
+                data-status-button
+                data-game-id={g.id}
+                data-status={g.status}
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                class="flex flex-1 items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 outline-none transition hover:border-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:focus:border-white/30"
+              >
+                <span data-status-label class="truncate">{STATUS_LABELS[g.status]}</span>
+                <span aria-hidden="true" class="shrink-0 text-[10px] text-zinc-400 dark:text-zinc-500">
+                  ▾
+                </span>
+              </button>
               <button
                 type="button"
                 data-remove-game
                 data-game-id={g.id}
                 title="Eliminar juego"
                 aria-label="Eliminar"
-                class="grid h-7 w-7 shrink-0 place-items-center rounded-full text-zinc-400 transition hover:bg-red-500/10 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
+                class="grid h-6 w-6 shrink-0 place-items-center rounded-full text-zinc-400 transition hover:bg-red-500/10 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400"
               >
                 ×
               </button>
+              <button
+                type="button"
+                data-edit-game
+                data-game-id={g.id}
+                data-game-name={g.name}
+                data-game-year={g.year == null ? '' : String(g.year)}
+                data-game-cover={g.coverUrl ?? ''}
+                data-game-saga={g.saga ?? ''}
+                title="Editar juego"
+                aria-label="Editar"
+                class="grid h-6 w-6 shrink-0 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-900 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-white"
+              >
+                <svg viewBox="0 0 16 16" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M11.5 1.5l3 3-9 9H2.5v-3l9-9z" />
+                </svg>
+              </button>
             </div>
-          </article>
-        ))}
+          </div>
+        </article>
+      ))}
       </div>
-    )
-  }
 
   <p
     class="hidden rounded-2xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-500 dark:border-white/10 dark:text-zinc-500"
@@ -156,6 +220,8 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       gamesInitial: games,
       statusKeys: STATUSES,
       statusLabels: STATUS_LABELS,
+      userSagasInitial: userSagas,
+      sagaCountsInitial: Object.fromEntries(sagaCounts),
     }}
   >
     const emptyDataUrl =
@@ -165,6 +231,8 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
     const emptyState = document.querySelector("[data-empty-state]");
     const filteredEmpty = document.querySelector("[data-filtered-empty]");
     const filterGroup = document.querySelector("[data-filter-group]");
+    const sagaFilterGroup = document.querySelector("[data-saga-filter-group]");
+    const sagaFilterSelect = document.querySelector("[data-saga-filter]");
 
     const FILTER_ACTIVE = [
       "border-zinc-900",
@@ -187,9 +255,29 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
 
     let games = gamesInitial.map((g) => ({ ...g }));
     let currentFilter = "all";
+    let currentSaga = "__all__";
+    let currentSearch = "";
+    // Map saga → count (lo mantenemos sincronizado con `games`).
+    const sagaCounts = new Map(Object.entries(sagaCountsInitial));
+
+    // Fallback único para covers SSR y cards creadas en runtime.
+    document.addEventListener("error", (e) => {
+      const image = e.target;
+      if (
+        !(image instanceof HTMLImageElement) ||
+        !image.matches("[data-game-cover-image]") ||
+        image.dataset.fallbackApplied === "true"
+      ) {
+        return;
+      }
+      image.dataset.fallbackApplied = "true";
+      image.src = emptyDataUrl;
+    }, true);
 
     function findCard(id) {
-      return document.querySelector('[data-game-card][data-game-id="' + id + '"]');
+      return Array.from(document.querySelectorAll("[data-game-card]")).find(
+        (card) => card.dataset.gameId === id
+      ) || null;
     }
 
     function buildGameCard(game) {
@@ -197,22 +285,22 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       article.dataset.gameCard = "";
       article.dataset.gameId = game.id;
       article.dataset.status = game.status;
+      article.dataset.saga = game.saga || "";
+      article.dataset.search = ((game.name || "") + " " + (game.saga || "")).toLowerCase();
       article.className =
         "overflow-hidden rounded-2xl border border-zinc-200 bg-white transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur";
 
       const coverWrap = document.createElement("div");
       coverWrap.className =
-        "relative aspect-[460/215] overflow-hidden bg-zinc-100 dark:bg-white/[0.04]";
+        "relative aspect-[460/215] overflow-hidden bg-zinc-100 dark:bg-zinc-800";
       if (game.coverUrl) {
         const img = document.createElement("img");
         img.src = game.coverUrl;
         img.alt = game.name || "";
         img.loading = "lazy";
+        img.decoding = "async";
+        img.dataset.gameCoverImage = "";
         img.className = "h-full w-full object-cover";
-        img.onerror = () => {
-          img.onerror = null;
-          img.src = emptyDataUrl;
-        };
         coverWrap.appendChild(img);
       } else {
         const ph = document.createElement("div");
@@ -240,13 +328,15 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       article.appendChild(coverWrap);
 
       const body = document.createElement("div");
-      body.className = "flex items-start gap-3 p-4";
-      const info = document.createElement("div");
-      info.className = "min-w-0 flex-1";
+      body.className = "flex flex-col gap-1.5 p-2.5";
+
       const nameEl = document.createElement("h3");
       nameEl.className = "truncate font-semibold text-zinc-900 dark:text-white";
       nameEl.textContent = game.name || "";
-      info.appendChild(nameEl);
+      body.appendChild(nameEl);
+
+      const actionsRow = document.createElement("div");
+      actionsRow.className = "flex items-center gap-1.5";
 
       const statusBtn = document.createElement("button");
       statusBtn.type = "button";
@@ -256,7 +346,7 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       statusBtn.setAttribute("aria-haspopup", "listbox");
       statusBtn.setAttribute("aria-expanded", "false");
       statusBtn.className =
-        "mt-2 flex w-full items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-white px-2.5 py-2 text-xs font-medium text-zinc-700 outline-none transition hover:border-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:focus:border-white/30";
+        "flex flex-1 items-center justify-between gap-2 rounded-lg border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-700 outline-none transition hover:border-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-zinc-200 dark:hover:border-white/30 dark:focus:border-white/30";
 
       const labelEl = document.createElement("span");
       labelEl.dataset.statusLabel = "";
@@ -270,8 +360,7 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       caret.textContent = "▾";
       statusBtn.appendChild(caret);
 
-      info.appendChild(statusBtn);
-      body.appendChild(info);
+      actionsRow.appendChild(statusBtn);
 
       const removeBtn = document.createElement("button");
       removeBtn.type = "button";
@@ -280,22 +369,76 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       removeBtn.title = "Eliminar juego";
       removeBtn.ariaLabel = "Eliminar";
       removeBtn.className =
-        "grid h-7 w-7 shrink-0 place-items-center rounded-full text-zinc-400 transition hover:bg-red-500/10 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400";
+        "grid h-6 w-6 shrink-0 place-items-center rounded-full text-zinc-400 transition hover:bg-red-500/10 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-red-500/10 dark:hover:text-red-400";
       removeBtn.textContent = "×";
-      body.appendChild(removeBtn);
+      actionsRow.appendChild(removeBtn);
+
+      const editBtn = document.createElement("button");
+      editBtn.type = "button";
+      editBtn.dataset.editGame = "";
+      editBtn.dataset.gameId = game.id;
+      editBtn.dataset.gameName = game.name || "";
+      editBtn.dataset.gameYear = game.year == null ? "" : String(game.year);
+      editBtn.dataset.gameCover = game.coverUrl || "";
+      editBtn.dataset.gameSaga = game.saga || "";
+      editBtn.title = "Editar juego";
+      editBtn.ariaLabel = "Editar";
+      editBtn.className =
+        "grid h-6 w-6 shrink-0 place-items-center rounded-full text-zinc-400 transition hover:bg-zinc-200 hover:text-zinc-900 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-white";
+      editBtn.innerHTML =
+        '<svg viewBox="0 0 16 16" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11.5 1.5l3 3-9 9H2.5v-3l9-9z" /></svg>';
+      actionsRow.appendChild(editBtn);
+
+      body.appendChild(actionsRow);
 
       article.appendChild(body);
       return article;
     }
 
+    function recomputeSagaCounts() {
+      sagaCounts.clear();
+      for (const g of games) {
+        if (g.saga) sagaCounts.set(g.saga, (sagaCounts.get(g.saga) ?? 0) + 1);
+      }
+    }
+
+    function rebuildSagaOptions() {
+      if (!sagaFilterSelect) return;
+      const prev = currentSaga;
+      const entries = [...sagaCounts.entries()].sort(
+        (a, b) => b[1] - a[1] || a[0].localeCompare(b[0])
+      );
+      // Reconstruyo opciones con nodos DOM para que una saga editable no pueda
+      // interpretarse como markup.
+      sagaFilterSelect.replaceChildren();
+      const allOption = document.createElement("option");
+      allOption.value = "__all__";
+      allOption.textContent = "Todas (" + games.length + ")";
+      sagaFilterSelect.appendChild(allOption);
+      for (const [s, n] of entries) {
+        const option = document.createElement("option");
+        option.value = s;
+        option.textContent = s + " (" + n + ")";
+        sagaFilterSelect.appendChild(option);
+      }
+      // Si la saga actual ya no existe (game eliminado), volver a "Todas".
+      if (prev !== "__all__" && !sagaCounts.has(prev)) {
+        currentSaga = "__all__";
+      }
+      sagaFilterSelect.value = currentSaga;
+      // Mostrar/ocultar el grupo si no hay sagas.
+      if (sagaFilterGroup) {
+        sagaFilterGroup.classList.toggle("hidden", sagaCounts.size === 0);
+      }
+    }
+
     function renderCounts() {
       if (!filterGroup) return;
+      const c = { backlog: 0, playing: 0, finished: 0 };
+      for (const g of games) c[g.status]++;
       filterGroup.querySelectorAll("[data-filter-tab]").forEach((tab) => {
         const key = tab.dataset.filterTab;
-        const count =
-          key === "all"
-            ? games.length
-            : games.filter((g) => g.status === key).length;
+        const count = key === "all" ? games.length : c[key] || 0;
         const label = key === "all" ? "Todas" : statusLabels[key] || key;
         tab.textContent = label + " (" + count + ")";
       });
@@ -305,14 +448,18 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       const cards = grid ? Array.from(grid.querySelectorAll("[data-game-card]")) : [];
       let visible = 0;
       for (const card of cards) {
-        const show = currentFilter === "all" || card.dataset.status === currentFilter;
+        const okStatus = currentFilter === "all" || card.dataset.status === currentFilter;
+        const okSaga =
+          currentSaga === "__all__" || (card.dataset.saga || "") === currentSaga;
+        const qOk = !currentSearch || (card.dataset.search || "").includes(currentSearch);
+        const show = okStatus && okSaga && qOk;
         card.classList.toggle("hidden", !show);
         if (show) visible++;
       }
       if (filteredEmpty) {
         filteredEmpty.classList.toggle(
           "hidden",
-          !(currentFilter !== "all" && games.length > 0 && visible === 0)
+          !((currentFilter !== "all" || currentSaga !== "__all__" || currentSearch) && games.length > 0 && visible === 0)
         );
       }
     }
@@ -320,6 +467,8 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
     function syncVisibility() {
       const noGames = games.length === 0;
       if (grid) grid.classList.toggle("hidden", noGames);
+      if (filterGroup) filterGroup.classList.toggle("hidden", noGames);
+      if (sagaFilterGroup) sagaFilterGroup.classList.toggle("hidden", noGames || sagaCounts.size === 0);
       if (emptyState) emptyState.classList.toggle("hidden", !noGames);
     }
 
@@ -340,6 +489,27 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       setActiveTab();
       applyFilter();
     });
+
+    sagaFilterSelect?.addEventListener("change", (e) => {
+      currentSaga = e.target.value || "__all__";
+      applyFilter();
+      // Notificar al AddGameDialog si está abierto, para que filtre la búsqueda
+      // de Steam por la saga activa.
+      if (typeof window.__addGameDialogSetSaga === "function") {
+        window.__addGameDialogSetSaga(currentSaga);
+      }
+    });
+
+    // Buscador "Buscar..." — debounce 200ms, solo memoria
+    const searchInput = document.querySelector('[data-search-input]');
+    const searchClear = document.querySelector('[data-search-clear]');
+    let searchTimer = null;
+    function toggleClear(){ if(searchClear) searchClear.classList.toggle('hidden', !searchInput || !searchInput.value); }
+    searchInput?.addEventListener('input', () => {
+      if(searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => { currentSearch = (searchInput.value || '').trim().toLowerCase(); toggleClear(); applyFilter(); }, 200);
+    });
+    searchClear?.addEventListener('click', () => { if(searchInput){ searchInput.value=''; currentSearch=''; toggleClear(); applyFilter(); searchInput.focus(); } });
 
     // --- Status dropdown custom (patrón del perk dropdown de D2) ---
     // El <select> nativo abría el popup con estilos del OS (texto gris sobre
@@ -473,6 +643,20 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
         }
         return;
       }
+      const editBtn = e.target.closest("[data-edit-game]");
+      if (editBtn) {
+        e.preventDefault();
+        if (typeof window.__openEditGameDialog === "function") {
+          window.__openEditGameDialog(
+            editBtn.dataset.gameId,
+            editBtn.dataset.gameName,
+            editBtn.dataset.gameYear,
+            editBtn.dataset.gameCover,
+            editBtn.dataset.gameSaga || ""
+          );
+        }
+        return;
+      }
       const removeBtn = e.target.closest("[data-remove-game]");
       if (!removeBtn) return;
       e.preventDefault();
@@ -495,26 +679,74 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       setTimeout(() => {
         games = games.filter((g) => g.id !== id);
         card.remove();
+        recomputeSagaCounts();
+        rebuildSagaOptions();
         renderCounts();
         syncVisibility();
         applyFilter();
+        updateHeaderCount();
       }, 200);
     });
+
+    function updateHeaderCount() {
+      const el = document.querySelector("[data-games-count]");
+      if (!el) return;
+      const n = games.length;
+      el.textContent = n + (n === 1 ? " juego" : " juegos");
+    }
 
     window.addEventListener("games:game-added", (e) => {
       const detail = e && e.detail;
       if (!detail || !detail.game) return;
-      games.unshift(detail.game);
-      const card = buildGameCard(detail.game);
-      if (grid) {
-        grid.prepend(card);
-        grid.classList.remove("hidden");
+      try {
+        games.unshift(detail.game);
+        const card = buildGameCard(detail.game);
+        if (grid) {
+          grid.prepend(card);
+          grid.classList.remove("hidden");
+        }
+        if (emptyState) emptyState.classList.add("hidden");
+        recomputeSagaCounts();
+        rebuildSagaOptions();
+        renderCounts();
+        syncVisibility();
+        applyFilter();
+        updateHeaderCount();
+      } catch (err) {
+        console.error("games:game-added handler failed", err);
       }
-      if (emptyState) emptyState.classList.add("hidden");
-      renderCounts();
-      applyFilter();
+    });
+
+    // Actualiza la card in-place con el game devuelto por /api/edit.
+    // Recorre el array local, reemplaza la fila, y reemplaza los nodos que
+    // cambiaron: nombre (h3), botón ✏️ (data attrs), cover (img o placeholder),
+    // badge de año. Mantiene el status, el botón de remove y el listener del
+    // status menu.
+    window.addEventListener("games:game-updated", (e) => {
+      const detail = e && e.detail;
+      if (!detail || !detail.game) return;
+      const updated = detail.game;
+      try {
+        const idx = games.findIndex((g) => g.id === updated.id);
+        if (idx >= 0) games[idx] = updated;
+        else games.unshift(updated);
+
+        const oldCard = findCard(updated.id);
+        if (!oldCard) return;
+        const newCard = buildGameCard(updated);
+        oldCard.replaceWith(newCard);
+        // Si el filtro activo era un status/saga y la card sigue matcheando,
+        // queda visible; si no, el applyFilter la oculta. No cambiamos los
+        // filtros.
+        recomputeSagaCounts();
+        rebuildSagaOptions();
+        applyFilter();
+      } catch (err) {
+        console.error("games:game-updated handler failed", err);
+      }
     });
   </script>
 
-  <AddGameDialog />
+  <AddGameDialog userSagas={userSagas} />
+  <EditGameDialog userSagas={userSagas} />
 </BaseLayout>

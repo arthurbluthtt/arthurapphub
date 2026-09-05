@@ -1,0 +1,82 @@
+---
+import type { ZzzRow } from '../../lib/zzz/store';
+import { STAT_UNITS } from '../../lib/zzz/constants';
+interface Props { item: ZzzRow; }
+const { item } = Astro.props;
+const initials = item.characterName.split(/\s+/).slice(0,2).map(w=>w[0]||'').join('').toUpperCase();
+function fmt(v: number | null, stat: string): string {
+  if (v === null || v === undefined) return '—';
+  const unit = STAT_UNITS[stat] || '';
+  const val = Number.isInteger(v) ? v.toLocaleString() : v.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  return unit ? `${val}${unit}` : val;
+}
+const statsToShow = (item.statValues || []).slice(0,4);
+const extra = (item.statValues || []).length - statsToShow.length;
+---
+
+<article
+  data-zzz-card
+  data-zzz-id={item.id}
+  data-search={item.characterName.toLowerCase()}
+  draggable="true"
+  class="group flex w-full overflow-hidden rounded-2xl border border-zinc-200 bg-white transition dark:border-white/10 dark:bg-white/[0.025] dark:backdrop-blur"
+>
+  <div class="relative w-[62%] shrink-0 aspect-[1/2] overflow-hidden bg-zinc-950/5 dark:bg-zinc-900">
+    <button type="button" data-drag-handle aria-label="Arrastrar" title="Arrastrar para ordenar (mantener pulsado en móvil)" class="absolute left-1 top-1 z-10 grid h-7 w-7 place-items-center rounded bg-zinc-950/60 text-white backdrop-blur cursor-grab active:cursor-grabbing touch-manipulation opacity-80 md:opacity-0 md:group-hover:opacity-100 transition">⋮⋮</button>
+    {item.coverUrl ? (
+      <img data-zzz-cover-image src={item.coverUrl} alt={item.characterName} loading="lazy" decoding="async" class="h-full w-full object-cover object-top" referrerpolicy="no-referrer" />
+    ) : (
+      <div class="grid h-full w-full place-items-center bg-gradient-to-br from-zinc-100 to-zinc-200 dark:from-white/[0.04] dark:to-white/[0.06]">
+        <span class="text-3xl font-bold tracking-wide text-zinc-300 dark:text-zinc-600">{initials}</span>
+      </div>
+    )}
+  </div>
+  <div class="flex w-[38%] flex-col gap-2 p-3">
+    <div>
+      <h3 class="truncate text-lg font-bold leading-tight text-zinc-900 dark:text-white">{item.characterName}</h3>
+      {item.wEngineId && item.wEngineName && (
+        <div class="mt-2 flex items-center gap-2 rounded-full bg-zinc-100 px-2.5 py-1.5 dark:bg-white/10 max-w-full">
+          <img src={`/zzz/api/icon?type=wengine&id=${encodeURIComponent(item.wEngineId)}`} alt={item.wEngineName} loading="lazy" class="h-7 w-7 shrink-0 rounded object-contain bg-white ring-1 ring-zinc-200 dark:ring-white/10" onerror="this.style.display='none'" />
+          <span class="truncate text-sm font-semibold text-zinc-800 dark:text-zinc-100">{item.wEngineName}</span>
+        </div>
+      )}
+      {(item.discSet4 || item.discSet2) && (
+        <div class="mt-2 flex flex-wrap gap-1.5">
+          {item.discSet4 && (
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1.5 text-sm font-medium leading-none text-zinc-700 dark:bg-white/10 dark:text-zinc-200">
+              <img src={`/zzz/api/icon?type=disc&id=${encodeURIComponent(item.discSet4)}`} alt={item.discSet4} loading="lazy" class="h-6 w-6 shrink-0 rounded object-contain bg-white ring-1 ring-zinc-200 dark:ring-white/10" onerror="this.style.display='none'" />
+              {item.discSet4}
+            </span>
+          )}
+          {item.discSet2 && (
+            <span class="inline-flex items-center gap-1.5 rounded-full bg-zinc-100 px-2.5 py-1.5 text-sm font-medium leading-none text-zinc-700 dark:bg-white/10 dark:text-zinc-200">
+              <img src={`/zzz/api/icon?type=disc&id=${encodeURIComponent(item.discSet2)}`} alt={item.discSet2} loading="lazy" class="h-6 w-6 shrink-0 rounded object-contain bg-white ring-1 ring-zinc-200 dark:ring-white/10" onerror="this.style.display='none'" />
+              {item.discSet2}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+    {statsToShow.length > 0 ? (
+      <div class="flex flex-col gap-1">
+        {statsToShow.map((s) => (
+          <div class="flex items-center justify-between gap-2 rounded-lg bg-zinc-50 px-2.5 py-1.5 dark:bg-white/[0.04]">
+            <span class="text-xs font-medium uppercase tracking-wider text-zinc-600 dark:text-zinc-300">{s.stat}</span>
+            <span class="text-sm tabular-nums font-semibold text-zinc-900 dark:text-white">{fmt(s.value, s.stat)}</span>
+          </div>
+        ))}
+        {extra > 0 && <span class="text-xs text-zinc-500">+{extra} más</span>}
+      </div>
+    ) : (
+      <p class="text-xs text-zinc-500">Sin stats visibles</p>
+    )}
+    <div class="mt-auto flex items-center justify-end gap-1 pt-1">
+      <button type="button" data-edit-zzz data-zzz-id={item.id} aria-label="Editar" title="Editar" class="grid h-7 w-7 place-items-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-zinc-900 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-white">
+        <svg viewBox="0 0 16 16" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M11.2 2.8a1.6 1.6 0 0 1 2 2L6 12H2v-4l9.2-9.2Z"/><path d="M11 3l2 2"/></svg>
+      </button>
+      <button type="button" data-remove-zzz data-zzz-id={item.id} aria-label="Eliminar" title="Eliminar" class="grid h-7 w-7 place-items-center rounded-full text-zinc-400 hover:bg-zinc-200 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-white/10 dark:hover:text-red-400">
+        <svg viewBox="0 0 16 16" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M3 4h10M6 4V2.5h4V4M5 4l1 9h4l1-9" /></svg>
+      </button>
+    </div>
+  </div>
+</article>

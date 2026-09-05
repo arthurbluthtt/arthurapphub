@@ -16,16 +16,8 @@ export const prerender = false;
 
 const STEAM_DETAILS_URL = 'https://store.steampowered.com/api/appdetails';
 
-interface SteamDetails {
-  [appid: string]: {
-    success?: boolean;
-    data?: {
-      type?: string;
-      name?: string;
-      header_image?: string;
-      release_date?: { date?: string };
-    };
-  };
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 // "20 Feb, 2024" → 2024. "Q4 2025" → 2025. Sin año → null.
@@ -45,7 +37,7 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  let body: { appId?: unknown };
+  let body: unknown;
   try {
     body = await request.json();
   } catch {
@@ -54,12 +46,38 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { 'content-type': 'application/json' },
     });
   }
-  const appId = Number(body.appId);
-  if (!Number.isInteger(appId) || appId <= 0) {
+  const bodyRecord = isRecord(body) ? body : null;
+  const rawAppId = bodyRecord?.appId;
+  const appId = typeof rawAppId === 'number' ? rawAppId : NaN;
+  if (!Number.isSafeInteger(appId) || appId <= 0) {
     return new Response(JSON.stringify({ error: 'appId required' }), {
       status: 400,
       headers: { 'content-type': 'application/json' },
     });
+  }
+
+  // `saga` es texto libre, pero comparte el mismo contrato con alta manual y
+  // edición: opcional, string recortado de hasta 60 caracteres o null.
+  let saga: string | null = null;
+  if ('saga' in bodyRecord) {
+    if (bodyRecord.saga == null || bodyRecord.saga === '') {
+      saga = null;
+    } else {
+      if (typeof bodyRecord.saga !== 'string') {
+        return new Response(JSON.stringify({ error: 'saga must be a string' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      const raw = bodyRecord.saga.trim();
+      if (raw.length > 60) {
+        return new Response(JSON.stringify({ error: 'saga must be 0-60 chars' }), {
+          status: 400,
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      saga = raw.length > 0 ? raw : null;
+    }
   }
 
   let upstream: Response;
@@ -81,28 +99,61 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 
-  let details: SteamDetails;
+  let payload: unknown;
   try {
-    details = (await upstream.json()) as SteamDetails;
+    payload = await upstream.json();
   } catch {
     return new Response(JSON.stringify({ error: 'steam invalid json' }), {
       status: 502,
       headers: { 'content-type': 'application/json' },
     });
   }
-  const data = details[String(appId)]?.success ? details[String(appId)].data : undefined;
-  if (!data?.name || !data.header_image) {
+  if (!isRecord(payload)) {
+    return new Response(JSON.stringify({ error: 'steam invalid response' }), {
+      status: 502,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+  const entry = payload[String(appId)];
+  if (!isRecord(entry) || typeof entry.success !== 'boolean') {
+    return new Response(JSON.stringify({ error: 'steam invalid response' }), {
+      status: 502,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+  if (!entry.success) {
     return new Response(JSON.stringify({ error: 'not found on steam' }), {
       status: 404,
       headers: { 'content-type': 'application/json' },
     });
   }
-  if (data.type && data.type !== 'game') {
-    return new Response(JSON.stringify({ error: `not a game (${data.type})` }), {
+  if (!isRecord(entry.data)) {
+    return new Response(JSON.stringify({ error: 'steam invalid response' }), {
+      status: 502,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+  const data = entry.data;
+  if (data.type !== 'game') {
+    return new Response(JSON.stringify({ error: `not a game (${data.type ?? 'unknown'})` }), {
       status: 400,
       headers: { 'content-type': 'application/json' },
     });
   }
+  if (
+    typeof data.name !== 'string' ||
+    !data.name ||
+    typeof data.header_image !== 'string' ||
+    !data.header_image
+  ) {
+    return new Response(JSON.stringify({ error: 'steam invalid response' }), {
+      status: 502,
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+  const releaseDate = isRecord(data.release_date) && typeof data.release_date.date === 'string'
+    ? data.release_date.date
+    : undefined;
 
   const result = await addGame(
     env.AUTH_DB,
@@ -111,7 +162,8 @@ export const POST: APIRoute = async ({ request }) => {
       appId,
       name: data.name,
       coverUrl: data.header_image,
-      year: parseYear(data.release_date?.date),
+      year: parseYear(releaseDate),
+      saga,
     },
     crypto.randomUUID()
   );

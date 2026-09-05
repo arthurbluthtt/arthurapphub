@@ -14,11 +14,12 @@ import {
   lookupSession,
   normalizeUsername,
   readCookie,
+  safeNextPath,
 } from '../lib/auth';
 
 export const prerender = false;
 
-const next = Astro.url.searchParams.get('next') ?? '/';
+const next = safeNextPath(Astro.url.searchParams.get('next'));
 
 const sessionId = readCookie(Astro.request);
 const sess = sessionId ? await lookupSession(env.AUTH_DB, sessionId) : null;
@@ -29,7 +30,7 @@ if (!sess && Astro.request.method === 'POST') {
   const form = await Astro.request.formData();
   const usernameInput = String(form.get('username') ?? '');
   const pin = String(form.get('pin') ?? '').trim();
-  const nextField = String(form.get('next') ?? '') || next;
+  const nextField = safeNextPath(form.get('next')?.toString() || next);
 
   const username = normalizeUsername(usernameInput);
 
@@ -69,7 +70,7 @@ if (!sess && Astro.request.method === 'POST') {
 }
 ---
 
-<BaseLayout title={sess ? 'AppHub — Hub personal de apps' : 'Entrar — AppHub'}>
+<BaseLayout title={sess ? 'AppHub — Hub personal de apps' : 'Entrar — AppHub'} contentMaxWidth="max-w-6xl xl:max-w-[1760px] 2xl:max-w-[2240px]">
   {sess ? (
     <div class="mb-8">
       <h1 class="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white">Mis apps</h1>

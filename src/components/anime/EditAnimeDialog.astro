@@ -1,0 +1,258 @@
+---
+import { ANIME_TYPES, ANIME_TYPE_LABELS } from '../../lib/anime/store';
+---
+
+<dialog
+  data-edit-anime-dialog
+  class="backdrop:bg-zinc-900/95 dark:backdrop:bg-zinc-950/95 m-auto max-h-[90vh] w-[min(560px,calc(100vw-2rem))] overflow-y-auto overscroll-contain rounded-2xl border border-zinc-200 bg-white p-0 text-zinc-900 shadow-2xl dark:border-white/10 dark:bg-zinc-900 dark:text-white"
+>
+  <div class="flex items-center justify-between gap-3 border-b border-zinc-200 p-4 dark:border-white/10">
+    <div>
+      <h2 class="text-base font-semibold">Editar item</h2>
+      <p class="text-xs uppercase tracking-wider text-zinc-500">Modificá los campos y guardá</p>
+    </div>
+    <button
+      type="button"
+      data-edit-anime-close
+      aria-label="Cerrar"
+      class="grid h-8 w-8 place-items-center rounded-full hover:bg-zinc-100 dark:hover:bg-white/10"
+    >
+      <span aria-hidden="true" class="text-lg leading-none">×</span>
+    </button>
+  </div>
+
+  <form data-edit-anime-form class="flex flex-col gap-3 p-4">
+    <label class="block">
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Tipo</span>
+      <select
+        data-edit-anime-type
+        class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-sm text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30 [&>option]:bg-white dark:[&>option]:bg-zinc-800"
+      >
+        {ANIME_TYPES.map((t) => (
+          <option value={t}>{ANIME_TYPE_LABELS[t]}</option>
+        ))}
+      </select>
+    </label>
+    <label class="block">
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Título *</span>
+      <input
+        type="text"
+        data-edit-anime-title
+        maxlength="120"
+        required
+        autocomplete="off"
+        class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+      />
+    </label>
+    <div class="grid grid-cols-2 gap-3">
+      <label class="block">
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Año (opcional)</span>
+        <input
+          type="number"
+          data-edit-anime-year
+          min="1888"
+          max="2100"
+          class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+        />
+      </label>
+      <label class="block">
+        <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Director/Creador (opcional)</span>
+        <input
+          type="text"
+          data-edit-anime-director
+          maxlength="120"
+          autocomplete="off"
+          class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:focus:border-white/30"
+        />
+      </label>
+    </div>
+    <label class="block">
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">URL de portada (opcional)</span>
+      <input
+        type="url"
+        data-edit-anime-cover
+        autocomplete="off"
+        spellcheck="false"
+        class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+      />
+    </label>
+    <label class="block">
+      <span class="text-xs font-medium uppercase tracking-wider text-zinc-500">Género (opcional)</span>
+      <input
+        type="text"
+        data-edit-anime-genre
+        maxlength="40"
+        autocomplete="off"
+        class="mt-1.5 w-full rounded-lg border border-zinc-300 bg-white px-3 py-2.5 text-zinc-900 outline-none placeholder:text-zinc-400 focus:border-zinc-500 dark:border-white/10 dark:bg-white/[0.04] dark:text-white dark:placeholder:text-zinc-500 dark:focus:border-white/30"
+      />
+    </label>
+    <div class="flex items-center justify-end gap-2 border-t border-zinc-200 pt-3 dark:border-white/10">
+      <button
+        type="submit"
+        data-edit-anime-submit
+        class="rounded-lg bg-zinc-900 px-4 py-2 text-xs font-medium text-white transition hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
+      >
+        Guardar
+      </button>
+    </div>
+  </form>
+
+  <p
+    data-edit-anime-status
+    class="hidden m-0 border-t border-zinc-200 px-4 py-2 text-center text-xs text-zinc-500 dark:border-white/10"
+  >
+  </p>
+</dialog>
+
+<script>
+  (() => {
+    if (window.__editAnimeDialogInit) return;
+    window.__editAnimeDialogInit = true;
+
+    const dialog = document.querySelector('[data-edit-anime-dialog]');
+    const form = document.querySelector('[data-edit-anime-form]');
+    const typeEl = document.querySelector('[data-edit-anime-type]');
+    const titleEl = document.querySelector('[data-edit-anime-title]');
+    const yearEl = document.querySelector('[data-edit-anime-year]');
+    const directorEl = document.querySelector('[data-edit-anime-director]');
+    const coverEl = document.querySelector('[data-edit-anime-cover]');
+    const genreEl = document.querySelector('[data-edit-anime-genre]');
+    const submitBtn = document.querySelector('[data-edit-anime-submit]');
+    const closeBtn = document.querySelector('[data-edit-anime-close]');
+    const statusEl = document.querySelector('[data-edit-anime-status]');
+
+    let currentId = null;
+    let bodyLocked = false;
+
+    function lockBodyScroll() {
+      if (bodyLocked) return;
+      bodyLocked = true;
+      const sbw = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (sbw > 0) document.body.style.paddingRight = sbw + 'px';
+    }
+    function unlockBodyScroll() {
+      if (!bodyLocked) return;
+      bodyLocked = false;
+      document.body.style.overflow = '';
+      document.body.style.paddingRight = '';
+    }
+    function showStatus(text, isError) {
+      if (!statusEl) return;
+      statusEl.textContent = text;
+      statusEl.classList.remove('hidden', 'text-red-500', 'dark:text-red-400');
+      if (isError) statusEl.classList.add('text-red-500', 'dark:text-red-400');
+    }
+    function hideStatus() {
+      if (!statusEl) return;
+      statusEl.classList.add('hidden');
+      statusEl.textContent = '';
+    }
+    function openDialog(anime) {
+      if (!dialog) return;
+      currentId = anime.id;
+      typeEl.value = anime.animeType;
+      titleEl.value = anime.title || '';
+      yearEl.value = anime.year == null ? '' : String(anime.year);
+      directorEl.value = anime.director || '';
+      coverEl.value = anime.coverUrl || '';
+      genreEl.value = anime.genre || '';
+      hideStatus();
+      lockBodyScroll();
+      dialog.showModal();
+      setTimeout(() => titleEl.focus(), 0);
+    }
+    function closeDialog() {
+      dialog?.close();
+      unlockBodyScroll();
+    }
+
+    closeBtn?.addEventListener('click', closeDialog);
+    dialog?.addEventListener('click', (e) => {
+      if (e.target === dialog) closeDialog();
+    });
+    dialog?.addEventListener('close', unlockBodyScroll);
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dialog?.open) closeDialog();
+    });
+
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (!currentId) return;
+      hideStatus();
+      const title = titleEl.value.trim();
+      if (!title) {
+        showStatus('Título requerido', true);
+        titleEl.focus();
+        return;
+      }
+      const coverUrl = coverEl.value.trim() || null;
+      if (coverUrl && !/^https?:\/\//i.test(coverUrl)) {
+        showStatus('URL de portada inválida', true);
+        coverEl.focus();
+        return;
+      }
+      const yearText = yearEl.value.trim();
+      const year = yearText ? Number(yearText) : null;
+      if (year !== null && (!Number.isSafeInteger(year) || year < 1888 || year > 2100)) {
+        showStatus('Año inválido (1888–2100)', true);
+        yearEl.focus();
+        return;
+      }
+      const director = directorEl.value.trim() || null;
+      if (director && director.length > 120) {
+        showStatus('Director/Creador demasiado largo (máximo 120)', true);
+        directorEl.focus();
+        return;
+      }
+      const genre = genreEl.value.trim() || null;
+      if (genre && genre.length > 40) {
+        showStatus('Género demasiado largo (máximo 40)', true);
+        genreEl.focus();
+        return;
+      }
+      submitBtn.disabled = true;
+      showStatus('Guardando...', false);
+      try {
+        const body = {
+          id: currentId,
+          animeType: typeEl.value,
+          title,
+          year,
+          director,
+          coverUrl,
+          genre,
+        };
+        const res = await fetch('/anime/api/edit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          showStatus('Guardado.', false);
+          window.dispatchEvent(new CustomEvent('anime:edited', { detail: { anime: data.anime } }));
+          setTimeout(closeDialog, 200);
+        } else {
+          let code = null;
+          try {
+            const data = await res.json();
+            code = data && typeof data.error === 'string' ? data.error : null;
+          } catch {
+            // El mensaje genérico cubre respuestas no JSON inesperadas.
+          }
+          if (code === 'duplicate') showStatus('Ya existe otro item con ese título', true);
+          else if (code === 'not_found') showStatus('No encontrado', true);
+          else if (code === 'unauthorized') showStatus('Sesión vencida. Volvé a iniciar sesión.', true);
+          else showStatus('Error al guardar.', true);
+        }
+      } catch (err) {
+        showStatus('Error de red', true);
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    window.__openEditAnimeDialog = openDialog;
+  })();
+</script>

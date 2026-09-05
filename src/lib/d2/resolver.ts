@@ -14,6 +14,7 @@ export interface ResolvedWishlistRow {
   itemHash: string;
   name: string;
   iconPath: string;
+  tier: 'exotic' | 'legendary';
   weaponType: string;
   damage: string;
   perks: Record<PerkSlot, ResolvedPerk | null>;
@@ -78,6 +79,7 @@ export async function resolveWishlistRow(
     itemHash: row.itemHash,
     name: row.weaponName || weapon.name,
     iconPath: row.weaponIconPath || weapon.icon,
+    tier: weapon.tier,
     weaponType: weapon.weaponType ?? '',
     damage: weapon.damage ?? '',
     perks,

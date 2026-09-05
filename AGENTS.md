@@ -1,22 +1,41 @@
-## Development
+# AGENTS.md — Instrucciones para AI agents
 
-When starting the dev server, use background mode:
+## Dev server
+
+Usar background mode:
 
 ```
 astro dev --background
 ```
 
-Manage the background server with `astro dev stop`, `astro dev status`, and `astro dev logs`.
+Gestión: `astro dev stop` / `astro dev status` / `astro dev logs`.
 
-## Documentation
+`vite.server.watch.ignored: ['**/.wrangler/**']` ya está configurado para evitar el crash `EINVAL lstat .sqlite-wal` en Windows.
 
-Full documentation: https://docs.astro.build
+## Dónde está la doc
 
-Consult these guides before working on related tasks:
+| Doc | Qué contiene |
+|---|---|
+| `INDEX.md` | Mapa navegable — empezar acá |
+| `README.md` | Qué hace, quickstart, deploy, agregar app |
+| `DESIGN.md` | **Single source of truth** para paleta, tipografía y componentes (chips, dialogs, dropdowns, grids fluidos, etc.) |
+| `docs/architecture.md` | Stack, bindings D1/R2, flujo SSO, lifecycle |
+| `docs/decisions.md` | Decisiones vigentes (por qué se hizo X) |
+| `docs/data-pipelines.md` | Scripts `build:*` y refresh |
+| `docs/sub-apps/*.md` | Detalle por sub-app (storage, API, UX) |
+| `docs/sessions/` | Logs de sesión archivados |
 
-- [Adding pages, dynamic routes, or middleware](https://docs.astro.build/en/guides/routing/)
-- [Working with Astro components](https://docs.astro.build/en/basics/astro-components/)
-- [Using React, Vue, Svelte, or other framework components](https://docs.astro.build/en/guides/framework-components/)
-- [Adding or managing content](https://docs.astro.build/en/guides/content-collections/)
-- [Adding styles or using Tailwind](https://docs.astro.build/en/guides/styling/)
-- [Supporting multiple languages](https://docs.astro.build/en/guides/internationalization/)
+## Convenciones
+
+- **Idioma**: doc y comentarios en español; código en inglés.
+- **Patrón nuevo → `DESIGN.md` primero**, después propagar al código. No inventar estilos fuera de `DESIGN.md` § Extensiones.
+- **Decisión nueva → `docs/decisions.md`**.
+- **Sub-app nueva**: clonar el patrón de `docs/sub-apps/trackers.md` (store + componentes + páginas + API). Ver `README.md` → "Agregar una app nueva".
+- **Clases/data-attributes** en `kebab-case`: `data-add-weapon-chip`, `data-saga-filter`, etc.
+- **Migrations**: `migrations/NNNN_nombre.sql`, aplicar con `wrangler d1 migrations apply arthurapphub-auth-db --remote`.
+- No commitear secrets. No crear `.md` nuevos en la raíz sin necesidad.
+
+## Referencias externas
+
+- Astro routing/components/content: https://docs.astro.build/en/guides/routing/ etc.
+- Cloudflare Workers / D1 / R2: https://developers.cloudflare.com/

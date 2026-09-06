@@ -59,6 +59,7 @@ Registro de decisiones vigentes. Para el contexto completo de cada sub-app, ver 
 - Búsqueda y detalle runtime contra Steam (sin API key): `storesearch` + `appdetails?filters=basic,release_date`. Solo `type === "game"` (rechaza DLC/OST/demo). Covers servidas directo del CDN de Steam (sin proxy R2).
 - `app_id NULL` + UNIQUE parcial para juegos manuales. Duplicado manual por nombre case-insensitive.
 - Sagas: texto libre (`TEXT NULL`), sin catálogo ni auto-detect. `SagaPicker` con "Sin saga" + lista de sagas que el user ya usó + "Otra (escribir manualmente)" → input con autofocus; el picker de alta se comparte entre Steam y manual. La card no muestra pill de saga (se removió porque descuadraba).
+- Random pick es una decisión de UI/runtime: selecciona solo juegos `backlog` desde el estado vivo, sin persistir una elección ni introducir una migración. La acción opcional "Marcar como jugando" reutiliza el endpoint existente de estado.
 
 ### Media / Manga / Book / Anime
 

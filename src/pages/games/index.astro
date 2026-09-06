@@ -3,6 +3,7 @@ import { env } from 'cloudflare:workers';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import AddGameDialog from '../../components/games/AddGameDialog.astro';
 import EditGameDialog from '../../components/games/EditGameDialog.astro';
+import RandomPickDialog from '../../components/games/RandomPickDialog.astro';
 import SearchBar from '../../components/SearchBar.astro';
 import { lookupSession, readCookie } from '../../lib/auth';
 import { listGames, STATUSES, STATUS_LABELS } from '../../lib/games/store';
@@ -43,9 +44,21 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
         Mis juegos con estado: portada de Steam, año de salida y progreso.
       </p>
     </div>
-    <span class="text-xs uppercase tracking-wider text-zinc-500 xl:text-sm" data-games-count>
-      {totalCount} {totalCount === 1 ? 'juego' : 'juegos'}
-    </span>
+    <div class="flex items-center gap-3">
+      <button
+        type="button"
+        data-random-pick
+        aria-label="Elegir un juego por jugar al azar"
+        disabled={counts.backlog === 0}
+        class="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 px-3 py-1.5 text-xs font-medium text-zinc-700 transition hover:border-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus:outline-none focus:ring-2 focus:ring-zinc-400 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:text-zinc-200 dark:hover:border-white/30 dark:hover:bg-white/10 dark:hover:text-white"
+      >
+        <span aria-hidden="true">🎲</span>
+        <span>Random pick</span>
+      </button>
+      <span class="text-xs uppercase tracking-wider text-zinc-500 xl:text-sm" data-games-count>
+        {totalCount} {totalCount === 1 ? 'juego' : 'juegos'}
+      </span>
+    </div>
   </div>
 
   {userSagas.length > 0 && (
@@ -214,6 +227,8 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
     No tenés juegos con ese estado.
   </p>
 
+  <RandomPickDialog />
+
   <script
     is:inline
     define:vars={{
@@ -233,6 +248,16 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
     const filterGroup = document.querySelector("[data-filter-group]");
     const sagaFilterGroup = document.querySelector("[data-saga-filter-group]");
     const sagaFilterSelect = document.querySelector("[data-saga-filter]");
+    const randomPickButton = document.querySelector("[data-random-pick]");
+    const randomDialog = document.querySelector("[data-random-dialog]");
+    const randomCover = randomDialog?.querySelector("[data-random-cover]");
+    const randomFallback = randomDialog?.querySelector("[data-random-fallback]");
+    const randomInitials = randomDialog?.querySelector("[data-random-initials]");
+    const randomTitle = randomDialog?.querySelector("[data-random-title]");
+    const randomMeta = randomDialog?.querySelector("[data-random-meta]");
+    const randomSaga = randomDialog?.querySelector("[data-random-saga]");
+    const randomError = randomDialog?.querySelector("[data-random-error]");
+    const randomStart = randomDialog?.querySelector("[data-random-start]");
 
     const FILTER_ACTIVE = [
       "border-zinc-900",
@@ -257,8 +282,162 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
     let currentFilter = "all";
     let currentSaga = "__all__";
     let currentSearch = "";
+    let selectedRandomGame = null;
+    let lastRandomGameId = null;
+    let bodyLocked = false;
     // Map saga → count (lo mantenemos sincronizado con `games`).
     const sagaCounts = new Map(Object.entries(sagaCountsInitial));
+
+    function lockBodyScroll() {
+      if (bodyLocked) return;
+      bodyLocked = true;
+      const sbw = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = "hidden";
+      if (sbw > 0) document.body.style.paddingRight = sbw + "px";
+    }
+
+    function unlockBodyScroll() {
+      if (!bodyLocked) return;
+      bodyLocked = false;
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+    }
+
+    function closeRandomDialog() {
+      if (randomDialog instanceof HTMLDialogElement && randomDialog.open) {
+        randomDialog.close();
+      }
+      selectedRandomGame = null;
+      unlockBodyScroll();
+    }
+
+    function updateRandomPickState() {
+      const hasBacklog = games.some((game) => game.status === "backlog");
+      if (randomPickButton instanceof HTMLButtonElement) {
+        randomPickButton.disabled = !hasBacklog;
+      }
+      if (!hasBacklog && randomDialog instanceof HTMLDialogElement && randomDialog.open) {
+        closeRandomDialog();
+      }
+    }
+
+    function renderRandomGame(game) {
+      if (!game) return;
+      const title = game.name || "Juego sin título";
+      const initials = title
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((word) => word[0] || "")
+        .join("")
+        .toUpperCase();
+
+      if (randomTitle) randomTitle.textContent = title;
+      if (randomMeta) randomMeta.textContent = game.year ? String(game.year) : "Por jugar";
+      if (randomSaga) {
+        randomSaga.textContent = game.saga ? `Saga: ${game.saga}` : "";
+        randomSaga.classList.toggle("hidden", !game.saga);
+      }
+      if (randomInitials) randomInitials.textContent = initials || "?";
+      if (randomError) {
+        randomError.textContent = "";
+        randomError.classList.add("hidden");
+      }
+
+      if (randomCover instanceof HTMLImageElement && randomFallback) {
+        randomCover.alt = title;
+        if (game.coverUrl) {
+          randomCover.src = game.coverUrl;
+          randomCover.classList.remove("hidden");
+          randomFallback.classList.add("hidden");
+        } else {
+          randomCover.removeAttribute("src");
+          randomCover.classList.add("hidden");
+          randomFallback.classList.remove("hidden");
+        }
+      }
+      if (randomStart instanceof HTMLButtonElement) randomStart.disabled = false;
+    }
+
+    function openRandomDialog(game) {
+      if (!(randomDialog instanceof HTMLDialogElement)) return;
+      selectedRandomGame = game;
+      renderRandomGame(game);
+      if (!randomDialog.open) {
+        lockBodyScroll();
+        randomDialog.showModal();
+      }
+    }
+
+    randomCover?.addEventListener("error", () => {
+      randomCover.classList.add("hidden");
+      randomFallback?.classList.remove("hidden");
+    });
+
+    randomDialog?.querySelectorAll("[data-random-close]").forEach((button) => {
+      button.addEventListener("click", closeRandomDialog);
+    });
+    randomDialog?.addEventListener("click", (event) => {
+      if (event.target === randomDialog) closeRandomDialog();
+    });
+    randomDialog?.addEventListener("close", () => {
+      selectedRandomGame = null;
+      unlockBodyScroll();
+    });
+
+    randomPickButton?.addEventListener("click", () => {
+      const candidates = games.filter((game) => game.status === "backlog");
+      if (candidates.length === 0) {
+        updateRandomPickState();
+        return;
+      }
+      const available = candidates.filter((game) => game.id !== lastRandomGameId);
+      const pool = available.length > 0 ? available : candidates;
+      const game = pool[Math.floor(Math.random() * pool.length)];
+      lastRandomGameId = game.id;
+      openRandomDialog(game);
+    });
+
+    randomStart?.addEventListener("click", async () => {
+      if (!(randomStart instanceof HTMLButtonElement) || !selectedRandomGame) return;
+      const id = selectedRandomGame.id;
+      randomStart.disabled = true;
+      if (randomError) {
+        randomError.textContent = "";
+        randomError.classList.add("hidden");
+      }
+      try {
+        const response = await fetch("/games/api/set-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, status: "playing" }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.game) throw new Error("No se pudo actualizar el estado.");
+
+        const game = games.find((item) => item.id === id);
+        if (game) game.status = data.game.status;
+        const card = findCard(id);
+        if (card) {
+          card.dataset.status = data.game.status;
+          const button = card.querySelector("[data-status-button]");
+          if (button) {
+            button.dataset.status = data.game.status;
+            const label = button.querySelector("[data-status-label]");
+            if (label) label.textContent = statusLabels[data.game.status] || data.game.status;
+          }
+        }
+        renderCounts();
+        applyFilter();
+        updateRandomPickState();
+        closeRandomDialog();
+      } catch (error) {
+        if (randomError) {
+          randomError.textContent = error instanceof Error ? error.message : "No se pudo actualizar el estado.";
+          randomError.classList.remove("hidden");
+        }
+        randomStart.disabled = false;
+      }
+    });
 
     // Fallback único para covers SSR y cards creadas en runtime.
     document.addEventListener("error", (e) => {
@@ -557,6 +736,7 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
           }
           renderCounts();
           applyFilter();
+          updateRandomPickState();
           closeStatusMenu();
         } catch {
           closeStatusMenu();
@@ -678,6 +858,7 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
       }
       setTimeout(() => {
         games = games.filter((g) => g.id !== id);
+        if (selectedRandomGame?.id === id) closeRandomDialog();
         card.remove();
         recomputeSagaCounts();
         rebuildSagaOptions();
@@ -685,6 +866,7 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
         syncVisibility();
         applyFilter();
         updateHeaderCount();
+        updateRandomPickState();
       }, 200);
     });
 
@@ -712,6 +894,7 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
         syncVisibility();
         applyFilter();
         updateHeaderCount();
+        updateRandomPickState();
       } catch (err) {
         console.error("games:game-added handler failed", err);
       }
@@ -741,10 +924,13 @@ const FILTER_TABS = ['all', ...STATUSES] as const;
         recomputeSagaCounts();
         rebuildSagaOptions();
         applyFilter();
+        updateRandomPickState();
       } catch (err) {
         console.error("games:game-updated handler failed", err);
       }
     });
+
+    updateRandomPickState();
   </script>
 
   <AddGameDialog userSagas={userSagas} />

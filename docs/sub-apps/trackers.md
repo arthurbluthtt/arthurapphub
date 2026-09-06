@@ -38,6 +38,7 @@ src/pages/<tracker>/{index.astro, api/{search,add,add-manual,edit,set-status,rem
 - **Layout y covers**: `BaseLayout` usa `max-w-[1760px] 2xl:max-w-[2240px]`; el grid usa `gap-4` y `1→2→3→5→6→7` columnas hasta 2xl. La portada mantiene `aspect-[460/215]`, `loading="lazy"` y `decoding="async"`; el fallback de imagen es común para cards SSR y runtime mediante `data-game-cover-image`.
 - **Atributos específicos**: GameTracker usa `data-remove-game` y `data-edit-game` en sus controles (los demás trackers de la familia usan `data-remove-button`/`data-edit-button`); el listener delegado del grid cubre ambos estados de render.
 - **Errores de búsqueda**: el dialog distingue resultados vacíos de `401`, fallos HTTP de Steam y errores de red; estos últimos no se presentan como “Sin coincidencias”.
+- **Random pick**: el botón `Random pick` elige uniformemente un juego del array vivo con estado `backlog` (Por jugar), evita repetir inmediatamente el anterior y muestra un diálogo con portada, año y saga. Desde el diálogo se puede marcar como `playing`; no requiere migración ni API nueva y se deshabilita cuando no quedan juegos por jugar.
 - **Migraciones**: `0010_gametracker.sql` + `0011_gametracker_manual.sql` (UNIQUE parcial) + `0012_games_saga.sql`.
 
 | Método | Ruta | Respuesta |

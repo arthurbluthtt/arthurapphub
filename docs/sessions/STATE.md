@@ -3,7 +3,7 @@
 > Fuente de verdad operativa del proyecto. `Mavis_STATE.md` y `Mavis_CHANGELOG.md` son históricos de otro agente y no deben usarse para decidir el estado actual.
 
 Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de apps** + **sub-apps internas** (D2 Wishlist + Umamusume Cards + Suscripciones + GameTracker + MediaTracker + MangaTracker + BookTracker + AnimeTracker + ZZZ — **base final**).
-Última actualización: 2026-09-04 (revisión de consistencia global cerrada; Fase 10 ZZZ Builds H1-H5 completada).
+Última actualización: 2026-09-05 (Random pick de GameTracker implementado).
 
 ## AppHub — deploy status
 
@@ -132,6 +132,11 @@ Estado actual del hub como **Identity Provider** (SSO multi-app) + **lanzador de
   imagen `data-game-cover-image`. `INDEX.md`, `DESIGN.md`, `decisions.md` y
   `trackers.md` ya no describen el catálogo eliminado ni un typeahead que no
   existe.
+- ✅ **Random pick**: el botón superior selecciona un juego `backlog` del array
+  vivo sin repetir inmediatamente el anterior, muestra portada/año/saga en un
+  `<dialog>` accesible y permite marcarlo como `playing` reutilizando el
+  endpoint existente. Se sincroniza después de altas, cambios de estado y
+  borrados; queda deshabilitado cuando no hay juegos por jugar.
 
 ### Decisiones GameTracker
 
